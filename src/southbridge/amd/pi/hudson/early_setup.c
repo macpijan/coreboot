@@ -25,12 +25,14 @@
 #include <cbmem.h>
 #include "hudson.h"
 #include "pci_devs.h"
+#include <Fch/Fch.h>
+
+#define BIT2        0x0000000000000004ull
 
 #if IS_ENABLED(CONFIG_HUDSON_UART)
 
 #include <cpu/x86/msr.h>
 #include <delay.h>
-#include <Fch/Fch.h>
 
 void configure_hudson_uart(void)
 {
@@ -119,6 +121,18 @@ void hudson_lpc_port80(void)
 	byte = pci_read_config8(dev, 0x4a);
 	byte |= 1 << 5; /* enable port 80 */
 	pci_write_config8(dev, 0x4a, byte);
+}
+
+void hudson_clk_output_48Mhz(void)
+{
+	u32 data, *memptr;
+
+	// Enable the X14M_25M_48M_OSC pin and leaving it at it's default so 48Mhz will be on ball AP13 (FT3b package)
+
+	memptr = (u32 *)(ACPI_MMIO_BASE + MISC_BASE + FCH_MISC_REG40 );
+	data = *memptr;
+	data &= (u32)~BIT2;		// clear the OSCOUT1_ClkOutputEnb to enable the 48 Mhz clock
+	*memptr = data;
 }
 
 void hudson_lpc_decode(void)
