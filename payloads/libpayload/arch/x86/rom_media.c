@@ -30,9 +30,14 @@
 
 #include <cbfs.h>
 #include <string.h>
+#include <arch/virtual.h>
+
 
 #ifdef LIBPAYLOAD
-# define printk(x...)
+# include <stdio.h>
+# define PRINT_DEBUG(x...) //printf(x)
+# define PRINT_ERROR(x...) printf(x)
+# define PRINT_INFO(x...) //printf(x)
 # define init_default_cbfs_media libpayload_init_default_cbfs_media
   extern int libpayload_init_default_cbfs_media(struct cbfs_media *media);
 #else
@@ -50,11 +55,16 @@ static void *x86_rom_map(struct cbfs_media *media, size_t offset, size_t count) 
 	// Some address (ex, pointer to master header) may be given in memory
 	// mapped location. To workaround that, we handle >0xf0000000 as real
 	// memory pointer.
+	PRINT_DEBUG( "x86_rom_map offset 0x%x\n", (unsigned int) offset );
 
-	if ((uint32_t)offset > (uint32_t)0xf0000000)
-		ptr = (void*)offset;
-	else
-		ptr = (void*)(0 - (uint32_t)media->context + offset);
+	if ((uint32_t)offset > (uint32_t)0xf0000000) {
+		PRINT_DEBUG( "physical offset\n" );
+		ptr = phys_to_virt(offset);
+	} else {
+		PRINT_DEBUG( "logical offset\n" );
+		ptr = (void*) (uint32_t) media->context + offset;
+	}
+	PRINT_DEBUG( "x86_rom_map returned pointer %p\n", ptr );
 	return ptr;
 }
 
@@ -81,20 +91,27 @@ int init_x86rom_cbfs_media(struct cbfs_media *media) {
 	// Since the CBFS core always use ROM offset, we need to figure out
 	// header->romsize even before media is initialized.
 	struct cbfs_header *header = (struct cbfs_header*)
-			*(uint32_t*)(0xfffffffc);
+		phys_to_virt( *(uint32_t*) phys_to_virt(0xfffffffc));
+
+	PRINT_DEBUG( "header %p contains 0x%x\n\n\n", (unsigned int *) header, header->magic );
+
 	if (CBFS_HEADER_MAGIC != ntohl(header->magic)) {
 #if defined(CONFIG_LP_ROM_SIZE)
-		printk(BIOS_ERR, "Invalid CBFS master header at %p\n", header);
+		PRINT_ERROR("\nBIOS_ERR : Invalid CBFS master header at %p\n", header);
 		media->context = (void*)CONFIG_LP_ROM_SIZE;
 #else
 		return -1;
 #endif
 	} else {
 		uint32_t romsize = ntohl(header->romsize);
-		media->context = (void*)romsize;
+
+		media->context = phys_to_virt(0 - romsize);
+
+		PRINT_DEBUG( "context set to %p\n", (char *) media->context );
+
 #if defined(CONFIG_LP_ROM_SIZE)
 		if (CONFIG_LP_ROM_SIZE != romsize)
-			printk(BIOS_INFO, "Warning: rom size unmatch (%d/%d)\n",
+			PRINT_INFO("BIOS_INFO: Warning: rom size unmatch (%d/%d)\n",
 			       CONFIG_LP_ROM_SIZE, romsize);
 #endif
 	}

@@ -21,14 +21,14 @@
 #include <lib.h>
 #include <console/console.h>
 
-int primitive_memtest(uintptr_t base, uintptr_t size)
+int primitive_memtest(uintptr_t base, size_t size)
 {
 	uintptr_t *p;
 	uintptr_t i;
 	int bad = 0;
 
 	printk(BIOS_SPEW, "Performing primitive memory test.\n");
-	printk(BIOS_SPEW, "DRAM start: 0x%08x, DRAM size: 0x%08x", base, size);
+	printk(BIOS_SPEW, "DRAM start: 0x%08x, DRAM size: 0x%08zx", base, size);
 	for(i = base; i < base + (size - 1) - sizeof(p); i += sizeof(p)) {
 		if (i % 0x100000 == 0) {
 			if ((i % 0x800000) == 0)
@@ -53,7 +53,7 @@ int primitive_memtest(uintptr_t base, uintptr_t size)
 
 		p = (uintptr_t *)i;
 		if (*p != i) {
-			printk(BIOS_SPEW, "\n0x%08zx: got 0x%zx\n", i, *p);
+			printk(BIOS_SPEW, "\n0x%08x: got 0x%x\n", i, *p);
 			bad++;
 		}
 	}

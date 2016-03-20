@@ -24,7 +24,7 @@
 
 unsigned int default_baudrate(void)
 {
-#if !defined(__SMM__) && CONFIG_USE_OPTION_TABLE
+#if !defined(__SMM__) && CONFIG_USE_OPTION_TABLE && !CONFIG_ELTAN_USE_FIXED_BAUDRATE
 	static const unsigned baud[8] =
 		{ 115200, 57600, 38400, 19200, 9600, 4800, 2400, 1200 };
 	unsigned b_index = 0;

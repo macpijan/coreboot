@@ -25,9 +25,9 @@
 #include <stdint.h>
 #include <string.h>
 
-#define SPD_SIZE	128
-#define SPD_CRC_HI	127
-#define SPD_CRC_LO	126
+//#define SPD_SIZE	128
+//#define SPD_CRC_HI	127
+//#define SPD_CRC_LO	126
 
 int read_spd_from_cbfs(u8 *buf, int idx)
 {

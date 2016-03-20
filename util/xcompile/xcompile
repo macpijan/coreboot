@@ -4,6 +4,7 @@
 #
 # Copyright (C) 2007-2010 coresystems GmbH
 # Copyright (C) 2012 Google Inc
+# Copyright (C) 2015-2016 Eltan B.V.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -20,7 +21,15 @@
 #
 
 TMPFILE=""
-XGCCPATH=${1:-"`pwd`/util/crossgcc/xgcc/bin/"}
+XGCCPATH=${1:-"/cygdrive/c/EltanCorebootStudio/crossgcc/126/xgcc/bin/"}
+if [ "$(${XGCCPATH}/iasl 2>/dev/null | grep -c ACPI)" -gt 0 ]; then
+	echo "#using EltanCorebootStudio 126"
+	EXGCCVER=126 
+else
+	echo "#using default coreboot cross"
+	XGCCPATH=${1:-"`pwd`/util/crossgcc/xgcc/bin/"}
+	EXGCCVER=0 
+fi
 
 die() {
 	echo "ERROR: $*" >&2
@@ -167,8 +176,12 @@ AR_${TARCH}:=${GCCPREFIX}ar
 EOF
 }
 
-# Architecture definition
-SUPPORTED_ARCHITECTURE="x86 arm arm64 riscv mipsel"
+ # Architecture definition
+if [ "$EXGCCVER" = "126" ]; then
+ SUPPORTED_ARCHITECTURE="x86"
+else 
+SUPPORTED_ARCHITECTURE="x86 arm arm64 riscv"
+fi
 
 arch_config_arm() {
 	TARCH="arm"
@@ -200,14 +213,6 @@ arch_config_x86() {
 	TARCH="x86_32"
 	TBFDARCH="i386"
 	TCLIST="i386 x86_64"
-	TWIDTH="32"
-	TABI="elf"
-}
-
-arch_config_mipsel() {
-	TARCH="mipsel"
-	TBFDARCH="littlemips"
-	TCLIST="mipsel"
 	TWIDTH="32"
 	TABI="elf"
 }

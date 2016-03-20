@@ -102,3 +102,17 @@ config HPET_ADDRESS
 config ID_SECTION_OFFSET
 	hex
 	default 0x80
+
+config USE_CBMEM_FILE_OVERRIDE
+	bool
+	default n
+	help
+		Can only be used if the payload supports this as well,
+		contact Eltan for payload support
+
+config CBMEM_FILE_AREA_SIZE
+	int	
+	default 4096
+	depends on USE_CBMEM_FILE_OVERRIDE
+	help
+		Defines the size of the CBMEM area containing the file data		

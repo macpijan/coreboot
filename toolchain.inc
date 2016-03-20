@@ -51,20 +51,19 @@ HOSTCXX:=CCC_CXX="$(HOSTCXX)" $(CXX)
 ROMCC=CCC_CC="$(ROMCC_BIN)" $(CC)
 endif
 
-COREBOOT_STANDARD_STAGES := bootblock verstage romstage ramstage
+# removed the verstage for now as we don't support ChromeOS for this board
+#COREBOOT_STANDARD_STAGES := bootblock verstage romstage ramstage
+COREBOOT_STANDARD_STAGES := bootblock romstage ramstage
 
 ARCHDIR-i386    := x86
 ARCHDIR-x86_32  := x86
 ARCHDIR-arm     := arm
 ARCHDIR-arm64   := arm64
 ARCHDIR-riscv   := riscv
-ARCHDIR-mipsel  := mips
 
 CFLAGS_arm      := -mno-unaligned-access -ffunction-sections -fdata-sections
 
 CFLAGS_arm64 := -ffunction-sections -fdata-sections
-
-CFLAGS_mipsel   := -mips32r2 -G 0
 
 toolchain_to_dir = \
 	$(foreach arch,$(ARCH_SUPPORTED),\

@@ -32,6 +32,11 @@ config S3_VGA_ROM_RUN
 	bool
 	default n
 
+#source src/northbridge/amd/pi/00630F01/Kconfig
+
+config NORTHBRIDGE_AMD_PI_00630F01
+	bool
+
 source src/northbridge/amd/pi/00730F01/Kconfig
 
 endif # NORTHBRIDGE_AMD_PI

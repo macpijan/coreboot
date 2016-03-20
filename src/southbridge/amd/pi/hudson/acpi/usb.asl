@@ -19,6 +19,29 @@
  * MA 02110-1301 USA
  */
 
+#if CONFIG_SOUTHBRIDGE_AMD_PI_AVALON
+
+/* 12.0 - EHCI device not named correctly just to prevent build to break.*/
+Device(UOH1) {
+	Name(_ADR, 0x00120000)
+	Name(_PRW, Package() {0x0B, 3})
+} /* end UOH1 */
+
+
+/* 0:13.0 - EHCI */
+Device(UOH3) {
+	Name(_ADR, 0x00130000)
+	Name(_PRW, Package() {0x0B, 3})
+} /* end UOH3 */
+
+
+/* 0:16.0 - EHCI */
+Device(UOH5) {
+	Name(_ADR, 0x00160000)
+	Name(_PRW, Package() {0x0B, 3})
+} /* end UOH5 */
+
+#else //CONFIG_SOUTHBRIDGE_AMD_PI_AVALON
 /* 0:12.0 - OHCI */
 Device(UOH1) {
 	Name(_ADR, 0x00120000)
@@ -54,6 +77,8 @@ Device(UOH6) {
 	Name(_ADR, 0x00160002)
 	Name(_PRW, Package() {0x0B, 3})
 } /* end UOH5 */
+#endif //CONFIG_SOUTHBRIDGE_AMD_PI_AVALON
+
 
 #if !CONFIG_SOUTHBRIDGE_AMD_PI_AVALON
 /* 0:14.5 - OHCI */

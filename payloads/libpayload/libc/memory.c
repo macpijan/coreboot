@@ -78,7 +78,8 @@ void *memcpy(void *dst, const void *src, size_t n)
 
 static void *default_memmove(void *dst, const void *src, size_t n)
 {
-	size_t i, offs;
+	int i;							// ELTAN20150303 Using the size_t here causes problems because it is not signed
+	size_t offs;
 
 	if (src > dst)
 		return memcpy(dst, src, n);

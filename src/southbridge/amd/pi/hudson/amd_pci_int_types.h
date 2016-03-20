@@ -21,11 +21,23 @@
 #define AMD_PCI_INT_TYPES_H
 
 const char * intr_types[] = {
-	[0x00] = "INTA#\t", "INTB#\t", "INTC#\t", "INTD#\t", "INTE#\t", "INTF#\t", "INTG#\t", "INTH#\t",
+#if IS_ENABLED(CONFIG_SOUTHBRIDGE_AMD_PI_AVALON)
+		[0x00] = "INTA#\t", "INTB#\t", "INTC#\t", "INTD#\t", "INTE#\t", "INTF#\t", "RSVD\t", "RSVD\t",
+#else //IS_ENABLED(CONFIG_SOUTHBRIDGE_AMD_PI_AVALON)
+		[0x00] = "INTA#\t", "INTB#\t", "INTC#\t", "INTD#\t", "INTE#\t", "INTF#\t", "INTG#\t", "INTH#\t",
+#endif //IS_ENABLED(CONFIG_SOUTHBRIDGE_AMD_PI_AVALON)
 	[0x08] = "Misc\t", "Misc0\t", "Misc1\t", "Misc2\t", "Ser IRQ INTA", "Ser IRQ INTB", "Ser IRQ INTC", "Ser IRQ INTD",
+#if IS_ENABLED(CONFIG_SOUTHBRIDGE_AMD_PI_AVALON)
+	[0x10] = "SCI\t", "SMBUS0\t", "ASF\t", "HDA\t", "FC\t\t", "RSVD\t", "PerMon\t", "SD\t\t",
+#else //IS_ENABLED(CONFIG_SOUTHBRIDGE_AMD_PI_AVALON)
 	[0x10] = "SCI\t", "SMBUS0\t", "ASF\t", "HDA\t", "FC\t\t", "GEC\t", "PerMon\t", "SD\t\t",
+#endif //IS_ENABLED(CONFIG_SOUTHBRIDGE_AMD_PI_AVALON)
 	[0x20] = "IMC INT0\t", "IMC INT1\t", "IMC INT2\t", "IMC INT3\t", "IMC INT4\t", "IMC INT5\t",
+#if IS_ENABLED(CONFIG_SOUTHBRIDGE_AMD_PI_AVALON)
+	[0x30] = "Dev18.0 INTA", "RSVD", "Dev19.0 INTA", "RSVD", "Dev22.0 INTA", "RSVD", "RSVD",
+#else //IS_ENABLED(CONFIG_SOUTHBRIDGE_AMD_PI_AVALON)
 	[0x30] = "Dev18.0 INTA", "Dev18.2 INTB", "Dev19.0 INTA", "Dev19.2 INTB", "Dev22.0 INTA", "Dev22.2 INTB", "Dev20.5 INTC",
+#endif //IS_ENABLED(CONFIG_SOUTHBRIDGE_AMD_PI_AVALON)
 	[0x7F] = "RSVD\t",
 #if IS_ENABLED(CONFIG_SOUTHBRIDGE_AMD_PI_AVALON)
 	[0x40] = "RSVD\t", "SATA\t",

@@ -33,8 +33,10 @@
 #define PIRQ_D		0x03	/* INT D */
 #define PIRQ_E		0x04	/* INT E */
 #define PIRQ_F		0x05	/* INT F */
-#define PIRQ_G		0x06	/* INT G */
+#if IS_ENABLED(CONFIG_SOUTHBRIDGE_AMD_PI_BOLTON)
+#define PIRQ_G		0x06	/* INT G */		Thes
 #define PIRQ_H		0x07	/* INT H */
+#endif //IS_ENABLED(CONFIG_SOUTHBRIDGE_AMD_PI_BOLTON)
 #define PIRQ_MISC	0x08	/* Miscellaneous IRQ Settings - See FCH Spec */
 #define PIRQ_MISC0	0x09	/* Miscellaneous0 IRQ Settings */
 #define PIRQ_MISC1	0x0A	/* Miscellaneous1 IRQ Settings */
@@ -48,7 +50,9 @@
 #define PIRQ_ASF	0x12	/* ASF */
 #define PIRQ_HDA	0x13	/* HDA		14h.2 */
 #define PIRQ_FC		0x14	/* FC */
+#if IS_ENABLED(CONFIG_SOUTHBRIDGE_AMD_PI_BOLTON)
 #define PIRQ_GEC	0x15	/* GEC */
+#endif //IS_ENABLED(CONFIG_SOUTHBRIDGE_AMD_PI_BOLTON)
 #define PIRQ_PMON	0x16	/* Performance Monitor */
 #define PIRQ_SD 	0x17	/* SD */
 #define PIRQ_IMC0	0x20	/* IMC INT0 */
@@ -57,14 +61,22 @@
 #define PIRQ_IMC3	0x23	/* IMC INT3 */
 #define PIRQ_IMC4	0x24	/* IMC INT4 */
 #define PIRQ_IMC5	0x25	/* IMC INT5 */
+#if CONFIG_CPU_AMD_PI_00730F01
+#define PIRQ_EHCI1	0x30	/* USB EHCI	12h.0 */
+#define PIRQ_EHCI2	0x32	/* USB EHCI	13h.0 */
+#define PIRQ_EHCI3	0x34	/* USB EHCI	16h.0 */
+#else //CONFIG_CPU_AMD_PI_00730F01
 #define PIRQ_OHCI1	0x30	/* USB OHCI	12h.0 */
 #define PIRQ_EHCI1	0x31	/* USB EHCI	12h.2 */
 #define PIRQ_OHCI2	0x32	/* USB OHCI	13h.0 */
 #define PIRQ_EHCI2	0x33	/* USB EHCI	13h.2 */
 #define PIRQ_OHCI3	0x34	/* USB OHCI	16h.0 */
 #define PIRQ_EHCI3	0x35	/* USB EHCI	16h.2 */
+#endif //CONFIG_CPU_AMD_PI_00730F01
+#if IS_ENABLED(CONFIG_SOUTHBRIDGE_AMD_PI_BOLTON)
 #define PIRQ_OHCI4	0x36	/* USB OHCI	14h.5 */
 #define PIRQ_IDE	0x40	/* IDE		14h.1 */
+#endif
 #define PIRQ_SATA	0x41	/* SATA		11h.0 */
 
 #if IS_ENABLED(CONFIG_SOUTHBRIDGE_AMD_PI_AVALON)

@@ -1,4 +1,4 @@
-all: build-i386 build-armv7a build-aarch64 build-mips
+all: build-i386 build-armv7a build-aarch64
 
 build-i386:
 	bash ./buildgcc -G -p i386-elf
@@ -8,9 +8,6 @@ build-armv7a:
 
 build-aarch64:
 	bash ./buildgcc -G -p aarch64-elf
-
-build-mips:
-	bash ./buildgcc -G -p mips-elf
 
 .PHONY: build-i386-without-gdb
 build-i386-without-gdb:
@@ -23,10 +20,6 @@ build-armv7a-without-gdb:
 .PHONY: build-aarch64-without-gdb
 build-aarch64-without-gdb:
 	bash ./buildgcc -p aarch64-elf
-
-.PHONY: build-mips-without-gdb
-build-mips-without-gdb:
-	bash ./buildgcc -p mips-elf
 
 clean:
 	rm -rf xgcc

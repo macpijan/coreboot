@@ -28,7 +28,7 @@
 static void nct5104d_init(struct device *dev)
 {
 	struct superio_nuvoton_nct5104d_config *conf = dev->chip_info;
-	u8 reg10, reg11, reg26;
+	u8 reg10, reg11, reg26, i;
 
 	if (!dev->enabled)
 		return;
@@ -61,6 +61,11 @@ static void nct5104d_init(struct device *dev)
 		break;
 	//SP3 (UARTC) IRQ type selection (1:level,0:edge) is controlled by CR 11, bit 5
 	case NCT5104D_SP3:
+		// Route pins to UARTC
+		i = pnp_read_config(dev, CR1C_MULTI_FUNCTION_SELECT);
+		i &= CR1C_UARTC;
+		pnp_write_config(dev, CR1C_MULTI_FUNCTION_SELECT, i);
+
 		reg11 = pnp_read_config(dev,IRQ_TYPE_SEL_CR11);
 		if (conf->irq_trigger_type)
 			reg11 |= (1 << 5);
@@ -70,6 +75,11 @@ static void nct5104d_init(struct device *dev)
 		break;
 	//SP4 (UARTD) IRQ type selection (1:level,0:edge) is controlled by CR 11, bit 4
 	case NCT5104D_SP4:
+		// Route pins to UARTD
+		i = pnp_read_config(dev, CR1C_MULTI_FUNCTION_SELECT);
+		i &= CR1C_UARTD;
+		pnp_write_config(dev, CR1C_MULTI_FUNCTION_SELECT, i);
+
 		reg11 = pnp_read_config(dev,IRQ_TYPE_SEL_CR11);
 		if (conf->irq_trigger_type)
 			reg11 |= (1 << 4);
@@ -77,6 +87,21 @@ static void nct5104d_init(struct device *dev)
 			reg11 &= ~(1 << 4);
 		pnp_write_config(dev, IRQ_TYPE_SEL_CR11, reg11);
 		break;
+
+	case NCT5104D_GPIO0:
+		// Enable the GPIO, disables UARTC mapping
+		i = pnp_read_config(dev, CR1C_MULTI_FUNCTION_SELECT);
+		i &= ~CR1C_UARTC;
+		pnp_write_config(dev, CR1C_MULTI_FUNCTION_SELECT, i);
+		break;
+
+	case NCT5104D_GPIO1:
+		// Enable the GPIO, disables UARTD mapping
+		i = pnp_read_config(dev, CR1C_MULTI_FUNCTION_SELECT);
+		i &= ~CR1C_UARTD;
+		pnp_write_config(dev, CR1C_MULTI_FUNCTION_SELECT, i);
+		break;
+
 	default:
 		break;
 	}

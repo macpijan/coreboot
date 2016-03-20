@@ -209,8 +209,8 @@ void *cbfs_simple_buffer_map(struct cbfs_simple_buffer *buffer,
 	void *address = buffer->buffer + buffer->allocated;;
 	DEBUG("simple_buffer_map(offset=%d, count=%d): "
 	      "allocated=%d, size=%d, last_allocate=%d\n",
-	    offset, count, buffer->allocated, buffer->size,
-	    buffer->last_allocate);
+	    (int) offset, (int) count, (int) buffer->allocated, (int) buffer->size,
+	    (int) buffer->last_allocate);
 	if (buffer->allocated + count >= buffer->size)
 		return CBFS_MEDIA_INVALID_MAP_ADDRESS;
 	if (media->read(media, address, offset, count) != count) {
@@ -229,8 +229,8 @@ void *cbfs_simple_buffer_unmap(struct cbfs_simple_buffer *buffer,
 	// allocated one.
 	DEBUG("simple_buffer_unmap(address=0x%p): "
 	      "allocated=%d, size=%d, last_allocate=%d\n",
-	    address, buffer->allocated, buffer->size,
-	    buffer->last_allocate);
+	    address, (int) buffer->allocated, (int) buffer->size,
+	    (int) buffer->last_allocate);
 	if ((buffer->buffer + buffer->allocated - buffer->last_allocate) ==
 	    address) {
 		buffer->allocated -= buffer->last_allocate;

@@ -11,6 +11,7 @@ ramstage-y += boot.c
 ramstage-y += gdt.c
 ramstage-y += tables.c
 ramstage-y += cbmem.c
+ramstage-$(CONFIG_USE_CBMEM_FILE_OVERRIDE) += cbmemfile.c
 ramstage-$(CONFIG_GENERATE_MP_TABLE) += mpspec.c
 ramstage-$(CONFIG_GENERATE_PIRQ_TABLE) += pirq_routing.c
 ramstage-$(CONFIG_HAVE_ACPI_TABLES) += acpi.c

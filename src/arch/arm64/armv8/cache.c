@@ -34,14 +34,13 @@
 #include <stdint.h>
 
 #include <arch/cache.h>
-#include <arch/lib_helpers.h>
 
 void tlb_invalidate_all(void)
 {
 	 /* TLBIALL includes dTLB and iTLB on systems that have them. */
-	tlbiall_current();
-	dsb();
-	isb();
+	 tlbiall(current_el());
+	 dsb();
+	 isb();
 }
 
 unsigned int dcache_line_bytes(void)
@@ -52,7 +51,7 @@ unsigned int dcache_line_bytes(void)
 	if (line_bytes)
 		return line_bytes;
 
-	ccsidr = raw_read_ccsidr_el1();
+	ccsidr = read_ccsidr();
 	/* [2:0] - Indicates (Log2(number of words in cache line)) - 4 */
 	line_bytes = 1 << ((ccsidr & 0x7) + 4);	/* words per line */
 	line_bytes *= sizeof(uint32_t);	/* bytes per word */
@@ -126,18 +125,18 @@ void dcache_mmu_disable(void)
 	uint32_t sctlr;
 
 	flush_dcache_all();
-	sctlr = raw_read_sctlr_current();
+	sctlr = read_sctlr(current_el());
 	sctlr &= ~(SCTLR_C | SCTLR_M);
-	raw_write_sctlr_current(sctlr);
+	write_sctlr(sctlr, current_el());
 }
 
 void dcache_mmu_enable(void)
 {
 	uint32_t sctlr;
 
-	sctlr = raw_read_sctlr_current();
+	sctlr = read_sctlr(current_el());
 	sctlr |= SCTLR_C | SCTLR_M;
-	raw_write_sctlr_current(sctlr);
+	write_sctlr(sctlr, current_el());
 }
 
 void cache_sync_instructions(void)

@@ -228,7 +228,38 @@ cbfs-files-handler= \
 		$(eval $(2)-required:=) \
 		$(eval $(2)-align:=)
 
+
 #######################################################################
+
+#######################################################################
+# Add handler for fixed files in CBFS
+$(call add-special-class,cbfs-fixed)
+cbfs-fixed-handler= \
+		$(eval tmp-cbfs-method:=$(word 2, $(subst :, ,$($(2)-file)))) \
+		$(eval $(2)-file:=$(call strip_quotes,$(word 1, $(subst :, ,$($(2)-file))))) \
+		$(if $(wildcard $(1)$($(2)-file)), \
+			$(eval tmp-cbfs-file:= $(wildcard $(1)$($(2)-file))), \
+			$(eval tmp-cbfs-file:= $($(2)-file))) \
+		$(if $(strip $($(2)-required)), \
+			$(if $(wildcard $(tmp-cbfs-file)),, \
+				$(info This build configuration requires $($(2)-required)) \
+				$(eval FAILBUILD:=1) \
+			)) \
+		$(if $(tmp-cbfs-method), \
+			$(eval tmp-old-cbfs-file:=$(tmp-cbfs-file)) \
+			$(eval tmp-cbfs-file:=$(shell mkdir -p $(obj)/mainboard/$(MAINBOARDDIR); mktemp $(obj)/mainboard/$(MAINBOARDDIR)/cbfs-file.XXXXXX).out) \
+			$(call cbfs-files-processor-$(tmp-cbfs-method),$(tmp-old-cbfs-file),$(tmp-cbfs-file))) \
+		$(eval cbfs-fixed += $(tmp-cbfs-file)|$(2)|$($(2)-type)|$($(2)-compression)|$($(2)-position)) \
+		$(eval $(2)-name:=) \
+		$(eval $(2)-type:=) \
+		$(eval $(2)-compression:=) \
+		$(eval $(2)-position:=) \
+		$(eval $(2)-required:=)
+
+
+#######################################################################
+
+
 # a variety of flags for our build
 CBFS_COMPRESS_FLAG:=none
 ifeq ($(CONFIG_COMPRESS_RAMSTAGE),y)
@@ -257,9 +288,10 @@ CFLAGS_common += -Werror
 endif
 CFLAGS_common += -fno-common -ffreestanding -fno-builtin -fomit-frame-pointer
 ifneq ($(GDB_DEBUG),)
-CFLAGS_common += -O0
-else
 CFLAGS_common += -Os
+else
+#CFLAGS_common += -O0
+CFLAGS_common += -Og
 endif
 
 
@@ -282,7 +314,7 @@ $(obj)/build.h: .xcompile
 	else \
 	   printf "/* `LANG= TZ=UTC date` */\n" >> $(obj)/build.ht; \
 	   printf "#define COREBOOT_VERSION_TIMESTAMP `LANG= date +%s`\n" >> $(obj)/build.ht; \
-        fi
+    fi
 	printf "#define COREBOOT_ORIGIN_GIT_REVISION \"`LANG= git log remotes/origin/master -1 --format=format:%h`\"\n" >> $(obj)/build.ht
 	printf "#define COREBOOT_EXTRA_VERSION \"$(COREBOOT_EXTRA_VERSION)\"\n" >> $(obj)/build.ht
 	printf "#define COREBOOT_BUILD \"`LANG= date`\"\n" >> $(obj)/build.ht
@@ -291,6 +323,7 @@ $(obj)/build.h: .xcompile
 	printf "#define COREBOOT_BUILD_DAY_BCD 0x`LANG= date +"%d"`\n" >> $(obj)/build.ht
 	printf "#define COREBOOT_BUILD_WEEKDAY_BCD 0x`LANG= date +"%w"`\n" >> $(obj)/build.ht
 	printf "#define COREBOOT_DMI_DATE \"`LANG= date +"%m/%d/%Y"`\"\n" >> $(obj)/build.ht
+	printf "#define COREBOOT_YYYYMMDD_DATE \"`LANG= date +"%Y%m%d"`\"\n" >> $(obj)/build.ht
 	printf "\n" >> $(obj)/build.ht
 	printf "#define COREBOOT_COMPILE_TIME \"`LANG= date +%T`\"\n" >> $(obj)/build.ht
 	printf "#define COREBOOT_COMPILE_BY \"$(subst \,@,$(shell PATH=$$PATH:/usr/ucb whoami))\"\n" >> $(obj)/build.ht
@@ -445,9 +478,9 @@ gitconfig:
 	git config remote.origin.push HEAD:refs/for/master
 	(git config --global user.name >/dev/null && git config --global user.email >/dev/null) || (printf 'Please configure your name and email in git:\n\n git config --global user.name "Your Name Comes Here"\n git config --global user.email your.email@example.com\n'; exit 1)
 
-crossgcc: crossgcc-i386 crossgcc-arm crossgcc-aarch64 crossgcc-mips
+crossgcc: crossgcc-i386 crossgcc-arm crossgcc-aarch64
 
-.PHONY: crossgcc-i386 crossgcc-arm crossgcc-aarch64 crossgcc-mips
+.PHONY: crossgcc-i386 crossgcc-arm crossgcc-aarch64
 crossgcc-i386: clean-for-update
 	$(MAKE) -C util/crossgcc build-i386-without-gdb
 
@@ -457,12 +490,9 @@ crossgcc-arm: clean-for-update
 crossgcc-aarch64: clean-for-update
 	$(MAKE) -C util/crossgcc build-aarch64-without-gdb
 
-crossgcc-mips: clean-for-update
-	$(MAKE) -C util/crossgcc build-mips-without-gdb
+crosstools: crosstools-i386
 
-crosstools: crosstools-i386 crosstools-arm crosstools-aarch64 crosstools-mips
-
-.PHONY: crosstools-i386 crosstools-arm crosstools-aarch64 crosstools-mips
+.PHONY: crosstools-i386 crosstools-arm crosstools-aarch64
 crosstools-i386: clean-for-update
 	$(MAKE) -C util/crossgcc build-i386
 
@@ -471,9 +501,6 @@ crosstools-arm: clean-for-update
 
 crosstools-aarch64: clean-for-update
 	$(MAKE) -C util/crossgcc build-aarch64
-
-crosstools-mips: clean-for-update
-	$(MAKE) -C util/crossgcc build-mips
 
 crossgcc-clean: clean-for-update
 	$(MAKE) -C util/crossgcc clean
@@ -542,19 +569,33 @@ prebuild-files = \
 	       $(if $(call extract_nth,6,$(file)),$(CBFSTOOL) $@.tmp locate -f $(call extract_nth,1,$(file)) -n $(call extract_nth,2,$(file)) -a $(call extract_nth,6,$(file))|xargs -i \
 	       $(cbfs-add-cmd) -b {} &&,\
 	       $(cbfs-add-cmd) $(if $(call extract_nth,5,$(file)),-b $(call extract_nth,5,$(file))) &&))
-prebuilt-files = $(foreach file,$(cbfs-files), $(call extract_nth,1,$(file)))
+prebuilt-files = $(foreach file,$(cbfs-files), $(call extract_nth,1,$(file))) 
 
-$(obj)/coreboot.pre1: $(objcbfs)/bootblock.bin $$(prebuilt-files) $(CBFSTOOL) $$(cpu_ucode_cbfs_file)
+prebuild-fixed = \
+	       $(foreach file,$(cbfs-fixed), \
+	       $(CBFSTOOL) $@.tmp \
+	       add$(if $(filter stage,$(call extract_nth,3,$(file))),-stage)$(if $(filter payload,$(call extract_nth,3,$(file))),-payload) \
+	       -f $(call extract_nth,1,$(file)) \
+	       -n $(call extract_nth,2,$(file)) $(if $(filter-out stage,$(call extract_nth,3,$(file))),-t $(call extract_nth,3,$(file))) \
+	       $(if $(call extract_nth,5,$(file)),-b $(call extract_nth,5,$(file))) &&) 
+prebuilt-fixed = $(foreach file,$(cbfs-fixed), $(call extract_nth,1,$(file))) 
+
+
+$(obj)/coreboot.pre1: $(objcbfs)/bootblock.bin $$(prebuilt-files) $$(prebuilt-fixed) $(CBFSTOOL) $$(cpu_ucode_cbfs_file)
 	$(CBFSTOOL) $@.tmp create -s $(CONFIG_COREBOOT_ROMSIZE_KB)K \
 	-B $(objcbfs)/bootblock.bin -a 64 \
 	$(CBFSTOOL_PRE1_OPTS)
+	$(prebuild-fixed) true
 	$(prebuild-files) true
 	$(call add-cpu-microcode-to-cbfs,$@.tmp)
 	mv $@.tmp $@
 else
 .PHONY: $(obj)/coreboot.pre1
-$(obj)/coreboot.pre1: $(CBFSTOOL)
-	mv $(obj)/coreboot.rom $@
+$(obj)/coreboot.pre1: $$(prebuilt-files) $$(prebuilt-fixed) $(CBFSTOOL)
+	mv $(obj)/coreboot.rom $@.tmp
+	$(prebuild-files) true
+	$(prebuild-fixed) true
+	mv $@.tmp $@
 endif
 
 ifeq ($(CONFIG_PAYLOAD_LINUX),y)

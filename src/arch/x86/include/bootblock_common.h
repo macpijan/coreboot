@@ -36,10 +36,15 @@ static void sanitize_cmos(void)
 		unsigned char *cmos_default = (unsigned char*)walkcbfs("cmos.default");
 		if (cmos_default) {
 			int i;
+			u16 sum = 0;
 			cmos_disable_rtc();
-			for (i = 14; i < 128; i++) {
+			for (i = LB_CKS_RANGE_START; i < LB_CKS_RANGE_END; i++) {
+				sum += cmos_default[i];
 				cmos_write_inner(cmos_default[i], i);
 			}
+			cmos_write(((sum >> 8) & 0x0ff), LB_CKS_LOC);
+			cmos_write(((sum >> 0) & 0x0ff), LB_CKS_LOC + 1);
+
 			cmos_enable_rtc();
 		}
 	}

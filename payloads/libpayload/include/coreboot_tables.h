@@ -216,14 +216,22 @@ struct cb_x86_rom_mtrr {
 	uint32_t index;
 };
 
-
+/* The following structures are for the cmos definitions table */
 #define CB_TAG_CMOS_OPTION_TABLE 0x00c8
+/* cmos header record */
 struct cb_cmos_option_table {
 	u32 tag;
 	u32 size;
 	u32 header_length;
 };
 
+/* cmos entry record
+        This record is variable length.  The name field may be
+        shorter than CMOS_MAX_NAME_LENGTH. The entry may start
+        anywhere in the byte, but can not span bytes unless it
+        starts at the beginning of the byte and the length is
+        fills complete bytes.
+*/
 #define CB_TAG_OPTION         0x00c9
 #define CB_CMOS_MAX_NAME_LENGTH    32
 struct cb_cmos_entries {
@@ -248,7 +256,7 @@ struct cb_cmos_enums {
 };
 
 #define CB_TAG_OPTION_DEFAULTS 0x00cb
-#define CB_CMOS_IMAGE_BUFFER_SIZE 128
+#define CB_CMOS_IMAGE_BUFFER_SIZE 256 // corrected to be same size as coreboot
 struct cb_cmos_defaults {
 	u32 tag;
 	u32 size;

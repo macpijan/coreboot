@@ -29,6 +29,11 @@
 #include <string.h>
 #include <cbmem.h>
 #include <smbios.h>
+#if CONFIG_USE_CBMEM_FILE_OVERRIDE
+#include <boot/cbmemfile.h>
+#endif //CONFIG_USE_CBMEM_FILE_OVERRIDE
+
+
 
 void write_tables(void)
 {
@@ -182,6 +187,11 @@ void write_tables(void)
 		rom_table_end = ALIGN(new_rom_table_end, 16);
 	}
 #endif
+
+#if CONFIG_USE_CBMEM_FILE_OVERRIDE
+	/* Write additional files into cbmem area to override existing */
+	create_cbmem_file_area();
+#endif //CONFIG_USE_CBMEM_FILE_OVERRIDE
 
 	post_code(0x9e);
 

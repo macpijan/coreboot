@@ -26,6 +26,7 @@
 
 static void pcie_init(struct device *dev)
 {
+	printk(BIOS_INFO, "hudson/pcie_init()\n");
 }
 
 static struct pci_operations lops_pci = {
@@ -61,5 +62,10 @@ static const struct pci_driver pciec_driver __pci_driver = {
 static const struct pci_driver pcied_driver __pci_driver = {
 	.ops = &pci_ops,
 	.vendor = PCI_VENDOR_ID_AMD,
-	.device = PCI_DEVICE_ID_ATI_SB900_PCIED,
+	.device = SB_PCIE_PORT4_DEVID,
+};
+static const struct pci_driver pcief_driver __pci_driver = {
+	.ops = &pci_ops,
+	.vendor = PCI_VENDOR_ID_AMD,
+	.device = SB_PCIE_PORT5_DEVID,
 };

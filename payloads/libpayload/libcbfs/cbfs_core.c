@@ -68,7 +68,7 @@ const struct cbfs_header *cbfs_get_header(struct cbfs_media *media)
 	}
 
 	media->open(media);
-	DEBUG("CBFS_HEADER_ROM_ADDRESS: 0x%x/0x%x\n", CBFS_HEADER_ROM_ADDRESS,
+	DEBUG("\nCBFS_HEADER_ROM_ADDRESS: 0x%x/0x%x\n", CBFS_HEADER_ROM_ADDRESS,
 	      CONFIG_LP_ROM_SIZE);
 	header = media->map(media, CBFS_HEADER_ROM_ADDRESS, sizeof(*header));
 	media->close(media);

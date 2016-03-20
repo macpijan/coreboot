@@ -35,7 +35,9 @@
  * This is defined by AGESA, but we don't include AGESA headers to avoid
  * polluting the namespace.
  */
-#define PM_MMIO_BASE 0xfed80300
+
+#define PM_MMIO_BASE  ACPI_MMIO_BASE + PMIO_BASE
+#define PM2_MMIO_BASE ACPI_MMIO_BASE + PMIO2_BASE
 
 
 int acpi_get_sleep_type(void)
@@ -63,6 +65,16 @@ void pm_write16(u8 reg, u16 value)
 u16 pm_read16(u16 reg)
 {
 	return read16((void *)(PM_MMIO_BASE + reg));
+}
+
+void pm2_write8(u8 reg, u8 value)
+{
+	write8((void *)(PM2_MMIO_BASE + reg), value);
+}
+
+u8 pm2_read8(u8 reg)
+{
+	return read8((void *)(PM2_MMIO_BASE + reg));
 }
 
 void hudson_enable(device_t dev)

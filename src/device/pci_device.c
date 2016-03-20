@@ -41,7 +41,9 @@
 #include <device/hypertransport.h>
 #include <pc80/i8259.h>
 #include <kconfig.h>
+#if CONFIG_CHROMEOS
 #include <vendorcode/google/chromeos/chromeos.h>
+#endif
 
 u8 pci_moving_config8(struct device *dev, unsigned int reg)
 {
@@ -995,6 +997,9 @@ device_t pci_probe_dev(device_t dev, struct bus *bus, unsigned devfn)
 		 * If a device is a stuff option on the motherboard
 		 * it may be absent and enable_dev() must cope.
 		 */
+
+		id = pci_read_config32(dev, PCI_VENDOR_ID);
+
 		/* Run the magic enable sequence for the device. */
 		if (dev->chip_ops && dev->chip_ops->enable_dev)
 			dev->chip_ops->enable_dev(dev);
@@ -1129,6 +1134,7 @@ unsigned int pci_scan_bus(struct bus *bus, unsigned min_devfn,
 		 * not present don't waste time probing another function.
 		 * Skip to next device.
 		 */
+
 		if ((PCI_FUNC(devfn) == 0x00) && (!dev
 		     || (dev->enabled && ((dev->hdr_type & 0x80) != 0x80)))) {
 			devfn += 0x07;

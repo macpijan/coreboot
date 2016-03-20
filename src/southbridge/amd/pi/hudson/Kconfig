@@ -123,6 +123,25 @@ config HUDSON_FWM_POSITION
 	  0xFF020000 if flash chip size is 16M
 endif # HUDSON_FWM
 
+if HUDSON_PSP
+
+config HUDSON_PSP_CUSTOM
+	bool "Define custom PSP position"
+	default n
+	help
+	  Possibility to locate the PSP directory to a fixed location, 
+	  this can be used to maximize the free cbfs area.
+
+config HUDSON_PSP_POSITION
+	hex "Hudson PSP directory Position"
+	depends on HUDSON_PSP_CUSTOM
+	default 0xFFFA0000 
+	help
+	  Possibility to locate the PSP directory to a fixed location, 
+	  this can be used to maximize the free cbfs area.
+
+endif #HUDSON_PSP
+
 config AMD_PUBKEY_FILE
 	depends on HUDSON_PSP
 	string "AMD public Key"

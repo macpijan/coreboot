@@ -37,7 +37,9 @@ int console_log_level(int msg_level)
 void console_init(void)
 {
 #if !defined(__PRE_RAM__)
+#if !CONFIG_ELTAN_USE_FIXED_BAUDRATE
 	if(get_option(&console_loglevel, "debug_level") != CB_SUCCESS)
+#endif //!CONFIG_ELTAN_USE_FIXED_BAUDRATE
 		console_loglevel=CONFIG_DEFAULT_CONSOLE_LOGLEVEL;
 #endif
 

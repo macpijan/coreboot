@@ -93,6 +93,19 @@ void hudson_lpc_port80(void)
 	pci_write_config8(dev, 0x4a, byte);
 }
 
+void hudson_clk_output_48Mhz(void)
+{
+	u32 data, *memptr;
+
+	// Enable the X14M_25M_48M_OSC pin and leaving it at it's default so 48Mhz will be on ball AP13 (FT3b package)
+
+	memptr = (u32 *)(ACPI_MMIO_BASE + MISC_BASE + FCH_MISC_REG40 );
+	data = *memptr;
+	data &= (u32)~BIT2;		// clear the OSCOUT1_ClkOutputEnb to enable the 48 Mhz clock
+	*memptr = data;
+}
+
+
 int s3_save_nvram_early(u32 dword, int size, int  nvram_pos)
 {
 	int i;
@@ -121,6 +134,18 @@ int s3_load_nvram_early(int size, u32 *old_dword, int nvram_pos)
 	printk(BIOS_DEBUG, "Loading %x of size %d to nvram pos:%d\n", *old_dword, size,
 		nvram_pos-size);
 	return nvram_pos;
+}
+
+void pm2_write8(u8 reg, u8 value)
+{
+	outb(reg, PM2_INDEX);
+	outb(value, PM2_DATA);
+}
+
+u8 pm2_read8(u8 reg)
+{
+	outb(reg, PM2_INDEX);
+	return inb(PM2_DATA);
 }
 
 #endif

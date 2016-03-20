@@ -2,6 +2,7 @@
 #
 # Copyright (c) 2012,        Advanced Micro Devices, Inc.
 #               2013 - 2014, Sage Electronic Engineering, LLC
+#               2014 - 2015, Eltan B.V.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -38,8 +39,8 @@ ramstage-y += sm.c
 ramstage-y += ide.c
 ramstage-y += sata.c
 ramstage-y += hda.c
-ramstage-y += pci.c
-ramstage-y += pcie.c
+ramstage-$(CONFIG_SOUTHBRIDGE_AMD_PI_BOLTON) += pci.c
+ramstage-$(CONFIG_SOUTHBRIDGE_AMD_PI_BOLTON) += pcie.c
 ramstage-y += sd.c
 
 ramstage-$(CONFIG_HAVE_ACPI_TABLES) += fadt.c
@@ -48,8 +49,17 @@ romstage-$(CONFIG_USBDEBUG_IN_ROMSTAGE) += enable_usbdebug.c
 ramstage-$(CONFIG_USBDEBUG) += enable_usbdebug.c
 romstage-y += early_setup.c
 
+romstage-y += eltanhudson.c
+ramstage-y += eltanhudson.c
+
 smm-$(CONFIG_HAVE_SMI_HANDLER) += smihandler.c smi_util.c
 ramstage-$(CONFIG_HAVE_SMI_HANDLER) += smi.c smi_util.c
+
+#
+# Added to make gpio configuration and use less troublesome
+#
+romstage-y += fchgpio.c
+ramstage-y += fchgpio.c
 
 # ROMSIG At ROMBASE + 0x20000:
 # +-----------+---------------+----------------+------------+
@@ -59,6 +69,7 @@ ramstage-$(CONFIG_HAVE_SMI_HANDLER) += smi.c smi_util.c
 # +-----------+
 #
 # EC ROM should be 64K aligned.
+
 
 HUDSON_FWM_POSITION=$(shell printf %u $(CONFIG_HUDSON_FWM_POSITION))
 CBFS_HEADER_SIZE=0x40
@@ -95,12 +106,22 @@ IMC_FWM_SIZE=0
 endif
 
 ifeq ($(CONFIG_CPU_AMD_PI_00730F01), y)
+
+ifeq ($(CONFIG_HUDSON_PSP_CUSTOM), y)
+#use user defined PSP position
+HUDSON_PSP_DIRECTORY_POSITION=$(shell printf %u $(CONFIG_HUDSON_PSP_POSITION))
+HUDSON_PSP_DIRECTORY_SIZE=256
+
+else 
+
 HUDSON_PSP_DIRECTORY_POSITION=$(call int-align,\
 	$(call int-add,\
 		$(HUDSON_FWM_POSITION) $(ROMSIG_SIZE) $(CBFS_HEADER_SIZE) $(XHCI_FWM_SIZE)\
 		$(CBFS_HEADER_SIZE) $(GEC_FWM_SIZE) $(CBFS_HEADER_SIZE) $(IMC_FWM_SIZE) $(CBFS_HEADER_SIZE)),\
 	65536)
 HUDSON_PSP_DIRECTORY_SIZE=256
+endif
+
 else
 HUDSON_PSP_DIRECTORY_POSITION=0
 HUDSON_PSP_DIRECTORY_SIZE=0
@@ -116,22 +137,34 @@ $(obj)/coreboot_hudson_romsig.bin: $(call strip_quotes, $(CONFIG_HUDSON_XHCI_FWM
 		$(HUDSON_IMC_POSITION) \
 		$(HUDSON_GEC_POSITION) \
 		$(HUDSON_XHCI_POSITION) \
-		$(HUDSON_PSP_DIRECTORY_POSITION); do \
+		$(HUDSON_PSP_DIRECTORY_POSITION) \
+		4294967295 \
+		4294967295 \
+		4294967295 \
+		4294967295 \
+		4294967295 \
+		4294967295 \
+		4294967295 \
+		4294967295 \
+		4294967295 \
+		4294967295 \
+		4294967295 \
+		4294967295 ; do \
 		echo  $$fwm | LC_ALL=C awk '{printf ("%c%c%c%c", $$1 % 256, int($$1/256) % 256, int($$1/65536) % 256, int($$1/16777216));}'; \
 	done > $@.tmp; \
 	dd if=$@.tmp of=$@ conv=notrunc status=noxfer 2>/dev/null; \
 	rm $@.tmp
 
 ifeq ($(CONFIG_HUDSON_FWM), y)
-cbfs-files-y += fch/fwm
+cbfs-fixed-y += fch/fwm
 fch/fwm-file := $(obj)/coreboot_hudson_romsig.bin
 fch/fwm-position := $(HUDSON_FWM_POSITION)
-fch/fwm-size := $(ROMSIZE_SIG)
+fch/fwm-size := $(ROMSIG_SIZE)
 fch/fwm-type := raw
 endif
 
 ifeq ($(CONFIG_HUDSON_XHCI_FWM), y)
-cbfs-files-y += fch/xhci
+cbfs-fixed-y += fch/xhci
 fch/xhci-file := $(call strip_quotes, $(CONFIG_HUDSON_XHCI_FWM_FILE))
 fch/xhci-position := $(HUDSON_XHCI_POSITION)
 fch/xhci-type := raw
@@ -139,7 +172,7 @@ fch/xhci-required := Hudson XHCI firmware (available in coreboot/3rdparty if ena
 endif
 
 ifeq ($(CONFIG_HUDSON_IMC_FWM), y)
-cbfs-files-y += fch/imc
+cbfs-fixed-y += fch/imc
 fch/imc-file := $(call strip_quotes, $(CONFIG_HUDSON_IMC_FWM_FILE))
 fch/imc-position := $(HUDSON_IMC_POSITION)
 fch/imc-type := raw
@@ -147,7 +180,7 @@ fch/imc-required := Hudson IMC Firmware (available in coreboot/3rdparty if enabl
 endif
 
 ifeq ($(CONFIG_HUDSON_GEC_FWM), y)
-cbfs-files-y += fch/gec
+cbfs-fixed-y += fch/gec
 fch/gec-file := $(call strip_quotes, $(CONFIG_HUDSON_GEC_FWM_FILE))
 fch/gec-position := $(HUDSON_GEC_POSITION)
 fch/gec-type := raw
@@ -164,7 +197,6 @@ endif
 
 ifeq ($(CONFIG_HUDSON_PSP), y)
 
-# 0
 # catenate the pubkey and pspdir together to save some space.
 AMDPUBKEY_POS=$(call int-add,$(HUDSON_PSP_DIRECTORY_POSITION) $(HUDSON_PSP_DIRECTORY_SIZE))
 AMDPUBKEY_SIZE=$(call file-size,$(CONFIG_AMD_PUBKEY_FILE))
@@ -249,7 +281,7 @@ $(obj)/coreboot_psp_directory.bin: $(obj)/config.h $(FLETCHER) $(RTM_FILE)
 	for fwm in 11 4294967295 0 0; do \
 	echo  $$fwm | LC_ALL=C awk '{printf ("%c%c%c%c", $$1 % 256, int($$1/256) % 256, int($$1/65536) % 256, int($$1/16777216));}'; \
 	done >> $@_tail.tmp
-	for fwm in  1347637284 0 `ls -l $@_tail.tmp | awk '{printf("%d", $$5/16);}'` 0; do \
+	for fwm in  1347637284 0 `ls -lG $@_tail.tmp | awk '{printf("%d", $$4/16);}'` 0; do \
 		echo  $$fwm | LC_ALL=C awk '{printf ("%c%c%c%c", $$1 % 256, int($$1/256) % 256, int($$1/65536) % 256, int($$1/16777216));}'; \
 	done > $@_head.tmp
 	cat $@_head.tmp $@_tail.tmp > $@.tmp
@@ -258,51 +290,51 @@ $(obj)/coreboot_psp_directory.bin: $(obj)/config.h $(FLETCHER) $(RTM_FILE)
 
 $(obj)/coreboot_psp_directory_combine_pubkey.bin: $(obj)/coreboot_psp_directory.bin
 	cat  $(obj)/coreboot_psp_directory.bin > $@
-	ls -l $(obj)/coreboot_psp_directory.bin | LC_ALL=C awk '{for (i=0; i<256-$$5; i++) {printf "%c", 255}}' >> $@
+	ls -lG $(obj)/coreboot_psp_directory.bin | LC_ALL=C awk '{for (i=0; i<256-$$4; i++) {printf "%c", 255}}' >> $@
 	cat  $(top)/$(FIRMWARE_LOCATE)/AmdPubKey$(FIRMWARE_TYPE).bin >> $@
 
-cbfs-files-y += apu/pspdir
+cbfs-fixed-y += apu/pspdir
 apu/pspdir-file := $(obj)/coreboot_psp_directory_combine_pubkey.bin
 apu/pspdir-position := $(HUDSON_PSP_DIRECTORY_POSITION)
 apu/pspdir-type := raw
 
 # 5
-cbfs-files-y += apu/pubsignedkey
+cbfs-fixed-y += apu/pubsignedkey
 apu/pubsignedkey-file := $(CONFIG_PUBSIGNEDKEY_FILE)
 apu/pubsignedkey-position := $(PUBSIGNEDKEY_POS)
 apu/pubsignedkey-type := raw
 
 # 1
-cbfs-files-y += apu/pspbtldr
+cbfs-fixed-y += apu/pspbtldr
 apu/pspbtldr-file := $(CONFIG_PSPBTLDR_FILE)
 apu/pspbtldr-position := $(PSPBTLDR_POS)
 apu/pspbtldr-type := raw
 
 #3
-cbfs-files-y += apu/psprcvr
+cbfs-fixed-y += apu/psprcvr
 apu/psprcvr-file := $(CONFIG_PSPRCVR_FILE)
 apu/psprcvr-position := $(PSPRCVR_POS)
 apu/psprcvr-type := raw
 
 # 2
-cbfs-files-y += apu/pspsecureos
+cbfs-fixed-y += apu/pspsecureos
 apu/pspsecureos-file := $(CONFIG_PSPSCUREOS_FILE)
 apu/pspsecureos-position := $(PSPSECUREOS_POS)
 apu/pspsecureos-type := raw
 
 # 4
-cbfs-files-y += apu/pspnvram
+cbfs-fixed-y += apu/pspnvram
 apu/pspnvram-file := $(CONFIG_PSPNVRAM_FILE)
 apu/pspnvram-position := $(PSPNVRAM_POS)
 apu/pspnvram-type := raw
 
 #8
-cbfs-files-y += apu/smufwm
+cbfs-fixed-y += apu/smufwm
 apu/smufwm-file := $(CONFIG_SMUFWM_FILE)
 apu/smufwm-position := $(SMUFWM_POS)
 apu/smufwm-type := raw
 
-cbfs-files-y += apu/smuscs
+cbfs-fixed-y += apu/smuscs
 apu/smuscs-file := $(CONFIG_SMUSCS_FILE)
 apu/smuscs-position := $(SMUSCS_POS)
 apu/smuscs-type := raw

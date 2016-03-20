@@ -142,12 +142,6 @@ static void cb_parse_acpi_gnvs(unsigned char *ptr, struct sysinfo_t *info)
 }
 
 #ifdef CONFIG_LP_NVRAM
-static void cb_parse_optiontable(void *ptr, struct sysinfo_t *info)
-{
-	/* ptr points to a coreboot table entry and is already virtual */
-	info->option_table = ptr;
-}
-
 static void cb_parse_checksum(void *ptr, struct sysinfo_t *info)
 {
 	struct cb_cmos_checksum *cmos_cksum = ptr;
@@ -155,6 +149,39 @@ static void cb_parse_checksum(void *ptr, struct sysinfo_t *info)
 	info->cmos_range_end = cmos_cksum->range_end;
 	info->cmos_checksum_location = cmos_cksum->location;
 }
+
+static void cb_parse_optiontable(void *ptr, struct sysinfo_t *info)
+{
+	struct cb_cmos_checksum *cmos_cksum;
+	unsigned char *local_ptr;
+	struct cb_cmos_option_table *option_table = ptr;
+
+	/* ptr points to a coreboot table entry and is already virtual */
+	info->option_table = ptr;
+
+	//
+	// Find the checksum information in the option table
+	//
+	local_ptr = ptr;
+	local_ptr += option_table->header_length;
+
+	while ( local_ptr < (unsigned char *) ptr + option_table->size ) {
+
+		cmos_cksum = (void *) local_ptr;
+
+		if ( cmos_cksum->tag == CB_TAG_OPTION_CHECKSUM ) {
+
+			cb_parse_checksum( cmos_cksum, info );
+			return;
+
+		} else {
+
+			local_ptr += cmos_cksum->size;
+		}
+	}
+}
+
+
 #endif
 
 #ifdef CONFIG_LP_COREBOOT_VIDEO_CONSOLE

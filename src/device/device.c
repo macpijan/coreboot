@@ -211,7 +211,8 @@ static void read_resources(struct bus *bus)
 			continue;
 
 		if (!curdev->ops || !curdev->ops->read_resources) {
-			printk(BIOS_ERR, "%s missing read_resources\n",
+			if (curdev->path.type != DEVICE_PATH_APIC)
+				printk(BIOS_ERR, "%s missing read_resources\n",
 			       dev_path(curdev));
 			continue;
 		}

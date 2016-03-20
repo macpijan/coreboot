@@ -21,6 +21,10 @@
 
 #include <stdint.h>
 
+#define SPD_SIZE	128
+#define SPD_CRC_HI	127
+#define SPD_CRC_LO	126
+
 #if IS_ENABLED(CONFIG_SPD_CACHE)
 int read_spd_from_cbfs(u8 *buf, int idx);
 #else

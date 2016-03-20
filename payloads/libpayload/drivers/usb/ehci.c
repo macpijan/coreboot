@@ -804,6 +804,8 @@ ehci_init (unsigned long physical_bar)
 	controller->create_intr_queue = ehci_create_intr_queue;
 	controller->destroy_intr_queue = ehci_destroy_intr_queue;
 	controller->poll_intr_queue = ehci_poll_intr_queue;
+	controller->reg_base = (uintptr_t)physical_bar;			// ELTAN20150303 made sure the reg_base is initialized
+
 	init_device_entry (controller, 0);
 
 	EHCI_INST(controller)->capabilities = phys_to_virt(controller->reg_base);

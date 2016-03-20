@@ -75,6 +75,7 @@
 #define CBMEM_ID_NONE		0x00000000
 #define CBMEM_ID_AGESA_RUNTIME	0x41474553
 #define CBMEM_ID_HOB_POINTER	0x484f4221
+#define CBMEM_ID_FILE  			0x46494c45 //'FILE'
 
 #ifndef __ASSEMBLER__
 #include <stddef.h>
@@ -115,7 +116,8 @@ struct cbmem_id_to_name {
 	{ CBMEM_ID_SMM_SAVE_SPACE,	"SMM BACKUP " }, \
 	{ CBMEM_ID_REFCODE_CACHE,	"REFCODE $  " }, \
 	{ CBMEM_ID_POWER_STATE,		"POWER STATE" }, \
-	{ CBMEM_ID_RAM_OOPS,		"RAMOOPS    " },
+	{ CBMEM_ID_RAM_OOPS,		"RAMOOPS    " }, \
+	{ CBMEM_ID_FILE,			"FILE       " },
 
 struct cbmem_entry;
 

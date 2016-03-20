@@ -19,7 +19,7 @@
 
 config CPU_AMD_PI
 	bool
-	default y if CPU_AMD_PI_00630F01
+#	default y if CPU_AMD_PI_00630F01
 	default y if CPU_AMD_PI_00730F01
 	default n
 	select ARCH_BOOTBLOCK_X86_32
@@ -29,7 +29,6 @@ config CPU_AMD_PI
 	select TSC_SYNC_LFENCE
 	select UDELAY_LAPIC
 	select LAPIC_MONOTONIC_TIMER
-	select BROKEN_CAR_MIGRATE
 	select SPI_FLASH if HAVE_ACPI_RESUME
 
 if CPU_AMD_PI
@@ -73,7 +72,14 @@ config S3_DATA_SIZE
 	int
 	default 32768
 
+config AGESA_HEAP_MEMTEST
+	bool "Test the AGESA heap"
+	default n
+	help
+		Test the agesa heap before using it. Useful during bringup.
+
+	
 endif # CPU_AMD_PI
 
-source src/cpu/amd/pi/00630F01/Kconfig
+#source src/cpu/amd/pi/00630F01/Kconfig
 source src/cpu/amd/pi/00730F01/Kconfig

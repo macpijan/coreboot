@@ -617,66 +617,7 @@ config PAYLOAD_TIANOCORE
 
 endchoice
 
-choice
-	prompt "SeaBIOS version"
-	default SEABIOS_STABLE
-	depends on PAYLOAD_SEABIOS
-
-config SEABIOS_STABLE
-	bool "1.7.5"
-	help
-	  Stable SeaBIOS version
-config SEABIOS_MASTER
-	bool "master"
-	help
-	  Newest SeaBIOS version
-
-endchoice
-
-config SEABIOS_PS2_TIMEOUT
-	prompt "PS/2 keyboard controller initialization timeout (milliseconds)" if PAYLOAD_SEABIOS
-	default 0
-	depends on EXPERT
-	int
-	help
-	  Some PS/2 keyboard controllers don't respond to commands immediately
-	  after powering on. This specifies how long SeaBIOS will wait for the
-	  keyboard controller to become ready before giving up.
-
-config SEABIOS_THREAD_OPTIONROMS
-	prompt "Hardware init during option ROM execution" if PAYLOAD_SEABIOS
-	default n
-	bool
-	help
-	  Allow hardware init to run in parallel with optionrom execution.
-
-	  This can reduce boot time, but can cause some timing
-	  variations during option ROM code execution. It is not
-	  known if all option ROMs will behave properly with this option.
-
-config SEABIOS_MALLOC_UPPERMEMORY
-	bool
-	default y
-	depends on PAYLOAD_SEABIOS
-	help
-	  Use the "Upper Memory Block" area (0xc0000-0xf0000) for internal
-	  "low memory" allocations.  If this is not selected, the memory is
-	  instead allocated from the "9-segment" (0x90000-0xa0000).
-	  This is not typically needed, but may be required on some platforms
-	  to allow USB and SATA buffers to be written correctly by the
-	  hardware.  In general, if this is desired, the option will be
-	  set to 'N' by the chipset Kconfig.
-
-config SEABIOS_VGA_COREBOOT
-	prompt "Include generated option rom that implements legacy VGA BIOS compatibility" if PAYLOAD_SEABIOS
-	default n
-	depends on !VGA_BIOS && (MAINBOARD_DO_NATIVE_VGA_INIT || MAINBOARD_HAS_NATIVE_VGA_INIT_TEXTMODECFG)
-	bool
-	help
-	  Coreboot can initialize the GPU of some mainboards.
-
-	  After initializing the GPU, the information about it can be passed to the payload.
-	  Provide an option rom that implements this legacy VGA BIOS compatibility requirement.
+source "payloads/external/SeaBIOS/Kconfig"
 
 choice
 	prompt "GRUB2 version"
@@ -691,12 +632,28 @@ config GRUB2_MASTER
 endchoice
 
 choice
+	prompt "FILO repo"
+	default FILO_GENERIC
+	depends on PAYLOAD_FILO
+
+config FILO_GENERIC
+	bool "FILO generic repository"
+	help
+	  Get FILO from the master GIT repo
+config FILO_ELTAN
+	bool "Eltan Repository"
+	help
+	  Get FILO from the Eltan repo
+
+endchoice
+
+choice
 	prompt "FILO version"
-	default FILO_STABLE
+	default FILO_MASTER
 	depends on PAYLOAD_FILO
 
 config FILO_STABLE
-	bool "0.6.0"
+	bool "FILO STABLE 0.6.0 for generic"
 	help
 	  Stable FILO version
 
@@ -704,8 +661,33 @@ config FILO_MASTER
 	bool "HEAD"
 	help
 	  Newest FILO version
-
+	  
 endchoice
+
+config ELTAN_FILO_TAG
+	depends on PAYLOAD_FILO
+	depends on FILO_ELTAN
+	depends on FILO_STABLE
+	string  "FILO TAG"
+	default "c315cb219587cde2143c3c6e7471b1214a532ed6"
+	help
+		Specify the FILO tag to check out	  
+
+config MENULST_FILE
+	depends on PAYLOAD_FILO
+	string "menulst path and filename"
+	default "hda3:/boot/filo/menu.lst"
+	help
+	  The path and filename of the menu.lst file, use uda1: instead of hda3: for usb disk. Use mem:
+	  to use the cbfs file system. Required eltan libpayload.
+
+config MENULST_TIMEOUT
+	depends on PAYLOAD_FILO
+	prompt "menu timeout in seconds"
+	default 0
+	int
+	help
+	  menu timeout in seconds
 
 config PAYLOAD_FILE
 	string "Payload path and filename"
@@ -721,14 +703,14 @@ config PAYLOAD_FILE
 	help
 	  The path and filename of the bzImage kernel to use as payload.
 
-config PAYLOAD_FILE
-	depends on PAYLOAD_SEABIOS
-	default "payloads/external/SeaBIOS/seabios/out/bios.bin.elf"
-
-config PAYLOAD_VGABIOS_FILE
-	string
-	depends on PAYLOAD_SEABIOS && SEABIOS_VGA_COREBOOT
-	default "payloads/external/SeaBIOS/seabios/out/vgabios.bin"
+#config PAYLOAD_FILE
+#	depends on PAYLOAD_SEABIOS
+#	default "payloads/external/SeaBIOS/seabios/out/bios.bin.elf"
+#
+#config PAYLOAD_VGABIOS_FILE
+#	string
+#	depends on PAYLOAD_SEABIOS && SEABIOS_VGA_COREBOOT
+#	default "payloads/external/SeaBIOS/seabios/out/vgabios.bin"
 
 config PAYLOAD_FILE
 	depends on PAYLOAD_FILO
@@ -1170,3 +1152,13 @@ config REG_SCRIPT
 config MAX_REBOOT_CNT
 	int
 	default 3
+	
+#
+# used but not defined
+#
+config VBOOT_VERIFY_FIRMWARE
+	bool 
+	
+config CHROMEOS
+	bool 
+
