@@ -374,7 +374,6 @@ AGESA_STATUS agesawrapper_amdinitenv(void)
 	printk(BIOS_DEBUG, "agesawrapper_amdinitenv returning from AmdCreateStruct\n");
 	EnvParam = (AMD_ENV_PARAMS *)AmdParamStruct.NewStructPtr;
 
-	EnvParam->GnbEnvConfiguration.IommuSupport = FALSE;
 	EnvParam->FchInterface.FchPowerFail = 1;			// System powered by default
 
 	printk(BIOS_DEBUG, "agesawrapper_amdinitenv calling AGESA\n");
@@ -468,6 +467,10 @@ AGESA_STATUS agesawrapper_amdinitlate(void)
 	/* NOTE: if not call amdcreatestruct, the initializer(AmdInitLateInitializer) would not be called */
 	AmdCreateStruct(&AmdParamStruct);
 	AmdLateParams = (AMD_LATE_PARAMS *)AmdParamStruct.NewStructPtr;
+
+	AmdLateParams->GnbLateConfiguration.GnbIoapicId = 0x05;
+	AmdLateParams->GnbLateConfiguration.FchIoapicId = 0x04;
+
 	Status = AmdInitLate(AmdLateParams);
 	if (Status != AGESA_SUCCESS) {
 		agesawrapper_amdreadeventlog(AmdLateParams->StdHeader.HeapStatus);
