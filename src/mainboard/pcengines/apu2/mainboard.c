@@ -34,7 +34,7 @@
 #if CONFIG_HAVE_OPTION_TABLE
 #include "option_table.h"
 #endif //CONFIG_HAVE_OPTION_TABLE
-#include <eltanhudson.h>
+#include <hudson.h>
 #include <timestamp.h>
 #include <fchgpio.h>
 #include "apu2.h"

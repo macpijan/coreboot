@@ -38,8 +38,7 @@
 #include <cpu/amd/pi/s3_resume.h>
 #include <fchgpio.h>
 #include "apu2.h"
-#include <northbridge/amd/pi/00730F01/northbridge.h>
-#include <eltanhudson.h>
+#include <hudson.h>
 #include <build.h>
 
 //
