@@ -47,6 +47,8 @@
 //#include <cbfs_core.h>
 #include <spd_cache.h>
 
+#define SPD_SIZE  128
+
 /**********************************************
  * enable the dedicated function in mainboard.
  **********************************************/
