@@ -24,11 +24,6 @@ romstage-y += PlatformGnbPcie.c
 ramstage-y += BiosCallOuts.c
 ramstage-y += PlatformGnbPcie.c
 
-# setup payload
-cbfs-files-y += img/setup
-img/setup-file := payloads/pcengines/sortbootorder.elf-payload
-img/setup-type := payload
-
 cbfs-files-y += bootorder_map
 bootorder_map-file := bootorder_map
 bootorder_map-type := raw
@@ -85,12 +80,3 @@ cbfs-files-y += spd.bin
 spd.bin-file := $(SPD_BIN)
 spd.bin-type := 0xab
 # WIV20141001 END ADD SPD FROM FILE
-
-cbfs-files-$(CONFIG_INCLUDE_SGABIOS) += vgaroms/sgabios.bin
-vgaroms/sgabios.bin-file := payloads/eltan/sgabios/sgabios.rom
-vgaroms/sgabios.bin-type := raw
-
-cbfs-files-$(CONFIG_INCLUDE_SGABIOS) += etc/screen-and-debug
-etc/screen-and-debug-file := payloads/eltan/sgabios/screen-and-debug
-etc/screen-and-debug-type := raw
-
