@@ -29,6 +29,7 @@
 #*****************************************************************************
 
 romstage-y += smbus.c smbus_spd.c
+romstage-y += fchgpio.c
 ramstage-y += hudson.c
 ramstage-y += usb.c
 ramstage-y += lpc.c
@@ -39,6 +40,7 @@ ramstage-y += hda.c
 ramstage-y += pci.c
 ramstage-y += pcie.c
 ramstage-y += sd.c
+ramstage-y += fchgpio.c
 
 ramstage-$(CONFIG_HAVE_ACPI_TABLES) += fadt.c
 ramstage-y += reset.c
