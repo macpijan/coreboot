@@ -95,7 +95,8 @@ void cache_as_ram_main(unsigned long bist, unsigned long cpu_init_detectedx)
 		//
 		HandleFchGpioTbl ( (GPIO_CONTROL *) &gGpioInitTable[0] );
 
-		hudson_clk_output_48Mhz();
+		//FIXME: do we need that ?
+		//hudson_clk_output_48Mhz();
 
 		post_code(0x31);
 		console_init();
