@@ -24,13 +24,6 @@ romstage-y += PlatformGnbPcie.c
 ramstage-y += BiosCallOuts.c
 ramstage-y += PlatformGnbPcie.c
 
-# WIV20150202 add ramtest
-cbfs-files-y += img/memtest
-img/memtest-file := payloads/eltan/memtest86+/memtest501.serial.com1.nospd.eltan-elf
-img/memtest-position := 0xcd900
-img/memtest-type := payload
-# WIV20150202 add ramtest
-
 # setup payload
 cbfs-files-y += img/setup
 img/setup-file := payloads/pcengines/sortbootorder.elf-payload
