@@ -84,6 +84,8 @@
 #define DECODE_ENABLE_KBC_PORT        (1 << 29)
 #define DECODE_ENABLE_ACPIUC_PORT     (1 << 30)
 #define DECODE_ENABLE_ADLIB_PORT      (1 << 31)
+#define PM_RTC_CONTROL		0x56
+#define PM_S_STATE_CONTROL	0xBA
 
 static inline int hudson_sata_enable(void)
 {
