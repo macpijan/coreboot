@@ -39,12 +39,11 @@
 #include <fchgpio.h>
 #include "apu2.h"
 #include <superio/nuvoton/nct5104d/nct5104d.h>
-#include <northbridge/amd/pi/00730F01/northbridge.h>
+//#include <northbridge/amd/pi/00730F01/northbridge.h>
 //FIXME: do we need that ?
 //#if CONFIG_USE_CBMEM_FILE_OVERRIDE
 //#include <boot/cbmemfile.h>
 //#endif //CONFIG_USE_CBMEM_FILE_OVERRIDE
-//#include <cbfs_core.h>
 #include <spd_cache.h>
 
 #define SPD_SIZE  128
