@@ -130,6 +130,7 @@ static void mainboard_enable(device_t dev)
 }
 #if CONFIG_FORCE_CONSOLE
 #else //CONFIG_FORCE_CONSOLE
+#if 0 //FIXME: do we need CONFIG_USE_CBMEM_FILE_OVERRIDE
 
 static char * findstr(const char *s, const char *pattern)
 {
@@ -156,17 +157,18 @@ static bool
 check_console( void )
 {
 	const char *boot_file;
-	size_t boot_file_len = 0;
+	//size_t boot_file_len = 0;
 	char * scon;
 
-	printk(BIOS_INFO, "read bootorder\n");
-	boot_file = cbfs_get_file_content(CBFS_DEFAULT_MEDIA, "bootorder", CBFS_TYPE_RAW, &boot_file_len);
-	if (!boot_file)
-		printk(BIOS_EMERG, "file [bootorder] not found in CBFS\n");
-	if (boot_file_len < 4096)
-		printk(BIOS_EMERG, "Missing bootorder data.\n");
-	if (!boot_file || boot_file_len < 4096)
-		return TRUE;
+	//FIXME: we should not do this kind of things
+	//printk(BIOS_INFO, "read bootorder\n");
+	//boot_file = cbfs_get_file_content(CBFS_DEFAULT_MEDIA, "bootorder", CBFS_TYPE_RAW, &boot_file_len);
+	//if (!boot_file)
+	//	printk(BIOS_EMERG, "file [bootorder] not found in CBFS\n");
+	//if (boot_file_len < 4096)
+	//	printk(BIOS_EMERG, "Missing bootorder data.\n");
+	//if (!boot_file || boot_file_len < 4096)
+	//	return TRUE;
 
 	//
 	// Find the serial console item
@@ -188,6 +190,8 @@ check_console( void )
 	}
 	return TRUE;
 }
+
+#endif //FIXME: do we need CONFIG_USE_CBMEM_FILE_OVERRIDE
 #endif //CONFIG_FORCE_CONSOLE
 
 static void mainboard_final(void *chip_info) {
@@ -226,7 +230,7 @@ static void mainboard_final(void *chip_info) {
 
 		printk(BIOS_INFO, "USB PORT ROUTING = EHCI PORTS ENABLED\n");
 	}
-#if CONFIG_USE_CBMEM_FILE_OVERRIDE
+#if 0 //FIXME: do we need CONFIG_USE_CBMEM_FILE_OVERRIDE
 
 #if CONFIG_FORCE_CONSOLE
 	bool console_enabled = TRUE;
