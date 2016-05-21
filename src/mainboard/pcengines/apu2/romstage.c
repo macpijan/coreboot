@@ -178,9 +178,6 @@ void cache_as_ram_main(unsigned long bist, unsigned long cpu_init_detectedx)
 	// amdinitreset AGESA code might issue a reset when the hardware is in a wrong state.
 	*/
 
-	printk(BIOS_ERR, CONFIG_MAINBOARD_PART_NUMBER "\n");
-	printk(BIOS_ERR, "coreboot build " COREBOOT_YYYYMMDD_DATE "\n");
-
 #if CONFIG_SVI2_SLOW_SPEED
 	/* Force SVI2 to slow speed for APU2 */
 	val = pci_read_config32( d18f3_dev, 0xA0);
