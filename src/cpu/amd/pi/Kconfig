@@ -65,6 +65,13 @@ config S3_DATA_SIZE
 	int
 	default 32768
 
+config AGESA_HEAP_MEMTEST
+	bool "Test the AGESA heap"
+	default n
+	help
+		Test the agesa heap before using it. Useful during bringup.
+
+	
 endif # CPU_AMD_PI
 
 source src/cpu/amd/pi/00630F01/Kconfig

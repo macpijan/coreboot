@@ -28,6 +28,7 @@ config BOARD_SPECIFIC_OPTIONS # dummy
 	select BOARD_ROMSIZE_KB_8192
 	select SPD_CACHE
 	select HUDSON_DISABLE_IMC
+	select AGESA_HEAP_MEMTEST
 
 config MAINBOARD_DIR
 	string

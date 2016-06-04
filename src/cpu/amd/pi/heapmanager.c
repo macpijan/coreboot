@@ -20,6 +20,9 @@
 #include <cbmem.h>
 #include <arch/acpi.h>
 #include <string.h>
+#if IS_ENABLED(CONFIG_AGESA_HEAP_MEMTEST)
+#include <lib.h>					// memory test prototypes
+#endif //CONFIG_AGESA_HEAP_MEMTEST
 
 UINT32 GetHeapBase(AMD_CONFIG_PARAMS *StdHeader)
 {
@@ -38,6 +41,11 @@ UINT32 GetHeapBase(AMD_CONFIG_PARAMS *StdHeader)
 void EmptyHeap(void)
 {
 	void *BiosManagerPtr = (void *) GetHeapBase(NULL);
+
+#if IS_ENABLED(CONFIG_AGESA_HEAP_MEMTEST) && defined(__PRE_RAM__)
+	printk(BIOS_INFO, "Checking AGESA Heap\n");
+	ram_check( (unsigned long) BiosManagerPtr, (unsigned long) BiosManagerPtr + BIOS_HEAP_SIZE);
+#endif //CONFIG_AGESA_HEAP_MEMTEST && defined(__PRE_RAM__)
 	memset(BiosManagerPtr, 0, BIOS_HEAP_SIZE);
 }
 
