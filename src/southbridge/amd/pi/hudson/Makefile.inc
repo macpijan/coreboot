@@ -28,7 +28,7 @@
 #
 #*****************************************************************************
 
-romstage-y += smbus.c smbus_spd.c
+romstage-y += smbus.c smbus_spd.c fchgpio.c
 ramstage-y += hudson.c
 ramstage-y += usb.c
 ramstage-y += lpc.c

@@ -27,6 +27,7 @@
 #endif
 #include "hudson.h"
 #include <stdlib.h>
+#include <fchgpio.h>
 #include "apu2.h"
 
 static AGESA_STATUS Fch_Oem_config(UINT32 Func, UINT32 FchData, VOID *ConfigPtr);
@@ -143,9 +144,8 @@ static AGESA_STATUS board_ReadSpd_from_cbfs(UINT32 Func, UINT32 Data, VOID *Conf
 
 	/* One SPD file contains all 4 options, determine which index to read here, then call into the standard routines*/
 
-	u8 *gpio_bank0_ptr = (u8 *)(ACPI_MMIO_BASE + GPIO_BANK0_BASE);
-	if (*(gpio_bank0_ptr + (0x40 << 2) + 2) & BIT0) index |= BIT0;
-	if (*(gpio_bank0_ptr + (0x41 << 2) + 2) & BIT0) index |= BIT1;
+	if ( ReadFchGpio(APU2_SPD_STRAP0_GPIO) ) index |= BIT0;
+	if ( ReadFchGpio(APU2_SPD_STRAP1_GPIO) ) index |= BIT1;
 
 	printk(BIOS_INFO, "Reading SPD index %d\n", index);
 
