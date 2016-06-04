@@ -13,14 +13,14 @@
 ## GNU General Public License for more details.
 ##
 
-TAG-$(CONFIG_MEMTEST_MASTER)=origin/master
+TAG-$(CONFIG_MEMTEST_MASTER)=origin/apu2
 NAME-$(CONFIG_MEMTEST_MASTER)=Master
-TAG-$(CONFIG_MEMTEST_STABLE)=ca352c9a6bd8c1bba16ea22cbfc7028d97bacec9
+TAG-$(CONFIG_MEMTEST_STABLE)=a4efe01c3d15cdb6c64adc8dfe5f890c15459f27
 NAME-$(CONFIG_MEMTEST_STABLE)=Stable
 
 project_name=Memtest86+
 project_dir=$(CURDIR)/memtest86plus
-project_git_repo=https://review.coreboot.org/memtest86plus.git
+project_git_repo=https://github.com/pcengines/memtest86plus.git
 
 all: build
 
