@@ -490,7 +490,7 @@
 #define SERIAL_DEBUG_BASE  0x1000
 #define GFX_DAC_BASE       0x1400
 #define GPIO_BANK0_BASE    0x1500   // DWORD
-//#define GPIO_BANK1_BASE    0x1600   // DWORD
+#define GPIO_BANK1_BASE    0x1600   // DWORD
 //#define GPIO_BANK2_BASE    0x1700   // DWORD
 #define CEC_BASE           0x1800
 #define XHCI_BASE          0x1C00

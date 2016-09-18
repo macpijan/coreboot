@@ -101,6 +101,30 @@ void cache_as_ram_main(unsigned long bist, unsigned long cpu_init_detectedx)
 		post_code(0x31);
 		console_init();
 
+		memptr = (u32 *)(ACPI_MMIO_BASE + GPIO_BANK1_BASE + 0x180);
+		data = *memptr;
+		printk(BIOS_INFO, "GPIO_BANK1_BASE + 0x180 0x%08x \n", data);
+
+		memptr = (u32 *)(ACPI_MMIO_BASE + GPIO_BANK1_BASE + 0x184);
+		data = *memptr;
+		printk(BIOS_INFO, "GPIO_BANK1_BASE + 0x184 0x%08x \n", data);
+
+		memptr = (u32 *)(ACPI_MMIO_BASE + GPIO_BANK1_BASE + 0x188);
+		data = *memptr;
+		printk(BIOS_INFO, "GPIO_BANK1_BASE + 0x188 0x%08x \n", data);
+
+		memptr = (u32 *)(ACPI_MMIO_BASE + GPIO_BANK1_BASE + 0x18C);
+		data = *memptr;
+		printk(BIOS_INFO, "GPIO_BANK1_BASE + 0x18C 0x%08x \n", data);
+
+		memptr = (u32 *)(ACPI_MMIO_BASE + GPIO_BANK1_BASE + 0x190);
+		data = *memptr;
+		printk(BIOS_INFO, "GPIO_BANK1_BASE + 0x190 0x%08x \n", data);
+
+		memptr = (u32 *)(ACPI_MMIO_BASE + GPIO_BANK1_BASE + 0x194);
+		data = *memptr;
+		printk(BIOS_INFO, "GPIO_BANK1_BASE + 0x194 0x%08x \n", data);
+
 		printk(BIOS_INFO, "14-25-48Mhz Clock settings\n");
 
 		memptr = (u32 *)(ACPI_MMIO_BASE + MISC_BASE + FCH_MISC_REG28 );
