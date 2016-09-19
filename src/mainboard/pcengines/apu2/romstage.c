@@ -42,6 +42,8 @@
 #include <eltanhudson.h>
 #include <build.h>
 
+void print_sd_gpio(unsigned int index);
+
 //
 // GPIO Init Table
 //
@@ -62,6 +64,37 @@ static const GPIO_CONTROL gGpioInitTable[] = {
 		{0xFF, 0xFF, 0xFF}									// Terminator
 	};
 
+
+void print_sd_gpio(unsigned int index) {
+
+	u32 data, *memptr;
+
+	printk(BIOS_INFO, "index %d \n", index);
+
+	memptr = (u32 *)(ACPI_MMIO_BASE + GPIO_BANK0_BASE + 0x180);
+	data = *memptr;
+	printk(BIOS_INFO, "GPIO_BANK0_BASE + 0x180 0x%08x \n", data);
+
+	memptr = (u32 *)(ACPI_MMIO_BASE + GPIO_BANK0_BASE + 0x184);
+	data = *memptr;
+	printk(BIOS_INFO, "GPIO_BANK0_BASE + 0x184 0x%08x \n", data);
+
+	memptr = (u32 *)(ACPI_MMIO_BASE + GPIO_BANK0_BASE + 0x188);
+	data = *memptr;
+	printk(BIOS_INFO, "GPIO_BANK0_BASE + 0x188 0x%08x \n", data);
+
+	memptr = (u32 *)(ACPI_MMIO_BASE + GPIO_BANK0_BASE + 0x18C);
+	data = *memptr;
+	printk(BIOS_INFO, "GPIO_BANK0_BASE + 0x18C 0x%08x \n", data);
+
+	memptr = (u32 *)(ACPI_MMIO_BASE + GPIO_BANK0_BASE + 0x190);
+	data = *memptr;
+	printk(BIOS_INFO, "GPIO_BANK0_BASE + 0x190 0x%08x \n", data);
+
+	memptr = (u32 *)(ACPI_MMIO_BASE + GPIO_BANK0_BASE + 0x194);
+	data = *memptr;
+	printk(BIOS_INFO, "GPIO_BANK0_BASE + 0x194 0x%08x \n", data);
+}
 
 void cache_as_ram_main(unsigned long bist, unsigned long cpu_init_detectedx)
 {
@@ -101,29 +134,7 @@ void cache_as_ram_main(unsigned long bist, unsigned long cpu_init_detectedx)
 		post_code(0x31);
 		console_init();
 
-		memptr = (u32 *)(ACPI_MMIO_BASE + GPIO_BANK1_BASE + 0x180);
-		data = *memptr;
-		printk(BIOS_INFO, "GPIO_BANK1_BASE + 0x180 0x%08x \n", data);
-
-		memptr = (u32 *)(ACPI_MMIO_BASE + GPIO_BANK1_BASE + 0x184);
-		data = *memptr;
-		printk(BIOS_INFO, "GPIO_BANK1_BASE + 0x184 0x%08x \n", data);
-
-		memptr = (u32 *)(ACPI_MMIO_BASE + GPIO_BANK1_BASE + 0x188);
-		data = *memptr;
-		printk(BIOS_INFO, "GPIO_BANK1_BASE + 0x188 0x%08x \n", data);
-
-		memptr = (u32 *)(ACPI_MMIO_BASE + GPIO_BANK1_BASE + 0x18C);
-		data = *memptr;
-		printk(BIOS_INFO, "GPIO_BANK1_BASE + 0x18C 0x%08x \n", data);
-
-		memptr = (u32 *)(ACPI_MMIO_BASE + GPIO_BANK1_BASE + 0x190);
-		data = *memptr;
-		printk(BIOS_INFO, "GPIO_BANK1_BASE + 0x190 0x%08x \n", data);
-
-		memptr = (u32 *)(ACPI_MMIO_BASE + GPIO_BANK1_BASE + 0x194);
-		data = *memptr;
-		printk(BIOS_INFO, "GPIO_BANK1_BASE + 0x194 0x%08x \n", data);
+		print_sd_gpio(1);
 
 		printk(BIOS_INFO, "14-25-48Mhz Clock settings\n");
 
@@ -199,6 +210,8 @@ void cache_as_ram_main(unsigned long bist, unsigned long cpu_init_detectedx)
 	post_code(0x39);
 	AGESAWRAPPER(amdinitearly);
 
+
+	print_sd_gpio(2);
 	/*
 	// Moved here to prevent double signon message
 	// amdinitreset AGESA code might issue a reset when the hardware is in a wrong state.
