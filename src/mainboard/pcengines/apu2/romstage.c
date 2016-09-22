@@ -42,7 +42,7 @@
 #include <eltanhudson.h>
 #include <build.h>
 
-void print_sd_gpio(unsigned int index);
+#include <sddebug.h>
 
 //
 // GPIO Init Table
@@ -65,37 +65,6 @@ static const GPIO_CONTROL gGpioInitTable[] = {
 	};
 
 
-void print_sd_gpio(unsigned int index) {
-
-	u32 data, *memptr;
-
-	printk(BIOS_INFO, "index %d \n", index);
-
-	memptr = (u32 *)(ACPI_MMIO_BASE + GPIO_BANK0_BASE + 0x180);
-	data = *memptr;
-	printk(BIOS_INFO, "GPIO_BANK0_BASE + 0x180 0x%08x \n", data);
-
-	memptr = (u32 *)(ACPI_MMIO_BASE + GPIO_BANK0_BASE + 0x184);
-	data = *memptr;
-	printk(BIOS_INFO, "GPIO_BANK0_BASE + 0x184 0x%08x \n", data);
-
-	memptr = (u32 *)(ACPI_MMIO_BASE + GPIO_BANK0_BASE + 0x188);
-	data = *memptr;
-	printk(BIOS_INFO, "GPIO_BANK0_BASE + 0x188 0x%08x \n", data);
-
-	memptr = (u32 *)(ACPI_MMIO_BASE + GPIO_BANK0_BASE + 0x18C);
-	data = *memptr;
-	printk(BIOS_INFO, "GPIO_BANK0_BASE + 0x18C 0x%08x \n", data);
-
-	memptr = (u32 *)(ACPI_MMIO_BASE + GPIO_BANK0_BASE + 0x190);
-	data = *memptr;
-	printk(BIOS_INFO, "GPIO_BANK0_BASE + 0x190 0x%08x \n", data);
-
-	memptr = (u32 *)(ACPI_MMIO_BASE + GPIO_BANK0_BASE + 0x194);
-	data = *memptr;
-	printk(BIOS_INFO, "GPIO_BANK0_BASE + 0x194 0x%08x \n", data);
-}
-
 void cache_as_ram_main(unsigned long bist, unsigned long cpu_init_detectedx)
 {
 	u32 val;
@@ -105,6 +74,7 @@ void cache_as_ram_main(unsigned long bist, unsigned long cpu_init_detectedx)
 #if CONFIG_SVI_WAIT_COMP_DIS
 	device_t d18f5_dev = PCI_DEV(0, 0x18, 5);
 #endif //CONFIG_SVI_WAIT_COMP_DIS
+
 
 	/*
 	 *  In Hudson RRG, PMIOxD2[5:4] is "Drive strength control for
@@ -136,6 +106,63 @@ void cache_as_ram_main(unsigned long bist, unsigned long cpu_init_detectedx)
 
 		print_sd_gpio(1);
 
+////    u32 j;
+////    for(j=0; j<0xffffffff; j++);
+//
+//	memptr = (u32 *)(ACPI_MMIO_BASE + GPIO_BANK0_BASE + 0x17C);
+//	data = *memptr;
+//
+//u32 j;
+//
+//    // enable output
+//    data |= (1<<23);
+//    data &= ~(1<<20);
+//    *memptr = data;
+//    print_sd_gpio(2);
+//
+//
+//    // out high
+//    data = *memptr;
+//    data |= (1<<22);
+//    *memptr = data;
+//    print_sd_gpio(5);
+//
+//    for (j=0; j<0xfffffff; j++);
+//
+//    // out low
+//    data = *memptr;
+//    data &= ~(1<<22);
+//    *memptr = data;
+//    print_sd_gpio(3);
+//
+//    print_sd_gpio(4);
+//
+//
+//	memptr = (u32 *)(ACPI_MMIO_BASE + GPIO_BANK0_BASE + 0x180);
+//	data = *memptr;
+//
+//    // enable output
+//    data |= (1<<23);
+//    data &= ~(1<<20);
+//    *memptr = data;
+//    print_sd_gpio(2);
+//
+//    // out low
+//    data = *memptr;
+//    data &= ~(1<<22);
+//    *memptr = data;
+//    print_sd_gpio(3);
+//
+//    for (j=0; j<0xfffffff; j++);
+//
+//    print_sd_gpio(4);
+//    // out high
+//    data = *memptr;
+//    data |= (1<<22);
+//    *memptr = data;
+//    print_sd_gpio(5);
+//
+//
 		printk(BIOS_INFO, "14-25-48Mhz Clock settings\n");
 
 		memptr = (u32 *)(ACPI_MMIO_BASE + MISC_BASE + FCH_MISC_REG28 );
@@ -211,7 +238,7 @@ void cache_as_ram_main(unsigned long bist, unsigned long cpu_init_detectedx)
 	AGESAWRAPPER(amdinitearly);
 
 
-	print_sd_gpio(2);
+	print_sd_gpio(5);
 	/*
 	// Moved here to prevent double signon message
 	// amdinitreset AGESA code might issue a reset when the hardware is in a wrong state.
@@ -251,14 +278,17 @@ void cache_as_ram_main(unsigned long bist, unsigned long cpu_init_detectedx)
 
 #endif //CONFIG_SVI_WAIT_COMP_DIS
 
+	print_sd_gpio(6);
 	int s3resume = acpi_is_wakeup_s3();
 	if (!s3resume) {
 		post_code(0x40);
 		AGESAWRAPPER(amdinitpost);
-
+	print_sd_gpio(7);
 		//PspMboxBiosCmdDramInfo();
 		post_code(0x41);
 		AGESAWRAPPER(amdinitenv);
+	print_sd_gpio(8);
+        pull_down_sd_gpio();
 		/*
 		  If code hangs here, please check cahaltasm.S
 		*/
@@ -267,7 +297,7 @@ void cache_as_ram_main(unsigned long bist, unsigned long cpu_init_detectedx)
 	} else { /* S3 detect */
 
 		printk(BIOS_INFO, "S3 detected\n");
-
+	print_sd_gpio(9);
 		post_code(0x60);
 		AGESAWRAPPER(amdinitresume);
 
@@ -276,10 +306,10 @@ void cache_as_ram_main(unsigned long bist, unsigned long cpu_init_detectedx)
 		post_code(0x61);
 		prepare_for_resume();
 	}
-
+	print_sd_gpio(10);
 	outb(0xEA, 0xCD6);
 	outb(0x1, 0xcd7);
-
+	print_sd_gpio(11);
 	post_code(0x50);
 	copy_and_run();
 

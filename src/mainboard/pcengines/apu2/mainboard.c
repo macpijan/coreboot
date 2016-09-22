@@ -9,8 +9,7 @@
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
@@ -50,6 +49,8 @@
 #include <cpu/amd/amdfam16.h>
 #include <cpuRegisters.h>
 
+#include <sddebug.h>
+
 static bool check_console(void);
 
 /**********************************************
@@ -59,7 +60,7 @@ static bool check_console(void);
 static void mainboard_enable(device_t dev)
 {
 	struct device *sio_dev;
-
+print_sd_gpio(1);
 	bool scon = check_console();
 	setup_bsp_ramtop();
 	u32 TOM1 = bsp_topmem() / (1024 *1024);	// Tom1 in Mbyte
@@ -95,10 +96,10 @@ static void mainboard_enable(device_t dev)
 	// Enable power on from WAKE#
 	//
 	pm_write16 ( PM_S_STATE_CONTROL, pm_read16( PM_S_STATE_CONTROL ) | (1 << 14));
-
+print_sd_gpio(2);
 	if (acpi_is_wakeup_s3())
 		agesawrapper_fchs3earlyrestore();
-
+print_sd_gpio(3);
 //
 // SIO CONFIG, enable and disable UARTC and UARTD depending on the selection
 //
@@ -145,7 +146,7 @@ static char * findstr(const char *s, const char *pattern)
 {
 	char *result = (char *) s;
 	char *lpattern = (char *) pattern;
-
+print_sd_gpio(4);
 	while (*result && *pattern ) {
 
 		if ( *lpattern == 0)	return result;		// the pattern matches return the pointer
@@ -198,16 +199,23 @@ check_console( void )
 	}
 	return TRUE;
 }
-#endif //CONFIG_FORCE_CONSOLE
+#endif //
 
 static void mainboard_final(void *chip_info) {
 
 	printk(BIOS_INFO, "Mainboard " CONFIG_MAINBOARD_PART_NUMBER "final\n");
+    print_sd_gpio(5);
 
 /* Disabling LPCCLK0 which is unused according to the schematic doesn't work. The system is stuck if we do this
  * So we don't do this.
 
  */
+
+//pull_down_sd_gpio();
+u32 k;
+for(k=0; k<0xffffffff; k++);
+//while(1);
+config_gpio_as_sd();
 
 #if CONFIG_DUMP_GPIO_CONFIGURATION
 	DumpGpioConfiguration( );
