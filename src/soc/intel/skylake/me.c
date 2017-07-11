@@ -30,12 +30,12 @@
 
 static inline u32 me_read_config32(int offset)
 {
-	return pci_read_config32(PCH_DEV_ME, offset);
+	return pci_read_config32(PCH_DEV_CSE, offset);
 }
 
 static inline void me_write_config32(int offset, u32 value)
 {
-	pci_write_config32(PCH_DEV_ME, offset, value);
+	pci_write_config32(PCH_DEV_CSE, offset, value);
 }
 
 static inline u32 me_read_mmio32(int offset)
@@ -49,7 +49,7 @@ static inline void me_write_mmio32(u16 offset, u32 value)
 }
 
 /* HFSTS1[3:0] Current Working State Values */
-static const char *me_cws_values[] = {
+static const char * const me_cws_values[] = {
 	[ME_HFS_CWS_RESET]	= "Reset",
 	[ME_HFS_CWS_INIT]	= "Initializing",
 	[ME_HFS_CWS_REC]	= "Recovery",
@@ -69,7 +69,7 @@ static const char *me_cws_values[] = {
 };
 
 /* HFSTS1[8:6] Current Operation State Values */
-static const char *me_opstate_values[] = {
+static const char * const me_opstate_values[] = {
 	[ME_HFS_STATE_PREBOOT]	= "Preboot",
 	[ME_HFS_STATE_M0_UMA]	= "M0 with UMA",
 	[ME_HFS_STATE_M3]	= "M3 without UMA",
@@ -79,7 +79,7 @@ static const char *me_opstate_values[] = {
 };
 
 /* HFSTS1[19:16] Current Operation Mode Values */
-static const char *me_opmode_values[] = {
+static const char * const me_opmode_values[] = {
 	[ME_HFS_MODE_NORMAL]	= "Normal",
 	[ME_HFS_MODE_DEBUG]	= "Debug",
 	[ME_HFS_MODE_DIS]	= "Soft Temporary Disable",
@@ -88,7 +88,7 @@ static const char *me_opmode_values[] = {
 };
 
 /* HFSTS1[15:12] Error Code Values */
-static const char *me_error_values[] = {
+static const char * const me_error_values[] = {
 	[ME_HFS_ERROR_NONE]	= "No Error",
 	[ME_HFS_ERROR_UNCAT]	= "Uncategorized Failure",
 	[ME_HFS_ERROR_IMAGE]	= "Image Failure",
@@ -96,7 +96,7 @@ static const char *me_error_values[] = {
 };
 
 /* HFSTS2[31:28] ME Progress Code */
-static const char *me_progress_values[] = {
+static const char * const me_progress_values[] = {
 	[ME_HFS2_PHASE_ROM]		= "ROM Phase",
 	[1]				= "Unknown (1)",
 	[ME_HFS2_PHASE_UKERNEL]		= "uKernel Phase",
@@ -109,7 +109,7 @@ static const char *me_progress_values[] = {
 };
 
 /* HFSTS2[27:24] Power Management Event */
-static const char *me_pmevent_values[] = {
+static const char * const me_pmevent_values[] = {
 	[ME_HFS2_PMEVENT_CLEAN_MOFF_MX_WAKE] =
 	"Clean Moff->Mx wake",
 	[ME_HFS2_PMEVENT_MOFF_MX_WAKE_ERROR] =
@@ -146,13 +146,13 @@ static const char *me_pmevent_values[] = {
 };
 
 /* Progress Code 0 states */
-static const char *me_progress_rom_values[] = {
+static const char * const me_progress_rom_values[] = {
 	[ME_HFS2_STATE_ROM_BEGIN]	= "BEGIN",
 	[ME_HFS2_STATE_ROM_DISABLE]	= "DISABLE"
 };
 
 /* Progress Code 1 states */
-static const char *me_progress_bup_values[] = {
+static const char * const me_progress_bup_values[] = {
 	[ME_HFS2_STATE_BUP_INIT] =
 	"Initialization starts",
 	[ME_HFS2_STATE_BUP_DIS_HOST_WAKE] =
@@ -279,10 +279,12 @@ void intel_me_status(void)
 		break;
 
 	case ME_HFS2_PHASE_BUP:		/* Bringup Phase */
-		if (hfs2.fields.current_state < ARRAY_SIZE(me_progress_bup_values)
+		if (hfs2.fields.current_state
+			< ARRAY_SIZE(me_progress_bup_values)
 		    && me_progress_bup_values[hfs2.fields.current_state])
 			printk(BIOS_DEBUG, "%s",
-			       me_progress_bup_values[hfs2.fields.current_state]);
+				me_progress_bup_values[
+					hfs2.fields.current_state]);
 		else
 			printk(BIOS_DEBUG, "0x%02x", hfs2.fields.current_state);
 		break;
@@ -335,7 +337,8 @@ void intel_me_status(void)
 			printk(BIOS_DEBUG, "Corporate\n");
 			break;
 		default:
-			printk(BIOS_DEBUG, "Unknown (0x%x)\n", hfs3.fields.fw_sku);
+			printk(BIOS_DEBUG, "Unknown (0x%x)\n",
+				hfs3.fields.fw_sku);
 		}
 	}
 }
@@ -494,7 +497,8 @@ static int recv_heci_packet(union mei_header *head, u32 *packet,
 				}
 				/* here is the message */
 				for (index = 0; index < length; index++)
-					packet[index] = me_read_mmio32(MMIO_ME_CB_RW);
+					packet[index] =
+						me_read_mmio32(MMIO_ME_CB_RW);
 
 				rec_msg = 1;
 				*packet_size = head->fields.length;
@@ -581,7 +585,7 @@ send_heci_message(void *msg, int len, u8 hostaddress, u8 clientaddress)
 }
 
 static int
-recv_heci_message(void *message, u32 * message_size)
+recv_heci_message(void *message, u32 *message_size)
 {
 	union mei_header head;
 	int cur = 0;
@@ -648,7 +652,7 @@ static int send_heci_reset_message(void)
 	};
 	u32 reply_size;
 
-	status= send_heci_message(&msg, sizeof(msg),
+	status = send_heci_message(&msg, sizeof(msg),
 			BIOS_HOST_ADD, HECI_MKHI_ADD);
 	if (status != 0)
 		return -1;
@@ -660,10 +664,9 @@ static int send_heci_reset_message(void)
 	if (reply.result != 0) {
 		printk(BIOS_DEBUG, "%s: Exit with Failure\n", __func__);
 		return -1;
-	} else {
-		printk(BIOS_DEBUG, "%s: Exit with Success\n",  __func__);
-		return 0;
 	}
+	printk(BIOS_DEBUG, "%s: Exit with Success\n",  __func__);
+	return 0;
 }
 
 int send_global_reset(void)

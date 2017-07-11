@@ -26,10 +26,13 @@
 #include <device/pci_def.h>
 #include <fsp/util.h>
 #include <fsp/memmap.h>
+#include <memory_info.h>
+#include <soc/intel/common/smbios.h>
 #include <soc/msr.h>
 #include <soc/pci_devs.h>
 #include <soc/pm.h>
 #include <soc/romstage.h>
+#include <string.h>
 #include <timestamp.h>
 #include <vboot/vboot_common.h>
 
@@ -39,7 +42,80 @@
  */
 #define ROMSTAGE_RAM_STACK_SIZE 0x5000
 
-asmlinkage void *car_stage_c_entry(void)
+#define FSP_SMBIOS_MEMORY_INFO_GUID	\
+{	\
+	0xd4, 0x71, 0x20, 0x9b, 0x54, 0xb0, 0x0c, 0x4e,	\
+	0x8d, 0x09, 0x11, 0xcf, 0x8b, 0x9f, 0x03, 0x23	\
+}
+
+/* Save the DIMM information for SMBIOS table 17 */
+static void save_dimm_info(void)
+{
+	int channel, dimm, dimm_max, index;
+	size_t hob_size;
+	const CONTROLLER_INFO *ctrlr_info;
+	const CHANNEL_INFO *channel_info;
+	const DIMM_INFO *src_dimm;
+	struct dimm_info *dest_dimm;
+	struct memory_info *mem_info;
+	const MEMORY_INFO_DATA_HOB *memory_info_hob;
+	const uint8_t smbios_memory_info_guid[16] = FSP_SMBIOS_MEMORY_INFO_GUID;
+
+	/* Locate the memory info HOB, presence validated by raminit */
+	memory_info_hob =
+		fsp_find_extension_hob_by_guid(smbios_memory_info_guid,
+						&hob_size);
+	if (memory_info_hob == NULL) {
+		printk(BIOS_ERR, "SMBIOS MEMORY_INFO_DATA_HOB not found\n");
+		return;
+	}
+
+	/*
+	 * Allocate CBMEM area for DIMM information used to populate SMBIOS
+	 * table 17
+	 */
+	mem_info = cbmem_add(CBMEM_ID_MEMINFO, sizeof(*mem_info));
+	if (mem_info == NULL) {
+		printk(BIOS_ERR, "CBMEM entry for DIMM info missing\n");
+		return;
+	}
+	memset(mem_info, 0, sizeof(*mem_info));
+
+	/* Describe the first N DIMMs in the system */
+	index = 0;
+	dimm_max = ARRAY_SIZE(mem_info->dimm);
+	ctrlr_info = &memory_info_hob->Controller[0];
+	for (channel = 0; channel < ctrlr_info->ChannelCount; channel++) {
+		if (index >= dimm_max)
+			break;
+		channel_info = &ctrlr_info->Channel[channel];
+		for (dimm = 0; dimm < channel_info->DimmCount; dimm++) {
+			if (index >= dimm_max)
+				break;
+			src_dimm = &channel_info->Dimm[dimm];
+			dest_dimm = &mem_info->dimm[index];
+
+			if (!src_dimm->DimmCapacity)
+				continue;
+
+			/* Populate the DIMM information */
+			dimm_info_fill(dest_dimm,
+				src_dimm->DimmCapacity,
+				memory_info_hob->DdrType,
+				memory_info_hob->Frequency,
+				channel_info->ChannelId,
+				src_dimm->DimmId,
+				(const char *)src_dimm->ModulePartNum,
+				sizeof(src_dimm->ModulePartNum),
+				memory_info_hob->DataWidth);
+			index++;
+		}
+	}
+	mem_info->dimm_cnt = index;
+	printk(BIOS_DEBUG, "%d DIMMs found\n", mem_info->dimm_cnt);
+}
+
+asmlinkage void car_stage_entry(void)
 {
 	bool s3wake;
 	struct postcar_frame pcf;
@@ -56,7 +132,8 @@ asmlinkage void *car_stage_c_entry(void)
 	s3wake = ps->prev_sleep_state == ACPI_S3;
 	fsp_memory_init(s3wake);
 	pmc_set_disb();
-
+	if (!s3wake)
+		save_dimm_info();
 	if (postcar_frame_init(&pcf, ROMSTAGE_RAM_STACK_SIZE))
 		die("Unable to initialize postcar frame.\n");
 
@@ -93,7 +170,7 @@ asmlinkage void *car_stage_c_entry(void)
 	postcar_frame_add_mtrr(&pcf, 0xFFFFFFFF - CONFIG_ROM_SIZE + 1,
 				CONFIG_ROM_SIZE, MTRR_TYPE_WRPROT);
 
-	return postcar_commit_mtrrs(&pcf);
+	run_postcar_phase(&pcf);
 }
 
 static void cpu_flex_override(FSP_M_CONFIG *m_cfg)
@@ -108,16 +185,12 @@ static void cpu_flex_override(FSP_M_CONFIG *m_cfg)
 	m_cfg->CpuRatio = (flex_ratio.lo >> 8) & 0xff;
 }
 
-static void soc_memory_init_params(FSP_M_CONFIG *m_cfg)
+static void soc_memory_init_params(FSP_M_CONFIG *m_cfg,
+			const struct soc_intel_skylake_config *config)
 {
-	const struct device *dev;
-	const struct soc_intel_skylake_config *config;
 	int i;
 	uint32_t mask = 0;
 
-	/* Set the parameters for MemoryInit */
-	dev = dev_find_slot(0, PCI_DEVFN(PCH_DEV_SLOT_LPC, 0));
-	config = dev->chip_info;
 	/*
 	 * Set IGD stolen size to 64MB.  The FBC hardware for skylake does not
 	 * have access to the bios_reserved range so it always assumes 8MB is
@@ -130,7 +203,6 @@ static void soc_memory_init_params(FSP_M_CONFIG *m_cfg)
 	m_cfg->TsegSize = CONFIG_SMM_TSEG_SIZE;
 	m_cfg->IedSize = CONFIG_IED_REGION_SIZE;
 	m_cfg->ProbelessTrace = config->ProbelessTrace;
-	m_cfg->EnableTraceHub = config->EnableTraceHub;
 	if (vboot_recovery_mode_enabled())
 		m_cfg->SaGv = 0; /* Disable SaGv in recovery mode. */
 	else
@@ -139,6 +211,7 @@ static void soc_memory_init_params(FSP_M_CONFIG *m_cfg)
 	m_cfg->RMT = config->Rmt;
 	m_cfg->DdrFreqLimit = config->DdrFreqLimit;
 	m_cfg->VmxEnable = config->VmxEnable;
+	m_cfg->PrmrrSize = config->PrmrrSize;
 	for (i = 0; i < ARRAY_SIZE(config->PcieRpEnable); i++) {
 		if (config->PcieRpEnable[i])
 			mask |= (1<<i);
@@ -150,10 +223,15 @@ static void soc_memory_init_params(FSP_M_CONFIG *m_cfg)
 
 void platform_fsp_memory_init_params_cb(FSPM_UPD *mupd, uint32_t version)
 {
+	const struct device *dev;
+	const struct soc_intel_skylake_config *config;
 	FSP_M_CONFIG *m_cfg = &mupd->FspmConfig;
 	FSP_M_TEST_CONFIG *m_t_cfg = &mupd->FspmTestConfig;
 
-	soc_memory_init_params(m_cfg);
+	dev = dev_find_slot(0, PCI_DEVFN(PCH_DEV_SLOT_LPC, 0));
+	config = dev->chip_info;
+
+	soc_memory_init_params(m_cfg, config);
 
 	/* Enable DMI Virtual Channel for ME */
 	m_t_cfg->DmiVcm = 0x01;
@@ -161,6 +239,12 @@ void platform_fsp_memory_init_params_cb(FSPM_UPD *mupd, uint32_t version)
 	/* Enable Sending DID to ME */
 	m_t_cfg->SendDidMsg = 0x01;
 	m_t_cfg->DidInitStat = 0x01;
+
+	/* DCI and TraceHub configs */
+	m_t_cfg->PchDciEn = config->PchDciEn;
+	m_cfg->EnableTraceHub = config->EnableTraceHub;
+	m_cfg->TraceHubMemReg0Size = config->TraceHubMemReg0Size;
+	m_cfg->TraceHubMemReg1Size = config->TraceHubMemReg1Size;
 
 	mainboard_memory_init_params(mupd);
 }

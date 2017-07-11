@@ -22,6 +22,9 @@
 #include <console/post_codes.h>
 #include <commonlib/loglevel.h>
 
+#define RAM_DEBUG (IS_ENABLED(CONFIG_DEBUG_RAM_SETUP) ? BIOS_DEBUG : BIOS_NEVER)
+#define RAM_SPEW  (IS_ENABLED(CONFIG_DEBUG_RAM_SETUP) ? BIOS_SPEW  : BIOS_NEVER)
+
 #ifndef __ROMCC__
 
 void post_code(u8 value);
@@ -42,13 +45,14 @@ void __attribute__ ((noreturn)) die(const char *msg);
 #define __CONSOLE_ENABLE__ \
 	((ENV_BOOTBLOCK && IS_ENABLED(CONFIG_BOOTBLOCK_CONSOLE)) || \
 	(ENV_POSTCAR && IS_ENABLED(CONFIG_POSTCAR_CONSOLE)) || \
-	ENV_VERSTAGE || ENV_ROMSTAGE || ENV_RAMSTAGE || \
+	ENV_VERSTAGE || ENV_ROMSTAGE || ENV_RAMSTAGE || ENV_LIBAGESA || \
 	(ENV_SMM && CONFIG_DEBUG_SMI))
 
 #if __CONSOLE_ENABLE__
 asmlinkage void console_init(void);
 int console_log_level(int msg_level);
-int do_printk(int msg_level, const char *fmt, ...) __attribute__((format(printf, 2, 3)));
+int do_printk(int msg_level, const char *fmt, ...)
+	__attribute__((format(printf, 2, 3)));
 void do_putchar(unsigned char byte);
 
 #define printk(LEVEL, fmt, args...) \

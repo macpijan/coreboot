@@ -28,7 +28,7 @@ uint32_t tlcl_lib_init(void);
  * Perform a raw TPM request/response transaction.
  */
 uint32_t tlcl_send_receive(const uint8_t *request, uint8_t *response,
-                         int max_length);
+			   int max_length);
 
 /* Commands */
 
@@ -127,7 +127,7 @@ uint32_t tlcl_set_deactivated(uint8_t flag);
  * be NULL.  The TPM error code is returned.
  */
 uint32_t tlcl_get_flags(uint8_t *disable, uint8_t *deactivated,
-                        uint8_t *nvlocked);
+			uint8_t *nvlocked);
 
 /**
  * Set the bGlobalLock flag, which only a reboot can clear.  The TPM error
@@ -144,7 +144,7 @@ uint32_t tlcl_lock_nv_write(uint32_t index);
  * Perform a TPM_Extend.
  */
 uint32_t tlcl_extend(int pcr_num, const uint8_t *in_digest,
-                     uint8_t *out_digest);
+		     uint8_t *out_digest);
 
 /**
  * Get the entire set of permanent flags.
@@ -155,5 +155,23 @@ uint32_t tlcl_get_permanent_flags(TPM_PERMANENT_FLAGS *pflags);
  * Disable platform hierarchy. Specific to TPM2. The TPM error code is returned.
  */
 uint32_t tlcl_disable_platform_hierarchy(void);
+
+/**
+ * CR50 specific tpm command to enable nvmem commits before internal timeout
+ * expires.
+ */
+uint32_t tlcl_cr50_enable_nvcommits(void);
+
+/**
+ * CR50 specific tpm command to restore header(s) of the dormant RO/RW
+ * image(s) and in case there indeed was a dormant image, trigger reboot after
+ * the timeout milliseconds. Note that timeout of zero means "NO REBOOT", not
+ * "IMMEDIATE REBOOT".
+ *
+ * Return value indicates success or failure of accessing the TPM; in case of
+ * success the number of restored headers is saved in num_restored_headers.
+ */
+uint32_t tlcl_cr50_enable_update(uint16_t timeout_ms,
+				 uint8_t *num_restored_headers);
 
 #endif  /* TPM_LITE_TLCL_H_ */

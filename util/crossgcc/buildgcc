@@ -18,8 +18,8 @@
 
 cd $(dirname $0)
 
-CROSSGCC_DATE="August 31st, 2016"
-CROSSGCC_VERSION="1.43"
+CROSSGCC_DATE="March 3rd, 2017"
+CROSSGCC_VERSION="1.44"
 CROSSGCC_COMMIT=$( git describe )
 
 # default settings
@@ -35,19 +35,19 @@ BOOTSTRAP=0
 THREADS=1
 
 # GCC toolchain version numbers
-GMP_VERSION=6.1.0
-MPFR_VERSION=3.1.4
+GMP_VERSION=6.1.2
+MPFR_VERSION=3.1.5
 MPC_VERSION=1.0.3
 LIBELF_VERSION=0.8.13
-GCC_VERSION=5.3.0
+GCC_VERSION=6.3.0
 GCC_AUTOCONF_VERSION=2.69
-BINUTILS_VERSION=2.26.1
-GDB_VERSION=7.11
-IASL_VERSION=20160831
+BINUTILS_VERSION=2.28
+GDB_VERSION=7.12
+IASL_VERSION=20161222
 PYTHON_VERSION=3.5.1
 EXPAT_VERSION=2.1.1
 # CLANG version number
-CLANG_VERSION=3.8.0
+CLANG_VERSION=3.9.1
 MAKE_VERSION=4.2.1
 
 # GCC toolchain archive locations
@@ -241,14 +241,12 @@ ada_requested() {
 
 check_gnat() {
 	if hostcc_has_gnat1; then
-		if [ \( "$(hostcc_major)" -lt "$(buildcc_major)" -o \
-			\( "$(hostcc_major)" -eq "$(buildcc_major)" -a \
-			   "$(hostcc_minor)" -lt "$(buildcc_minor)" \) \) \
-			-a \
-			"${BOOTSTRAP}" != "1" ]; \
+		if [ \( "$(hostcc_major)" -lt 4 -o \
+			\( "$(hostcc_major)" -eq 4 -a "$(hostcc_minor)" -lt 9 \) \) -a \
+		     "${BOOTSTRAP}" != "1" ];
 		then
 			printf "\n${RED}ERROR:${red} Building the Ada compiler (gnat $(buildcc_version)) "
-			printf "with an older host compiler\n       version ($(hostcc_version)) "
+			printf "with a host compiler older\n       than 4.9.x (yours $(hostcc_version)) "
 			printf "requires bootstrapping (-b).${NC}\n\n"
 			HALT_FOR_TOOLS=1
 		fi
@@ -401,7 +399,7 @@ build_for_target()
 build()
 {
 	if package_uses_targetarch $1; then
-		if [ $BOOTSTRAP -eq 1 -a ! -f "${DESTDIR}${TARGETDIR}/.GCC.success" ]; then
+		if [ $BOOTSTRAP -eq 1 -a ! -f "${DESTDIR}${TARGETDIR}/.GCC.${GCC_VERSION}.success" ]; then
 			build_for_host GCC
 		fi
 		build_for_target $1
@@ -536,7 +534,7 @@ build_MPFR() {
 
 	# work around build problem of libgmp.la
 	if [ "$DESTDIR" != "" ]; then
-	    perl -pi -e "s,$DESTDIR,," $DESTDIR$TARGETDIR/libgmp.la
+	    perl -pi -e "s,$DESTDIR,," $DESTDIR$TARGETDIR/lib/libgmp.la
 	fi
 }
 
@@ -545,8 +543,19 @@ build_MPC() {
 		--infodir=$TARGETDIR/info --with-mpfr=$DESTDIR$TARGETDIR \
 		--with-gmp=$DESTDIR$TARGETDIR CFLAGS="$HOSTCFLAGS" || \
 		touch .failed
+
+	# work around build problem of libmpfr.la
+	if [ "$DESTDIR" != "" ]; then
+	    perl -pi -e "s,$TARGETDIR/lib/libgmp.la,$DESTDIR\$&," $DESTDIR$TARGETDIR/lib/libmpfr.la
+	fi
+
 	$MAKE $JOBS || touch .failed
 	$MAKE install DESTDIR=$DESTDIR || touch .failed
+
+	# work around build problem of libmpfr.la
+	if [ "$DESTDIR" != "" ]; then
+	    perl -pi -e "s,$DESTDIR,," $DESTDIR$TARGETDIR/lib/libmpfr.la
+	fi
 
 	normalize_dirs
 }
@@ -591,6 +600,7 @@ bootstrap_GCC() {
 		--disable-werror --disable-nls \
 		--disable-shared --disable-multilib \
 		--disable-libssp --disable-libquadmath --disable-libcc1 \
+		--disable-libsanitizer \
 		${GCC_OPTIONS} --enable-languages="${LANGUAGES}" \
 		--with-gmp=$DESTDIR$TARGETDIR --with-mpfr=$DESTDIR$TARGETDIR \
 		--with-mpc=$DESTDIR$TARGETDIR --with-libelf=$DESTDIR$TARGETDIR \
@@ -882,6 +892,7 @@ searchtool g++ "Free Software Foundation" nofail > /dev/null || \
 searchtool clang "clang version" nofail > /dev/null || \
 searchtool clang "LLVM" "" "g++" > /dev/null
 searchtool bzip2 "bzip2," > /dev/null
+searchtool xz "XZ Utils" "" "xz-utils" > /dev/null
 
 if searchtool wget "GNU" nofail > /dev/null; then
 	download_showing_percentage() {
@@ -952,7 +963,9 @@ elif [ $UNAME = "NetBSD" ]; then
 fi
 if [ -z "${LANGUAGES}" ]; then
 	if hostcc_has_gnat1 && \
-		[ "$(hostcc_version)" = "$(buildcc_version)" -o "${BOOTSTRAP}" = "1" ];
+		[ "$(hostcc_major)" -ge 5 -o \
+		  \( "$(hostcc_major)" -eq 4 -a "$(hostcc_minor)" -ge 9 \) -o \
+		  "${BOOTSTRAP}" = "1" ];
 	then
 		printf "\nFound compatible Ada compiler, enabling Ada support by default.\n\n"
 		LANGUAGES="ada,${DEFAULT_LANGUAGES}"

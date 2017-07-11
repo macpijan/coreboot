@@ -186,7 +186,7 @@ verstage-$(CONFIG_C_ENVIRONMENT_BOOTBLOCK) += verstage.c
 
 verstage-$(CONFIG_COLLECT_TIMESTAMPS) += timestamp.c
 
-verstage-libs += $(objgenerated)/libverstage.a
+verstage-libs ?=
 
 $(eval $(call early_x86_assembly_entry_rule,verstage))
 
@@ -334,6 +334,7 @@ ramstage-$(CONFIG_GENERATE_MP_TABLE) += mpspec.c
 ramstage-y += pci_ops_conf1.c
 ramstage-$(CONFIG_MMCONF_SUPPORT) += pci_ops_mmconf.c
 ramstage-$(CONFIG_GENERATE_PIRQ_TABLE) += pirq_routing.c
+ramstage-y += rdrand.c
 ramstage-$(CONFIG_GENERATE_SMBIOS_TABLES) += smbios.c
 ramstage-y += tables.c
 ramstage-$(CONFIG_COOP_MULTITASKING) += thread.c

@@ -1,3 +1,16 @@
+/*
+ * This file is part of the coreboot project.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; version 2 of the License.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ */
+
 #include <arch/early_variables.h>
 #include <console/console.h>
 #include <arch/io.h>
@@ -34,7 +47,8 @@ static unsigned long calibrate_tsc_with_pit(void)
 	 * (interrupt on terminal count mode), binary count,
 	 * load 5 * LATCH count, (LSB and MSB) to begin countdown.
 	 */
-	outb(0xb0, 0x43);			/* binary, mode 0, LSB/MSB, Ch 2 */
+	outb(0xb0, 0x43);	/* binary, mode 0, LSB/MSB, Ch 2 */
+
 	outb(CALIBRATE_INTERVAL	& 0xff, 0x42);	/* LSB of count */
 	outb(CALIBRATE_INTERVAL	>> 8, 0x42);	/* MSB of count */
 
@@ -57,8 +71,8 @@ static unsigned long calibrate_tsc_with_pit(void)
 		/* 64-bit subtract - gcc just messes up with long longs */
 		__asm__("subl %2,%0\n\t"
 			"sbbl %3,%1"
-			:"=a" (end.lo), "=d" (end.hi)
-			:"g" (start.lo), "g" (start.hi),
+			: "=a" (end.lo), "=d" (end.hi)
+			: "g" (start.lo), "g" (start.hi),
 			 "0" (end.lo), "1" (end.hi));
 
 		/* Error: ECPUTOOFAST */
@@ -103,7 +117,7 @@ static inline unsigned long get_clocks_per_usec(void)
 	return car_get_var(clocks_per_usec);
 }
 
-void udelay(unsigned us)
+void udelay(unsigned int us)
 {
 	unsigned long long start;
 	unsigned long long current;

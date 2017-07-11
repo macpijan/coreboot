@@ -19,7 +19,7 @@
 #include <commonlib/cbfs_serialized.h>
 #include <endian.h>
 
-#define CBFS_SUBHEADER(_p) ( (void *) ((((uint8_t *) (_p)) + ntohl((_p)->offset))) )
+#define CBFS_SUBHEADER(_p) ((void *)((((uint8_t *)(_p)) + ntohl((_p)->offset))))
 
 static struct cbfs_file *walkcbfs_head(char *target)
 {
@@ -27,7 +27,8 @@ static struct cbfs_file *walkcbfs_head(char *target)
 	asm volatile (
 		"mov $1f, %%esp\n\t"
 		"jmp walkcbfs_asm\n\t"
-		"1:\n\t" : "=a" (entry) : "S" (target) : "ebx", "ecx", "edi", "esp");
+		"1:\n\t" : "=a" (entry) : "S" (target) : "ebx", "ecx", "edi",
+			"esp");
 	return entry;
 }
 
@@ -41,13 +42,15 @@ static void *walkcbfs(char *target)
 	return (void *)0;
 }
 
-/* just enough to support findstage. copied because the original version doesn't easily pass through romcc */
+/* just enough to support findstage. copied because the original version doesn't
+ * easily pass through romcc
+ */
 struct cbfs_stage_restricted {
 	unsigned long compression;
 	unsigned long entry; // this is really 64bit, but properly endianized
 };
 
-static inline unsigned long findstage(char* target)
+static inline unsigned long findstage(char *target)
 {
 	struct cbfs_stage_restricted *stage = walkcbfs(target);
 	if ((u32)stage != 0)

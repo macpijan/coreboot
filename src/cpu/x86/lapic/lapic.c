@@ -1,3 +1,16 @@
+/*
+ * This file is part of the coreboot project.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; version 2 of the License.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ */
+
 #include <cpu/x86/lapic.h>
 #include <console/console.h>
 #include <cpu/x86/msr.h>
@@ -40,18 +53,18 @@ void setup_lapic(void)
 		(lapic_read_around(LAPIC_LVT0) &
 			~(LAPIC_LVT_MASKED | LAPIC_LVT_LEVEL_TRIGGER |
 				LAPIC_LVT_REMOTE_IRR | LAPIC_INPUT_POLARITY |
-				LAPIC_SEND_PENDING |LAPIC_LVT_RESERVED_1 |
+				LAPIC_SEND_PENDING | LAPIC_LVT_RESERVED_1 |
 				LAPIC_DELIVERY_MODE_MASK))
-		| (LAPIC_LVT_REMOTE_IRR |LAPIC_SEND_PENDING |
+		| (LAPIC_LVT_REMOTE_IRR | LAPIC_SEND_PENDING |
 			LAPIC_DELIVERY_MODE_EXTINT)
 		);
 	lapic_write_around(LAPIC_LVT1,
 		(lapic_read_around(LAPIC_LVT1) &
 			~(LAPIC_LVT_MASKED | LAPIC_LVT_LEVEL_TRIGGER |
 				LAPIC_LVT_REMOTE_IRR | LAPIC_INPUT_POLARITY |
-				LAPIC_SEND_PENDING |LAPIC_LVT_RESERVED_1 |
+				LAPIC_SEND_PENDING | LAPIC_LVT_RESERVED_1 |
 				LAPIC_DELIVERY_MODE_MASK))
-		| (LAPIC_LVT_REMOTE_IRR |LAPIC_SEND_PENDING |
+		| (LAPIC_LVT_REMOTE_IRR | LAPIC_SEND_PENDING |
 			LAPIC_DELIVERY_MODE_NMI)
 		);
 

@@ -21,7 +21,7 @@
 
 /*
  * Timing values are in units of clock period, with the clock speed
- * provided by the SOC in CONFIG_SOC_INTEL_COMMON_LPSS_I2C_CLOCK_MHZ.
+ * provided by the SOC in CONFIG_SOC_INTEL_COMMON_LPSS_CLOCK_MHZ.
  * Automatic configuration is done based on requested speed, but the
  * values may need tuned depending on the board and the number of
  * devices present on the bus.
@@ -61,16 +61,17 @@ struct lpss_i2c_bus_config {
 	 * precedence. */
 	int rise_time_ns;
 	int fall_time_ns;
+	int data_hold_time_ns;
 	/* Specific bus speed configuration */
 	struct lpss_i2c_speed_config speed_config[LPSS_I2C_SPEED_CONFIG_COUNT];
 };
 
-#define LPSS_I2C_SPEED_CONFIG(speedval,lcnt,hcnt,hold)	\
-	{						\
-		.speed = I2C_SPEED_ ## speedval,	\
-		.scl_lcnt = (lcnt),			\
-		.scl_hcnt = (hcnt),			\
-		.sda_hold = (hold),			\
+#define LPSS_I2C_SPEED_CONFIG(speedval, lcnt, hcnt, hold)	\
+	{							\
+		.speed = I2C_SPEED_ ## speedval,		\
+		.scl_lcnt = (lcnt),				\
+		.scl_hcnt = (hcnt),				\
+		.sda_hold = (hold),				\
 	}
 
 /*
@@ -79,13 +80,13 @@ struct lpss_i2c_bus_config {
  * This function *must* be implemented by the SOC and return the appropriate
  * base address for the I2C registers that correspond to the provided bus.
  */
-uintptr_t lpss_i2c_base_address(unsigned bus);
+uintptr_t lpss_i2c_base_address(unsigned int bus);
 
 /*
  * Generate I2C timing information into the SSDT for the OS driver to consume,
  * optionally applying override values provided by the caller.
  */
-void lpss_i2c_acpi_fill_ssdt(unsigned bus,
+void lpss_i2c_acpi_fill_ssdt(unsigned int bus,
 				const struct lpss_i2c_bus_config *bcfg);
 
 /*
@@ -97,6 +98,6 @@ void lpss_i2c_acpi_fill_ssdt(unsigned bus,
  * The SOC *must* define CONFIG_SOC_INTEL_COMMON_LPSS_I2C_CLOCK for the
  * bus speed calculation to be correct.
  */
-int lpss_i2c_init(unsigned bus, const struct lpss_i2c_bus_config *bcfg);
+int lpss_i2c_init(unsigned int bus, const struct lpss_i2c_bus_config *bcfg);
 
 #endif

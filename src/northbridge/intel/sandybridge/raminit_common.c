@@ -189,10 +189,39 @@ void dram_xover(ramctr_timing * ctrl)
 	}
 }
 
-void dram_timing_regs(ramctr_timing * ctrl)
+static void dram_odt_stretch(ramctr_timing *ctrl, int channel)
 {
-	u32 reg, addr, val32, cpu, stretch;
 	struct cpuid_result cpures;
+	u32 reg, addr, cpu, stretch;
+
+	stretch = ctrl->ref_card_offset[channel];
+	/* ODT stretch: Delay ODT signal by stretch value.
+	 * Useful for multi DIMM setups on the same channel. */
+	cpures = cpuid(1);
+	cpu = cpures.eax;
+	if (IS_SANDY_CPU(cpu) && IS_SANDY_CPU_C(cpu)) {
+		if (stretch == 2)
+			stretch = 3;
+		addr = 0x400 * channel + 0x401c;
+		reg = MCHBAR32(addr) & 0xffffc3ff;
+		reg |= (stretch << 12);
+		reg |= (stretch << 10);
+		MCHBAR32(addr) = reg;
+		printram("OTHP Workaround [%x] = %x\n", addr, reg);
+	} else {
+		// OTHP
+		addr = 0x400 * channel + 0x400c;
+		reg = MCHBAR32(addr) & 0xfff0ffff;
+		reg |= (stretch << 16);
+		reg |= (stretch << 18);
+		MCHBAR32(addr) = reg;
+		printram("OTHP [%x] = %x\n", addr, reg);
+	}
+}
+
+void dram_timing_regs(ramctr_timing *ctrl)
+{
+	u32 reg, addr, val32;
 	int channel;
 
 	FOR_ALL_CHANNELS {
@@ -232,52 +261,7 @@ void dram_timing_regs(ramctr_timing * ctrl)
 
 		MCHBAR32(addr) |= 0x00020000;
 
-		// ODT stretch
-		reg = 0;
-
-		cpures = cpuid(1);
-		cpu = cpures.eax;
-		if (IS_IVY_CPU(cpu)
-		    || (IS_SANDY_CPU(cpu) && IS_SANDY_CPU_D2(cpu))) {
-			stretch = 2;
-			addr = 0x400 * channel + 0x400c;
-			printram("ODT stretch [%x] = %x\n",
-			       0x400 * channel + 0x400c, reg);
-			reg = MCHBAR32(addr);
-
-			if (((ctrl->rankmap[channel] & 3) == 0)
-			    || (ctrl->rankmap[channel] & 0xc) == 0) {
-
-				// Rank 0 - operate on rank 2
-				reg = (reg & ~0xc0000) | (stretch << 18);
-
-				// Rank 2 - operate on rank 0
-				reg = (reg & ~0x30000) | (stretch << 16);
-
-				printram("ODT stretch [%x] = %x\n", addr, reg);
-				MCHBAR32(addr) = reg;
-			}
-
-		} else if (IS_SANDY_CPU(cpu) && IS_SANDY_CPU_C(cpu)) {
-			stretch = 3;
-			addr = 0x400 * channel + 0x401c;
-			reg = MCHBAR32(addr);
-
-			if (((ctrl->rankmap[channel] & 3) == 0)
-			    || (ctrl->rankmap[channel] & 0xc) == 0) {
-
-				// Rank 0 - operate on rank 2
-				reg = (reg & ~0x3000) | (stretch << 12);
-
-				// Rank 2 - operate on rank 0
-				reg = (reg & ~0xc00) | (stretch << 10);
-
-				printram("ODT stretch [%x] = %x\n", addr, reg);
-				MCHBAR32(addr) = reg;
-			}
-		} else {
-			stretch = 0;
-		}
+		dram_odt_stretch(ctrl, channel);
 
 		// REFI
 		reg = 0;
@@ -1223,9 +1207,6 @@ static void discover_timA_coarse(ramctr_timing * ctrl, int channel,
 		FOR_ALL_LANES {
 			statistics[lane][timA] =
 			    !does_lane_work(ctrl, channel, slotrank, lane);
-			printram("Astat: %d, %d, %d: %x, %x\n",
-			       channel, slotrank, lane, timA,
-			       statistics[lane][timA]);
 		}
 	}
 	FOR_ALL_LANES {
@@ -1234,10 +1215,8 @@ static void discover_timA_coarse(ramctr_timing * ctrl, int channel,
 		upperA[lane] = rn.end;
 		if (upperA[lane] < rn.middle)
 			upperA[lane] += 128;
-		printram("Aval: %d, %d, %d: %x\n", channel, slotrank,
-		       lane, ctrl->timings[channel][slotrank].lanes[lane].timA);
-		printram("Aend: %d, %d, %d: %x\n", channel, slotrank,
-		       lane, upperA[lane]);
+		printram("timA: %d, %d, %d: 0x%02x-0x%02x-0x%02x\n",
+				 channel, slotrank, lane, rn.start, rn.middle, rn.end);
 	}
 }
 
@@ -1614,9 +1593,6 @@ static int discover_timC(ramctr_timing *ctrl, int channel, int slotrank)
 			statistics[lane][timC] =
 			    read32(DEFAULT_MCHBAR + 0x4340 + 4 * lane +
 				   0x400 * channel);
-			printram("Cstat: %d, %d, %d, %x, %x\n",
-			       channel, slotrank, lane, timC,
-			       statistics[lane][timC]);
 		}
 	}
 	FOR_ALL_LANES {
@@ -1628,8 +1604,8 @@ static int discover_timC(ramctr_timing *ctrl, int channel, int slotrank)
 			       channel, slotrank, lane);
 			return MAKE_ERR;
 		}
-		printram("Cval: %d, %d, %d: %x\n", channel, slotrank,
-		       lane, ctrl->timings[channel][slotrank].lanes[lane].timC);
+		printram("timC: %d, %d, %d: 0x%02x-0x%02x-0x%02x\n",
+				 channel, slotrank, lane, rn.start, rn.middle, rn.end);
 	}
 	return 0;
 }
@@ -1847,9 +1823,6 @@ static int discover_timB(ramctr_timing *ctrl, int channel, int slotrank)
 			       (DEFAULT_MCHBAR + lane_registers[lane] +
 				channel * 0x100 + 4 + ((timB / 32) & 1) * 4)
 			       >> (timB % 32)) & 1);
-			printram("Bstat: %d, %d, %d: %x, %x\n",
-			       channel, slotrank, lane, timB,
-			       statistics[lane][timB]);
 		}
 	}
 	FOR_ALL_LANES {
@@ -1873,8 +1846,8 @@ static int discover_timB(ramctr_timing *ctrl, int channel, int slotrank)
 			       channel, slotrank, lane);
 			return MAKE_ERR;
 		}
-		printram("Bval: %d, %d, %d: %x\n", channel, slotrank,
-		       lane, ctrl->timings[channel][slotrank].lanes[lane].timB);
+		printram("timB: %d, %d, %d: 0x%02x-0x%02x-0x%02x\n",
+				 channel, slotrank, lane, rn.start, rn.middle, rn.end);
 	}
 	return 0;
 }
@@ -2218,7 +2191,6 @@ static int test_320c(ramctr_timing * ctrl, int channel, int slotrank)
 
 	ctrl->timings[channel][slotrank] = saved_rt;
 
-	printram("3lanes: %x\n", lanes_ok);
 	return lanes_ok != ((1 << NUM_LANES) - 1);
 }
 
@@ -2355,9 +2327,6 @@ static int try_cmd_stretch(ramctr_timing *ctrl, int channel, int cmd_stretch)
 		FOR_ALL_POPULATED_RANKS {
 			stat[slotrank][c320c + 127] =
 					test_320c(ctrl, channel, slotrank);
-			printram("3stat: %d, %d, %d: %x\n",
-					 channel, slotrank, c320c,
-					 stat[slotrank][c320c + 127]);
 		}
 	}
 	FOR_ALL_POPULATED_RANKS {
@@ -2365,9 +2334,8 @@ static int try_cmd_stretch(ramctr_timing *ctrl, int channel, int cmd_stretch)
 			get_longest_zero_run(stat[slotrank], 255);
 		ctrl->timings[channel][slotrank].val_320c =
 			rn.middle - 127;
-		printram("3val %d, %d: %d\n", channel,
-				 slotrank,
-				 ctrl->timings[channel][slotrank].val_320c);
+		printram("cmd_stretch: %d, %d: 0x%02x-0x%02x-0x%02x\n",
+				 channel, slotrank, rn.start, rn.middle, rn.end);
 		if (rn.all || rn.length < MIN_C320C_LEN) {
 			FOR_ALL_POPULATED_RANKS {
 				ctrl->timings[channel][slotrank] =
@@ -3023,15 +2991,22 @@ int discover_timC_write(ramctr_timing *ctrl)
 void normalize_training(ramctr_timing * ctrl)
 {
 	int channel, slotrank, lane;
-	int mat = 0;
+	int mat;
 
 	FOR_ALL_CHANNELS FOR_ALL_POPULATED_RANKS {
 		int delta;
+		mat = 0;
 		FOR_ALL_LANES mat =
 		    max(ctrl->timings[channel][slotrank].lanes[lane].timA, mat);
-		 delta = (mat >> 6) - ctrl->timings[channel][slotrank].val_4028;
-		 ctrl->timings[channel][slotrank].val_4024 += delta;
-		 ctrl->timings[channel][slotrank].val_4028 += delta;
+		printram("normalize %d, %d, %d: mat %d\n",
+		    channel, slotrank, lane, mat);
+
+		delta = (mat >> 6) - ctrl->timings[channel][slotrank].val_4028;
+		printram("normalize %d, %d, %d: delta %d\n",
+		    channel, slotrank, lane, delta);
+
+		ctrl->timings[channel][slotrank].val_4024 += delta;
+		ctrl->timings[channel][slotrank].val_4028 += delta;
 	}
 
 	FOR_ALL_POPULATED_CHANNELS {
@@ -3164,7 +3139,7 @@ void prepare_training(ramctr_timing * ctrl)
 void set_4008c(ramctr_timing * ctrl)
 {
 	int channel, slotrank;
-	u32 reg;
+
 	FOR_ALL_POPULATED_CHANNELS {
 		u32 b20, b4_8_12;
 		int min_320c = 10000;
@@ -3185,11 +3160,8 @@ void set_4008c(ramctr_timing * ctrl)
 		else
 			b4_8_12 = 0x2220;
 
-		reg = read32(DEFAULT_MCHBAR + 0x400c + (channel << 10));
-		write32(DEFAULT_MCHBAR + 0x400c + (channel << 10),
-			(reg & 0xFFF0FFFF)
-			| (ctrl->ref_card_offset[channel] << 16)
-			| (ctrl->ref_card_offset[channel] << 18));
+		dram_odt_stretch(ctrl, channel);
+
 		write32(DEFAULT_MCHBAR + 0x4008 + (channel << 10),
 			0x0a000000
 			| (b20 << 20)

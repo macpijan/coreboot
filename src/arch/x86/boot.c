@@ -24,13 +24,13 @@ static void jmp_payload_no_bounce_buffer(void *entry)
 {
 	/* Jump to kernel */
 	__asm__ __volatile__(
-		"	cld	\n\t"
+		"	cld\n\t"
 		/* Now jump to the loaded image */
 		"	call	*%0\n\t"
 
 		/* The loaded image returned? */
-		"	cli	\n\t"
-		"	cld	\n\t"
+		"	cli\n\t"
+		"	cld\n\t"
 
 		::
 		"r" (entry)
@@ -51,7 +51,7 @@ static void jmp_payload(void *entry, unsigned long buffer, unsigned long size)
 
 	/* Jump to kernel */
 	__asm__ __volatile__(
-		"	cld	\n\t"
+		"	cld\n\t"
 #ifdef __x86_64__
 		/* switch back to 32-bit mode */
 		"       push    %4\n\t"
@@ -132,13 +132,17 @@ static void jmp_payload(void *entry, unsigned long buffer, unsigned long size)
 		"	shrl	$2, %%ecx\n\t"
 		"	rep	movsl\n\t"
 
-		/* Adjust the stack pointer to point into the new coreboot image */
+		/* Adjust the stack pointer to point into the new coreboot
+		 * image
+		 */
 		"	addl	20(%%esp), %%esp\n\t"
-		/* Adjust the instruction pointer to point into the new coreboot image */
+		/* Adjust the instruction pointer to point into the new coreboot
+		 * image
+		 */
 		"	movl	$1f, %%eax\n\t"
 		"	addl	20(%%esp), %%eax\n\t"
 		"	jmp	*%%eax\n\t"
-		"1:	\n\t"
+		"1:\n\t"
 
 		/* Copy the coreboot bounce buffer over coreboot */
 		/* Move ``longs'' the coreboot size is 4 byte aligned */
@@ -154,8 +158,8 @@ static void jmp_payload(void *entry, unsigned long buffer, unsigned long size)
 		"	call	*4(%%esp)\n\t"
 
 		/* The loaded image returned? */
-		"	cli	\n\t"
-		"	cld	\n\t"
+		"	cli\n\t"
+		"	cld\n\t"
 
 		/* Copy the saved copy of coreboot where coreboot runs */
 		/* Move ``longs'' the coreboot size is 4 byte aligned */
@@ -166,14 +170,18 @@ static void jmp_payload(void *entry, unsigned long buffer, unsigned long size)
 		"	shrl	$2, %%ecx\n\t"
 		"	rep	movsl\n\t"
 
-		/* Adjust the stack pointer to point into the old coreboot image */
+		/* Adjust the stack pointer to point into the old coreboot
+		 * image
+		 */
 		"	subl	20(%%esp), %%esp\n\t"
 
-		/* Adjust the instruction pointer to point into the old coreboot image */
+		/* Adjust the instruction pointer to point into the old coreboot
+		 * image
+		 */
 		"	movl	$1f, %%eax\n\t"
 		"	subl	20(%%esp), %%eax\n\t"
 		"	jmp	*%%eax\n\t"
-		"1:	\n\t"
+		"1:\n\t"
 
 		/* Drop the parameters I was passed */
 		"	addl	$24, %%esp\n\t"

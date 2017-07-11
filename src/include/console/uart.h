@@ -55,14 +55,23 @@ static inline void *uart_platform_baseptr(int idx)
 
 void oxford_remap(unsigned int new_base);
 
-#define __CONSOLE_SERIAL_ENABLE__	CONFIG_CONSOLE_SERIAL && \
+#define __CONSOLE_SERIAL_ENABLE__	(CONFIG_CONSOLE_SERIAL && \
 	(ENV_BOOTBLOCK || ENV_ROMSTAGE || ENV_RAMSTAGE || ENV_VERSTAGE || \
-	ENV_POSTCAR || (ENV_SMM && CONFIG_DEBUG_SMI))
+	ENV_POSTCAR || (ENV_SMM && CONFIG_DEBUG_SMI)))
 
 #if __CONSOLE_SERIAL_ENABLE__
-static inline void __uart_init(void)		{ uart_init(CONFIG_UART_FOR_CONSOLE); }
-static inline void __uart_tx_byte(u8 data)	{ uart_tx_byte(CONFIG_UART_FOR_CONSOLE, data); }
-static inline void __uart_tx_flush(void)	{ uart_tx_flush(CONFIG_UART_FOR_CONSOLE); }
+static inline void __uart_init(void)
+{
+	uart_init(CONFIG_UART_FOR_CONSOLE);
+}
+static inline void __uart_tx_byte(u8 data)
+{
+	uart_tx_byte(CONFIG_UART_FOR_CONSOLE, data);
+}
+static inline void __uart_tx_flush(void)
+{
+	uart_tx_flush(CONFIG_UART_FOR_CONSOLE);
+}
 #else
 static inline void __uart_init(void)		{}
 static inline void __uart_tx_byte(u8 data)	{}
@@ -70,11 +79,17 @@ static inline void __uart_tx_flush(void)	{}
 #endif
 
 #if CONFIG_GDB_STUB && (ENV_ROMSTAGE || ENV_RAMSTAGE)
-#define CONFIG_UART_FOR_GDB 	CONFIG_UART_FOR_CONSOLE
+#define CONFIG_UART_FOR_GDB	CONFIG_UART_FOR_CONSOLE
 static inline void __gdb_hw_init(void)	{ uart_init(CONFIG_UART_FOR_GDB); }
-static inline void __gdb_tx_byte(u8 data)	{ uart_tx_byte(CONFIG_UART_FOR_GDB, data); }
+static inline void __gdb_tx_byte(u8 data)
+{
+	uart_tx_byte(CONFIG_UART_FOR_GDB, data);
+}
 static inline void __gdb_tx_flush(void)	{ uart_tx_flush(CONFIG_UART_FOR_GDB); }
-static inline u8 __gdb_rx_byte(void)		{ return uart_rx_byte(CONFIG_UART_FOR_GDB); }
+static inline u8 __gdb_rx_byte(void)
+{
+	return uart_rx_byte(CONFIG_UART_FOR_GDB);
+}
 #endif
 
 #endif /* __ROMCC__ */

@@ -31,10 +31,13 @@
 #include <console/console.h>
 #include <southbridge/intel/i82801ix/i82801ix.h>
 #include <northbridge/intel/gm45/gm45.h>
+#include "dock.h"
 #include "gpio.h"
 
 #define LPC_DEV PCI_DEV(0, 0x1f, 0)
 #define MCH_DEV PCI_DEV(0, 0, 0)
+
+void hybrid_graphics_init(sysinfo_t *sysinfo);
 
 static void early_lpc_setup(void)
 {
@@ -66,6 +69,9 @@ void mainboard_romstage_entry(unsigned long bist)
 	/* First, run everything needed for console output. */
 	i82801ix_early_init();
 	early_lpc_setup();
+
+	dock_connect();
+
 	console_init();
 	printk(BIOS_DEBUG, "running main(bist = %lu)\n", bist);
 
@@ -101,9 +107,13 @@ void mainboard_romstage_entry(unsigned long bist)
 	memset(&sysinfo, 0, sizeof(sysinfo));
 	sysinfo.spd_map[0] = 0x50;
 	sysinfo.spd_map[2] = 0x51;
-	sysinfo.enable_igd = 1;
-	sysinfo.enable_peg = 0;
 	get_gmch_info(&sysinfo);
+
+	/* Configure graphic GPIOs.
+	* Make sure there's a little delay between
+	* setup_pch_gpios() and this call ! */
+	hybrid_graphics_init(&sysinfo);
+
 	raminit(&sysinfo, s3resume);
 
 	const u32 deven = pci_read_config32(MCH_DEV, D0F0_DEVEN);

@@ -135,7 +135,7 @@ static int relocate_segment(unsigned long buffer, struct segment *seg)
 		return 0;
 
 	if (!arch_supports_bounce_buffer())
-		die ("bounce buffer not supported");
+		die("bounce buffer not supported");
 
 	start = seg->s_dstaddr;
 	middle = start + seg->s_filesz;
@@ -170,7 +170,8 @@ static int relocate_segment(unsigned long buffer, struct segment *seg)
 			/* compute the new value of start */
 			start = seg->s_dstaddr;
 
-			printk(BIOS_SPEW, "   early: [0x%016lx, 0x%016lx, 0x%016lx)\n",
+			printk(BIOS_SPEW,
+				"   early: [0x%016lx, 0x%016lx, 0x%016lx)\n",
 				new->s_dstaddr,
 				new->s_dstaddr + new->s_filesz,
 				new->s_dstaddr + new->s_memsz);
@@ -199,7 +200,8 @@ static int relocate_segment(unsigned long buffer, struct segment *seg)
 			/* Order by stream offset */
 			segment_insert_after(seg, new);
 
-			printk(BIOS_SPEW, "   late: [0x%016lx, 0x%016lx, 0x%016lx)\n",
+			printk(BIOS_SPEW,
+				"   late: [0x%016lx, 0x%016lx, 0x%016lx)\n",
 				new->s_dstaddr,
 				new->s_dstaddr + new->s_filesz,
 				new->s_dstaddr + new->s_memsz);
@@ -274,8 +276,10 @@ static int build_self_segment_list(
 				+ segment.offset;
 			new->s_filesz = segment.len;
 
-			printk(BIOS_DEBUG, "  New segment dstaddr 0x%lx memsize 0x%lx srcaddr 0x%lx filesize 0x%lx\n",
-				new->s_dstaddr, new->s_memsz, new->s_srcaddr, new->s_filesz);
+			printk(BIOS_DEBUG,
+				"  New segment dstaddr 0x%lx memsize 0x%lx srcaddr 0x%lx filesize 0x%lx\n",
+				new->s_dstaddr, new->s_memsz, new->s_srcaddr,
+				new->s_filesz);
 
 			/* Clean up the values */
 			if (new->s_filesz > new->s_memsz)  {
@@ -369,7 +373,7 @@ static int load_self_segments(struct segment *head, struct prog *payload,
 			return 0;
 	}
 
-	for(ptr = head->next; ptr != head; ptr = ptr->next) {
+	for (ptr = head->next; ptr != head; ptr = ptr->next) {
 		/*
 		 * Add segments to bootmem memory map before a bounce buffer is
 		 * allocated so that there aren't conflicts with the actual
@@ -391,20 +395,23 @@ static int load_self_segments(struct segment *head, struct prog *payload,
 		return 0;
 	}
 
-	for(ptr = head->next; ptr != head; ptr = ptr->next) {
+	for (ptr = head->next; ptr != head; ptr = ptr->next) {
 		unsigned char *dest, *src, *middle, *end;
 		size_t len, memsz;
-		printk(BIOS_DEBUG, "Loading Segment: addr: 0x%016lx memsz: 0x%016lx filesz: 0x%016lx\n",
+		printk(BIOS_DEBUG,
+			"Loading Segment: addr: 0x%016lx memsz: 0x%016lx filesz: 0x%016lx\n",
 			ptr->s_dstaddr, ptr->s_memsz, ptr->s_filesz);
 
-		/* Modify the segment to load onto the bounce_buffer if necessary.
+		/* Modify the segment to load onto the bounce_buffer if
+		 * necessary.
 		 */
 		if (relocate_segment(bounce_buffer, ptr)) {
 			ptr = (ptr->prev)->prev;
 			continue;
 		}
 
-		printk(BIOS_DEBUG, "Post relocation: addr: 0x%016lx memsz: 0x%016lx filesz: 0x%016lx\n",
+		printk(BIOS_DEBUG,
+			"Post relocation: addr: 0x%016lx memsz: 0x%016lx filesz: 0x%016lx\n",
 			ptr->s_dstaddr, ptr->s_memsz, ptr->s_filesz);
 
 		/* Compute the boundaries of the segment */
@@ -415,33 +422,34 @@ static int load_self_segments(struct segment *head, struct prog *payload,
 		end = dest + memsz;
 
 		/* Copy data from the initial buffer */
-		switch(ptr->compression) {
-			case CBFS_COMPRESS_LZMA: {
-				printk(BIOS_DEBUG, "using LZMA\n");
-				timestamp_add_now(TS_START_ULZMA);
-				len = ulzman(src, len, dest, memsz);
-				timestamp_add_now(TS_END_ULZMA);
-				if (!len) /* Decompression Error. */
-					return 0;
-				break;
-			}
-			case CBFS_COMPRESS_LZ4: {
-				printk(BIOS_DEBUG, "using LZ4\n");
-				timestamp_add_now(TS_START_ULZ4F);
-				len = ulz4fn(src, len, dest, memsz);
-				timestamp_add_now(TS_END_ULZ4F);
-				if (!len) /* Decompression Error. */
-					return 0;
-				break;
-			}
-			case CBFS_COMPRESS_NONE: {
-				printk(BIOS_DEBUG, "it's not compressed!\n");
-				memcpy(dest, src, len);
-				break;
-			}
-			default:
-				printk(BIOS_INFO,  "CBFS:  Unknown compression type %d\n", ptr->compression);
-				return -1;
+		switch (ptr->compression) {
+		case CBFS_COMPRESS_LZMA: {
+			printk(BIOS_DEBUG, "using LZMA\n");
+			timestamp_add_now(TS_START_ULZMA);
+			len = ulzman(src, len, dest, memsz);
+			timestamp_add_now(TS_END_ULZMA);
+			if (!len) /* Decompression Error. */
+				return 0;
+			break;
+		}
+		case CBFS_COMPRESS_LZ4: {
+			printk(BIOS_DEBUG, "using LZ4\n");
+			timestamp_add_now(TS_START_ULZ4F);
+			len = ulz4fn(src, len, dest, memsz);
+			timestamp_add_now(TS_END_ULZ4F);
+			if (!len) /* Decompression Error. */
+				return 0;
+			break;
+		}
+		case CBFS_COMPRESS_NONE: {
+			printk(BIOS_DEBUG, "it's not compressed!\n");
+			memcpy(dest, src, len);
+			break;
+		}
+		default:
+			printk(BIOS_INFO,  "CBFS:  Unknown compression type %d\n",
+				ptr->compression);
+			return -1;
 		}
 		/* Calculate middle after any changes to len. */
 		middle = dest + len;
@@ -453,29 +461,43 @@ static int load_self_segments(struct segment *head, struct prog *payload,
 
 		/* Zero the extra bytes between middle & end */
 		if (middle < end) {
-			printk(BIOS_DEBUG, "Clearing Segment: addr: 0x%016lx memsz: 0x%016lx\n",
-				(unsigned long)middle, (unsigned long)(end - middle));
+			printk(BIOS_DEBUG,
+				"Clearing Segment: addr: 0x%016lx memsz: 0x%016lx\n",
+				(unsigned long)middle,
+				(unsigned long)(end - middle));
 
 			/* Zero the extra bytes */
 			memset(middle, 0, end - middle);
 		}
 
-		/* Copy the data that's outside the area that shadows ramstage */
-		printk(BIOS_DEBUG, "dest %p, end %p, bouncebuffer %lx\n", dest, end, bounce_buffer);
+		/* Copy the data that's outside the area that shadows ramstage
+		 */
+		printk(BIOS_DEBUG, "dest %p, end %p, bouncebuffer %lx\n", dest,
+			end, bounce_buffer);
 		if ((unsigned long)end > bounce_buffer) {
 			if ((unsigned long)dest < bounce_buffer) {
 				unsigned char *from = dest;
-				unsigned char *to = (unsigned char*)(lb_start-(bounce_buffer-(unsigned long)dest));
-				unsigned long amount = bounce_buffer-(unsigned long)dest;
-				printk(BIOS_DEBUG, "move prefix around: from %p, to %p, amount: %lx\n", from, to, amount);
+				unsigned char *to = (unsigned char *)
+					(lb_start - (bounce_buffer
+					- (unsigned long)dest));
+				unsigned long amount = bounce_buffer
+					- (unsigned long)dest;
+				printk(BIOS_DEBUG,
+					"move prefix around: from %p, to %p, amount: %lx\n",
+					from, to, amount);
 				memcpy(to, from, amount);
 			}
-			if ((unsigned long)end > bounce_buffer + (lb_end - lb_start)) {
-				unsigned long from = bounce_buffer + (lb_end - lb_start);
+			if ((unsigned long)end > bounce_buffer + (lb_end
+				- lb_start)) {
+				unsigned long from = bounce_buffer + (lb_end
+					- lb_start);
 				unsigned long to = lb_end;
-				unsigned long amount = (unsigned long)end - from;
-				printk(BIOS_DEBUG, "move suffix around: from %lx, to %lx, amount: %lx\n", from, to, amount);
-				memcpy((char*)to, (char*)from, amount);
+				unsigned long amount =
+					(unsigned long)end - from;
+				printk(BIOS_DEBUG,
+					"move suffix around: from %lx, to %lx, amount: %lx\n",
+						from, to, amount);
+				memcpy((char *)to, (char *)from, amount);
 			}
 		}
 

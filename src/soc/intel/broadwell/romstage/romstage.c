@@ -19,6 +19,7 @@
 #include <arch/io.h>
 #include <arch/cbfs.h>
 #include <arch/early_variables.h>
+#include <bootmode.h>
 #include <console/console.h>
 #include <cbfs.h>
 #include <cbmem.h>
@@ -35,11 +36,10 @@
 #include <soc/reset.h>
 #include <soc/romstage.h>
 #include <soc/spi.h>
-#include <vendorcode/google/chromeos/chromeos.h>
 
 /* Entry from cache-as-ram.inc. */
-void * asmlinkage romstage_main(unsigned long bist,
-                                uint32_t tsc_low, uint32_t tsc_hi)
+asmlinkage void *romstage_main(unsigned long bist,
+				uint32_t tsc_low, uint32_t tsc_hi)
 {
 	struct romstage_params rp = {
 		.bist = bist,
@@ -79,10 +79,6 @@ void * asmlinkage romstage_main(unsigned long bist,
 	/* Call into mainboard. */
 	mainboard_romstage_entry(&rp);
 
-#if CONFIG_CHROMEOS
-	save_chromeos_gpios();
-#endif
-
 	return setup_stack_and_mttrs();
 }
 
@@ -119,18 +115,19 @@ void romstage_common(struct romstage_params *params)
 #endif
 }
 
-void asmlinkage romstage_after_car(void)
+asmlinkage void romstage_after_car(void)
 {
 	/* Load the ramstage. */
 	run_ramstage();
-	while (1);
+	while (1)
+		;
 }
 
 int get_sw_write_protect_state(void)
 {
 	u8 status;
 	/* Return unprotected status if status read fails. */
-	return (early_spi_read_wpsr(&status) ? 0 : !!(status & 0x80));
+	return early_spi_read_wpsr(&status) ? 0 : !!(status & 0x80);
 }
 
 void __attribute__((weak)) mainboard_pre_console_init(void) {}

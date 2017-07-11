@@ -16,7 +16,7 @@ void *memset(void *s, int c, size_t n);
 int memcmp(const void *s1, const void *s2, size_t n);
 void *memchr(const void *s, int c, size_t n);
 #if !defined(__ROMCC__)
-int snprintf(char * buf, size_t size, const char *fmt, ...);
+int snprintf(char *buf, size_t size, const char *fmt, ...);
 #endif
 
 // simple string functions
@@ -24,18 +24,16 @@ int snprintf(char * buf, size_t size, const char *fmt, ...);
 static inline size_t strnlen(const char *src, size_t max)
 {
 	size_t i = 0;
-	while ((*src++) && (i < max)) {
+	while ((*src++) && (i < max))
 		i++;
-	}
 	return i;
 }
 
 static inline size_t strlen(const char *src)
 {
 	size_t i = 0;
-	while (*src++) {
+	while (*src++)
 		i++;
-	}
 	return i;
 }
 
@@ -71,10 +69,13 @@ static inline char *strconcat(const char *s1, const char *s2)
 static inline char *strncpy(char *to, const char *from, int count)
 {
 	register char *ret = to;
+	register char data;
 
 	while (count > 0) {
 		count--;
-		if ((*to++ = *from++) == '\0')
+		data = *from++;
+		*to++  = data;
+		if (data == '\0')
 			break;
 	}
 

@@ -53,7 +53,7 @@ int intel_ht_sibling(void)
 
 void intel_sibling_init(struct device *cpu)
 {
-	unsigned i, siblings;
+	unsigned int i, siblings;
 	struct cpuid_result result;
 
 	/* On the bootstrap processor see if I want sibling cpus enabled */
@@ -63,24 +63,22 @@ void intel_sibling_init(struct device *cpu)
 	}
 	result = cpuid(1);
 	/* Is hyperthreading supported */
-	if (!(result.edx & (1 << 28))) {
+	if (!(result.edx & (1 << 28)))
 		return;
-	}
+
 	/* See how many sibling cpus we have */
 	siblings = (result.ebx >> 16) & 0xff;
-	if (siblings < 1) {
+	if (siblings < 1)
 		siblings = 1;
-	}
 
 	printk(BIOS_DEBUG, "CPU: %u %d siblings\n",
 		cpu->path.apic.apic_id,
 		siblings);
 
 	/* See if I am a sibling cpu */
-	if (cpu->path.apic.apic_id & (siblings -1)) {
-		if (disable_siblings) {
+	if (cpu->path.apic.apic_id & (siblings - 1)) {
+		if (disable_siblings)
 			cpu->enabled = 0;
-		}
 		return;
 	}
 
@@ -98,9 +96,8 @@ void intel_sibling_init(struct device *cpu)
 		 */
 		new = alloc_find_dev(cpu->bus, &cpu_path);
 
-		if (!new) {
+		if (!new)
 			continue;
-		}
 
 		printk(BIOS_DEBUG, "CPU: %u has sibling %u\n",
 			cpu->path.apic.apic_id,

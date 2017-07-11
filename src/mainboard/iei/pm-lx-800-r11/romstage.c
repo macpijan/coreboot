@@ -23,7 +23,6 @@
 #include <console/console.h>
 #include <cpu/x86/bist.h>
 #include <cpu/x86/msr.h>
-#include <cpu/amd/car.h>
 #include <cpu/amd/lxdef.h>
 #include <southbridge/amd/cs5536/cs5536.h>
 #include <southbridge/amd/cs5536/early_smbus.c>
@@ -49,7 +48,7 @@ int spd_read_byte(unsigned int device, unsigned int address)
 #include <cpu/amd/geode_lx/syspreinit.c>
 #include <cpu/amd/geode_lx/msrinit.c>
 
-void main(unsigned long bist)
+void asmlinkage mainboard_romstage_entry(unsigned long bist)
 {
 	static const struct mem_controller memctrl[] = {
 		{.channel0 = {DIMM0, DIMM1}}

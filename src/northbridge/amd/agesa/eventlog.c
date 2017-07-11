@@ -15,12 +15,46 @@
 #include <stdint.h>
 #include <string.h>
 
-#include <northbridge/amd/agesa/agesawrapper.h>
+#include <northbridge/amd/agesa/state_machine.h>
 #include <northbridge/amd/agesa/BiosCallOuts.h>
 #include "amdlib.h"
 #include "AGESA.h"
 #include "AMD.h"
 
+#include <heapManager.h>
+
+static const char undefined[] = "undefined";
+
+/* Match order of enum AGESA_STRUCT_NAME. */
+static const char *AgesaFunctionNameStr[] = {
+	"AmdInitRecovery", "AmdCreateStruct", "AmdInitEarly", "AmdInitEnv", "AmdInitLate",
+	"AmdInitMid", "AmdInitPost", "AmdInitReset", "AmdInitResume", "AmdReleaseStruct",
+	"AmdS3LateRestore","AmdS3Save", "AmdGetApicId", "AmdGetPciAddress", "AmdIdentifyCore",
+	"AmdReadEventLog", "AmdGetAvailableExeCacheSize", "AmdLateRunApTask", "AmdIdentifyDimm",
+};
+
+/* heapManager.h */
+static const char *HeapStatusStr[] = {
+	"DoNotExistYet", "LocalCache", "TempMem", "SystemMem", "DoNotExistAnymore","S3Resume"
+};
+
+const char *agesa_struct_name(int state)
+{
+	if ((state < AMD_INIT_RECOVERY) || (state > AMD_IDENTIFY_DIMMS))
+		return undefined;
+
+	int index = state - AMD_INIT_RECOVERY;
+	return AgesaFunctionNameStr[index];
+}
+
+const char *heap_status_name(int status)
+{
+	if ((status < HEAP_DO_NOT_EXIST_YET) || (status > HEAP_S3_RESUME))
+		return undefined;
+
+	int index = status - HEAP_DO_NOT_EXIST_YET;
+	return HeapStatusStr[index];
+}
 
 /*
  * Possible AGESA_STATUS values:
@@ -707,6 +741,7 @@ static void interpret_agesa_eventlog(EVENT_PARAMS *event)
 
 static void amd_readeventlog(AMD_CONFIG_PARAMS *StdHeader)
 {
+	AGESA_STATUS status;
 	EVENT_PARAMS AmdEventParams;
 
 	memset(&AmdEventParams, 0, sizeof(EVENT_PARAMS));
@@ -717,8 +752,8 @@ static void amd_readeventlog(AMD_CONFIG_PARAMS *StdHeader)
 	AmdEventParams.StdHeader.ImageBasePtr = 0;
 	AmdEventParams.StdHeader.HeapStatus = StdHeader->HeapStatus;
 
-	AmdReadEventLog(&AmdEventParams);
-	while (AmdEventParams.EventClass != 0) {
+	status = AmdReadEventLog(&AmdEventParams);
+	while ((status == AGESA_SUCCESS) && (AmdEventParams.EventClass != 0)) {
 		printk(BIOS_DEBUG,"\nEventLog:  EventClass = %x, EventInfo = %x.\n",
 				(unsigned int)AmdEventParams.EventClass,
 				(unsigned int)AmdEventParams.EventInfo);
@@ -728,7 +763,7 @@ static void amd_readeventlog(AMD_CONFIG_PARAMS *StdHeader)
 		printk(BIOS_DEBUG,"  Param3 = %x, Param4 = %x.\n",
 				(unsigned int)AmdEventParams.DataParam3,
 				(unsigned int)AmdEventParams.DataParam4);
-		AmdReadEventLog(&AmdEventParams);
+		status = AmdReadEventLog(&AmdEventParams);
 	}
 }
 

@@ -1,7 +1,8 @@
 /*
  * This file is part of the coreboot project.
  *
- * Copyright (C) 2015 Timothy Pearson <tpearson@raptorengineeringinc.com>, Raptor Engineering
+ * Copyright (C) 2015 Timothy Pearson <tpearson@raptorengineeringinc.com>,
+ * Raptor Engineering
  * Copyright (C) 2009 Rudolf Marek <r.marek@assembler.cz>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -204,9 +205,8 @@ void acpigen_write_name_string(const char *name, const char *string)
 void acpigen_emit_stream(const char *data, int size)
 {
 	int i;
-	for (i = 0; i < size; i++) {
+	for (i = 0; i < size; i++)
 		acpigen_emit_byte(data[i]);
-	}
 }
 
 void acpigen_emit_string(const char *string)
@@ -238,26 +238,28 @@ void acpigen_write_coreboot_hid(enum coreboot_acpi_ids id)
  * Check sections 5.3, 18.2.2 and 18.4 of ACPI spec 3.0 for details.
  */
 
-static void acpigen_emit_simple_namestring(const char *name) {
+static void acpigen_emit_simple_namestring(const char *name)
+{
 	int i;
 	char ud[] = "____";
 	for (i = 0; i < 4; i++) {
 		if ((name[i] == '\0') || (name[i] == '.')) {
 			acpigen_emit_stream(ud, 4 - i);
 			break;
-		} else {
-			acpigen_emit_byte(name[i]);
 		}
+		acpigen_emit_byte(name[i]);
 	}
 }
 
-static void acpigen_emit_double_namestring(const char *name, int dotpos) {
+static void acpigen_emit_double_namestring(const char *name, int dotpos)
+{
 	acpigen_emit_byte(DUAL_NAME_PREFIX);
 	acpigen_emit_simple_namestring(name);
 	acpigen_emit_simple_namestring(&name[dotpos + 1]);
 }
 
-static void acpigen_emit_multi_namestring(const char *name) {
+static void acpigen_emit_multi_namestring(const char *name)
+{
 	int count = 0;
 	unsigned char *pathlen;
 	acpigen_emit_byte(MULTI_NAME_PREFIX);
@@ -279,7 +281,8 @@ static void acpigen_emit_multi_namestring(const char *name) {
 }
 
 
-void acpigen_emit_namestring(const char *namepath) {
+void acpigen_emit_namestring(const char *namepath)
+{
 	int dotcount = 0, i;
 	int dotpos = 0;
 
@@ -311,13 +314,12 @@ void acpigen_emit_namestring(const char *namepath) {
 		i++;
 	}
 
-	if (dotcount == 0) {
+	if (dotcount == 0)
 		acpigen_emit_simple_namestring(namepath);
-	} else if (dotcount == 1) {
+	else if (dotcount == 1)
 		acpigen_emit_double_namestring(namepath, dotpos);
-	} else {
+	else
 		acpigen_emit_multi_namestring(namepath);
-	}
 }
 
 void acpigen_write_name(const char *name)
@@ -492,12 +494,18 @@ void acpigen_write_empty_PCT(void)
 	})
 */
 	static char stream[] = {
-		0x08, 0x5F, 0x50, 0x43, 0x54, 0x12, 0x2C,	/* 00000030    "0._PCT.," */
-		0x02, 0x11, 0x14, 0x0A, 0x11, 0x82, 0x0C, 0x00,	/* 00000038    "........" */
-		0x7F, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,	/* 00000040    "........" */
-		0x00, 0x00, 0x00, 0x00, 0x79, 0x00, 0x11, 0x14,	/* 00000048    "....y..." */
-		0x0A, 0x11, 0x82, 0x0C, 0x00, 0x7F, 0x00, 0x00,	/* 00000050    "........" */
-		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,	/* 00000058    "........" */
+		/* 00000030    "0._PCT.," */
+		0x08, 0x5F, 0x50, 0x43, 0x54, 0x12, 0x2C,
+		/* 00000038    "........" */
+		0x02, 0x11, 0x14, 0x0A, 0x11, 0x82, 0x0C, 0x00,
+		/* 00000040    "........" */
+		0x7F, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		/* 00000048    "....y..." */
+		0x00, 0x00, 0x00, 0x00, 0x79, 0x00, 0x11, 0x14,
+		/* 00000050    "........" */
+		0x0A, 0x11, 0x82, 0x0C, 0x00, 0x7F, 0x00, 0x00,
+		/* 00000058    "........" */
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 		0x00, 0x79, 0x00
 	};
 	acpigen_emit_stream(stream, ARRAY_SIZE(stream));
@@ -711,7 +719,8 @@ void acpigen_write_CST_package(acpi_cstate_t *cstate, int nentries)
 	acpigen_pop_len();
 }
 
-void acpigen_write_CSD_package(u32 domain, u32 numprocs, CSD_coord coordtype, u32 index)
+void acpigen_write_CSD_package(u32 domain, u32 numprocs, CSD_coord coordtype,
+	u32 index)
 {
 	acpigen_write_name("_CSD");
 	acpigen_write_package(1);
@@ -853,6 +862,8 @@ void acpigen_write_resourcetemplate_header(void)
 	acpigen_write_len_f();
 	acpigen_emit_byte(WORD_PREFIX);
 	len_stack[ltop++] = acpigen_get_current();
+	/* Add 2 dummy bytes for the ACPI word (keep aligned with
+	   the calclulation in acpigen_write_resourcetemplate() below). */
 	acpigen_emit_byte(0x00);
 	acpigen_emit_byte(0x00);
 }
@@ -870,7 +881,9 @@ void acpigen_write_resourcetemplate_footer(void)
 	acpigen_emit_byte(0x79);
 	acpigen_emit_byte(0x00);
 
-	len = gencurrent - p;
+	/* Start counting past the 2-bytes length added in
+	   acpigen_write_resourcetemplate() above. */
+	len = acpigen_get_current() - (p + 2);
 
 	/* patch len word */
 	p[0] = len & 0xff;
@@ -1137,13 +1150,13 @@ void acpigen_write_to_integer(uint8_t src, uint8_t dst)
 	acpigen_emit_byte(dst);
 }
 
-void acpigen_write_byte_buffer(uint8_t *arr, uint8_t size)
+void acpigen_write_byte_buffer(uint8_t *arr, size_t size)
 {
-	uint8_t i;
+	size_t i;
 
 	acpigen_emit_byte(BUFFER_OP);
 	acpigen_write_len_f();
-	acpigen_write_byte(size);
+	acpigen_write_integer(size);
 
 	for (i = 0; i < size; i++)
 		acpigen_emit_byte(arr[i]);
@@ -1151,7 +1164,7 @@ void acpigen_write_byte_buffer(uint8_t *arr, uint8_t size)
 	acpigen_pop_len();
 }
 
-void acpigen_write_return_byte_buffer(uint8_t *arr, uint8_t size)
+void acpigen_write_return_byte_buffer(uint8_t *arr, size_t size)
 {
 	acpigen_emit_byte(RETURN_OP);
 	acpigen_write_byte_buffer(arr, size);
@@ -1298,4 +1311,27 @@ int __attribute__((weak)) acpigen_soc_clear_tx_gpio(unsigned int gpio_num)
 	printk(BIOS_ERR, "ERROR: %s not implemented\n", __func__);
 	acpigen_write_debug_string("clear_tx_gpio not available");
 	return -1;
+}
+
+/*
+ * Helper functions for enabling/disabling Tx GPIOs based on the GPIO
+ * polarity. These functions end up calling acpigen_soc_{set,clear}_tx_gpio to
+ * make callbacks into SoC acpigen code.
+ *
+ * Returns 0 on success and -1 on error.
+ */
+int acpigen_enable_tx_gpio(struct acpi_gpio *gpio)
+{
+	if (gpio->polarity == ACPI_GPIO_ACTIVE_HIGH)
+		return acpigen_soc_set_tx_gpio(gpio->pins[0]);
+	else
+		return acpigen_soc_clear_tx_gpio(gpio->pins[0]);
+}
+
+int acpigen_disable_tx_gpio(struct acpi_gpio *gpio)
+{
+	if (gpio->polarity == ACPI_GPIO_ACTIVE_LOW)
+		return acpigen_soc_set_tx_gpio(gpio->pins[0]);
+	else
+		return acpigen_soc_clear_tx_gpio(gpio->pins[0]);
 }

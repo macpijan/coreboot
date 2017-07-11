@@ -106,7 +106,7 @@ static void pch_pirq_init(device_t dev)
 	pci_write_config8(dev, PIRQH_ROUT, config->pirqh_routing);
 
 	for (irq_dev = all_devices; irq_dev; irq_dev = irq_dev->next) {
-		u8 int_pin=0, int_line=0;
+		u8 int_pin = 0, int_line = 0;
 
 		if (!irq_dev->enabled || irq_dev->path.type != DEVICE_PATH_PCI)
 			continue;
@@ -114,10 +114,18 @@ static void pch_pirq_init(device_t dev)
 		int_pin = pci_read_config8(irq_dev, PCI_INTERRUPT_PIN);
 
 		switch (int_pin) {
-		case 1: /* INTA# */ int_line = config->pirqa_routing; break;
-		case 2: /* INTB# */ int_line = config->pirqb_routing; break;
-		case 3: /* INTC# */ int_line = config->pirqc_routing; break;
-		case 4: /* INTD# */ int_line = config->pirqd_routing; break;
+		case 1: /* INTA# */
+			int_line = config->pirqa_routing;
+			break;
+		case 2: /* INTB# */
+			int_line = config->pirqb_routing;
+			break;
+		case 3: /* INTC# */
+			int_line = config->pirqc_routing;
+			break;
+		case 4: /* INTD# */
+			int_line = config->pirqd_routing;
+			break;
 		}
 
 		if (!int_line)
@@ -133,7 +141,7 @@ static void pch_power_options(device_t dev)
 	const char *state;
 	/* Get the chip configuration */
 	config_t *config = dev->chip_info;
-	int pwr_on=CONFIG_MAINBOARD_POWER_ON_AFTER_POWER_FAIL;
+	int pwr_on = CONFIG_MAINBOARD_POWER_ON_AFTER_POWER_FAIL;
 
 	/* Which state do we want to goto after g3 (power restored)?
 	 * 0 == S0 Full On
@@ -260,10 +268,9 @@ static const struct reg_script pch_pm_init_script[] = {
 	REG_MMIO_WRITE32(RCBA_BASE_ADDRESS + 0x33b4, 0x00007001),
 	REG_MMIO_WRITE32(RCBA_BASE_ADDRESS + 0x3350, 0x022ddfff),
 	REG_MMIO_WRITE32(RCBA_BASE_ADDRESS + 0x3354, 0x00000001),
-#if IS_ENABLED(CONFIG_BROADWELL_POWER_OPTIMIZER)
 	/* Power Optimizer */
 	REG_MMIO_OR32(RCBA_BASE_ADDRESS + 0x33d4, 0x08000000),
-	REG_MMIO_OR32(RCBA_BASE_ADDRESS + 0x33c8, 0x08000080),
+	REG_MMIO_OR32(RCBA_BASE_ADDRESS + 0x33c8, 0x00000080),
 	REG_MMIO_WRITE32(RCBA_BASE_ADDRESS + 0x2b10, 0x0000883c),
 	REG_MMIO_WRITE32(RCBA_BASE_ADDRESS + 0x2b14, 0x1e0a4616),
 	REG_MMIO_WRITE32(RCBA_BASE_ADDRESS + 0x2b24, 0x40000005),
@@ -272,7 +279,6 @@ static const struct reg_script pch_pm_init_script[] = {
 	REG_MMIO_WRITE32(RCBA_BASE_ADDRESS + 0x3a84, 0x00001005),
 	REG_MMIO_OR32(RCBA_BASE_ADDRESS + 0x33d4, 0x2fff2fb1),
 	REG_MMIO_OR32(RCBA_BASE_ADDRESS + 0x33c8, 0x00008000),
-#endif
 	REG_SCRIPT_END
 };
 
@@ -472,12 +478,12 @@ static void pch_lpc_add_mmio_resources(device_t dev)
 	res->flags = IORESOURCE_MEM | IORESOURCE_ASSIGNED | IORESOURCE_FIXED;
 
 	/* RCBA */
-	if (RCBA_BASE_ADDRESS < default_decode_base) {
+	if (default_decode_base > RCBA_BASE_ADDRESS) {
 		res = new_resource(dev, RCBA);
 		res->base = RCBA_BASE_ADDRESS;
 		res->size = 16 * 1024;
 		res->flags = IORESOURCE_MEM | IORESOURCE_ASSIGNED |
-		             IORESOURCE_FIXED | IORESOURCE_RESERVE;
+			     IORESOURCE_FIXED | IORESOURCE_RESERVE;
 	}
 
 	/* Check LPC Memory Decode register. */
@@ -489,7 +495,7 @@ static void pch_lpc_add_mmio_resources(device_t dev)
 			res->base = reg;
 			res->size = 16 * 1024;
 			res->flags = IORESOURCE_MEM | IORESOURCE_ASSIGNED |
-			             IORESOURCE_FIXED | IORESOURCE_RESERVE;
+				     IORESOURCE_FIXED | IORESOURCE_RESERVE;
 		}
 	}
 }
@@ -593,7 +599,7 @@ static void southcluster_inject_dsdt(device_t device)
 
 	gnvs = cbmem_find(CBMEM_ID_ACPI_GNVS);
 	if (!gnvs) {
-		gnvs = cbmem_add(CBMEM_ID_ACPI_GNVS, sizeof (*gnvs));
+		gnvs = cbmem_add(CBMEM_ID_ACPI_GNVS, sizeof(*gnvs));
 		if (gnvs)
 			memset(gnvs, 0, sizeof(*gnvs));
 	}

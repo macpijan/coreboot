@@ -16,8 +16,8 @@
 
 #set -x # Turn echo on....
 
-ABUILD_DATE="Dec 6, 2016"
-ABUILD_VERSION="0.10.01"
+ABUILD_DATE="Mar 28, 2017"
+ABUILD_VERSION="0.10.03"
 
 TOP=$PWD
 
@@ -50,11 +50,17 @@ configureonly=0
 # Did any board fail to build?
 failed=0
 
+# default: don't save checksums
+checksum_file=""
+
 # default: single CPU build
 cpus=1
 
 # change with -d <directory>
 configdir="$TOP/configs"
+
+# Timeless builds
+TIMELESS=0
 
 # One might want to adjust these in case of cross compiling
 for i in make gmake gnumake nonexistant_make; do
@@ -339,7 +345,7 @@ function compile_target
 	CURR=$( pwd )
 	#stime=`perl -e 'print time();' 2>/dev/null || date +%s`
 	# shellcheck disable=SC2086
-	eval $BUILDPREFIX $MAKE $silent DOTCONFIG="${build_dir}/config.build" obj="${build_dir}" objutil="$TARGET/sharedutils" \
+	eval $BUILDPREFIX $MAKE $silent DOTCONFIG="${build_dir}/config.build" obj="${build_dir}" objutil="$TARGET/sharedutils" BUILD_TIMELESS=$TIMELESS \
 		&> "${build_dir}/make.log" ; \
 		MAKE_FAILED=$?
 	cp .xcompile "${build_dir}/xcompile.build"
@@ -366,6 +372,11 @@ function compile_target
 		failed=1
 	fi
 	cd "$CURR" || return $?
+	if [ -n "$checksum_file" ]; then
+		sha256sum "${build_dir}/coreboot.rom" >> "${checksum_file}_platform"
+		sort "${build_dir}/config.h" | grep CONFIG_ > "${build_dir}/config.h.sorted"
+		sha256sum "${build_dir}/config.h.sorted" >> "${checksum_file}_config"
+	fi
 	if [ "$clean_work" = "true" ]; then
 		rm -rf "${build_dir}"
 	fi
@@ -518,6 +529,7 @@ Usage: $0 [options]
 Options:\n"
     [-a|--all]                    Build previously succeeded ports as well
     [-B|--blobs]                  Allow using binary files
+    [--checksum <path/basefile>]  Store checksums at path/basefile
     [-c|--cpus <numcpus>]         Build on <numcpus> at the same time
     [-C|--config]                 Configure-only mode
     [-d|--dir <dir>]              Directory containing config files
@@ -535,6 +547,7 @@ Options:\n"
                                   (defaults to $ROOT)
     [--scan-build]                Use clang's static analyzer
     [-s|--silent]                 Omit compiler calls in logs
+    [--timeless]                  Generate timeless builds
     [-t|--target <vendor/board>]  Attempt to build target vendor/board only
     [-T|--test]                   Submit image(s) to automated test system
     [-u|--update]                 Update existing image
@@ -581,8 +594,8 @@ test "$ROOT" = "" && ROOT=$( cd ../.. && pwd )
 export PATH=$PATH:util/abuild
 getopt - > /dev/null 2>/dev/null || gcc -o util/abuild/getopt util/abuild/getopt.c
 
-# command line for xargs parallelization. Thus overwrite -c X
-cmdline="$* -c 1"
+# Save command line for xargs parallelization.
+cmdline=("$@")
 
 # parse parameters.. try to find out whether we're running GNU getopt
 getoptbrand="$(getopt -V)"
@@ -590,7 +603,7 @@ getoptbrand="$(getopt -V)"
 # shellcheck disable=SC2086
 if [ "${getoptbrand:0:6}" == "getopt" ]; then
 	# Detected GNU getopt that supports long options.
-	args=$(getopt -l version,verbose,quiet,help,all,target:,payloads:,cpus:,silent,junit,config,loglevel:,remove,prefix:,update,scan-build,ccache,blobs,clang,clean,outdir:,chromeos,xmlfile:,kconfig:,dir:,root:,recursive -o Vvqhat:p:c:sJCl:rP:uyBLzo:xX:K:d:R:I -- "$@") || exit 1
+	args=$(getopt -l version,verbose,quiet,help,all,target:,payloads:,cpus:,silent,junit,config,loglevel:,remove,prefix:,update,scan-build,ccache,blobs,clang,clean,outdir:,chromeos,xmlfile:,kconfig:,dir:,root:,recursive,checksum:,timeless -o Vvqhat:p:c:sJCl:rP:uyBLzo:xX:K:d:R:I -- "$@") || exit 1
 	eval set -- $args
 	retval=$?
 else
@@ -682,6 +695,8 @@ while true ; do
 			customizing="${customizing}, $1 config"
 			configoptions="$(cat "$1")${configoptions}\n"
 			shift;;
+		--checksum)	shift; checksum_file="$1"; shift;;
+		--timeless)	shift; TIMELESS=1;;
 		--)		shift; break;;
 		-*)		printf "Invalid option '%s'\n\n" "$1"; myhelp; exit 1;;
 		*)		break;;
@@ -735,6 +750,8 @@ build_targets()
 	local ABSPATH
 	local stime
 	local etime
+	local num_targets
+	local cpus_per_target
 
 	local targets=${*-$(get_mainboards)}
 	# seed shared utils
@@ -781,8 +798,9 @@ build_targets()
 		rmdir "${scanbuild_out}tmp"
 	fi
 	rm -rf "$TARGET/temp" "$TMPCFG"
-	# shellcheck disable=SC2086
-	echo $targets | xargs -P ${cpus:-0} -n 1 "$0" $cmdline -I -t
+	num_targets=$(wc -w <<<"$targets")
+	cpus_per_target=$(((${cpus:-1} + num_targets - 1) / num_targets))
+	echo "$targets" | xargs -P ${cpus:-0} -n 1 "$0" "${cmdline[@]}" -I -c "$cpus_per_target" -t
 }
 fi
 

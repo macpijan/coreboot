@@ -31,6 +31,9 @@
 #include <superio/winbond/common/winbond.h>
 #include <lib.h>
 #include <arch/stages.h>
+#include <cbmem.h>
+#include <romstage_handoff.h>
+#include <timestamp.h>
 
 #define SERIAL_DEV PNP_DEV(0x4e, W83627THG_SP1)
 #define SUPERIO_DEV PNP_DEV(0x4e, 0)
@@ -99,6 +102,12 @@ static void rcba_config(void)
 void mainboard_romstage_entry(unsigned long bist)
 {
 	const u8 spd_addrmap[4] = { 0x50, 0x51, 0, 0 };
+	int cbmem_was_initted;
+	int s3resume = 0;
+	int boot_path;
+
+	timestamp_init(get_initial_timestamp());
+	timestamp_add_now(TS_START_ROMSTAGE);
 
 	if (bist == 0)
 		enable_lapic();
@@ -120,12 +129,36 @@ void mainboard_romstage_entry(unsigned long bist)
 
 	post_code(0x30);
 
+	s3resume = southbridge_detect_s3_resume();
+
+	if (s3resume) {
+		boot_path = BOOT_PATH_RESUME;
+	} else {
+		if (MCHBAR32(0xf14) & (1 << 8)) /* HOT RESET */
+			boot_path = BOOT_PATH_RESET;
+		else
+			boot_path = BOOT_PATH_NORMAL;
+	}
+
 	printk(BIOS_DEBUG, "Initializing memory\n");
-	sdram_initialize(0, spd_addrmap);
+	timestamp_add_now(TS_BEFORE_INITRAM);
+	sdram_initialize(boot_path, spd_addrmap);
+	timestamp_add_now(TS_AFTER_INITRAM);
 	printk(BIOS_DEBUG, "Memory initialized\n");
 
 	post_code(0x31);
-	ram_check(0x200000,0x300000);
+
+	quick_ram_check();
 
 	rcba_config();
+
+	cbmem_was_initted = !cbmem_recovery(s3resume);
+
+	if (!cbmem_was_initted && s3resume) {
+		/* Failed S3 resume, reset to come up cleanly */
+		outb(0x6, 0xcf9);
+		halt();
+	}
+
+	romstage_handoff_init(s3resume);
 }

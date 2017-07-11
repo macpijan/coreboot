@@ -88,7 +88,13 @@
 #define EC_EVENT_PD_MCU                      0x16
 #define EC_EVENT_BATTERY_STATUS              0x17
 #define EC_EVENT_PANIC                       0x18
-#define EC_EVENT_KEYBOARD_RECOVERY_HWREINIT  0x19
+#define EC_EVENT_KEYBOARD_FASTBOOT           0x19
+#define EC_EVENT_RTC                         0x1a
+#define EC_EVENT_MKBP                        0x1b
+#define EC_EVENT_USB_MUX                     0x1c
+#define EC_EVENT_MODE_CHANGE                 0x1d
+#define EC_EVENT_KEYBOARD_RECOVERY_HWREINIT  0x1e
+#define EC_EVENT_EXTENDED                    0x1f
 
 /* Power */
 #define ELOG_TYPE_POWER_FAIL              0x92
@@ -146,9 +152,6 @@ struct elog_event_data_me_extended {
 /* EC Shutdown Reason */
 #define ELOG_TYPE_EC_SHUTDOWN             0xa5
 
-/* CPU Thermal Trip */
-#define ELOG_TYPE_THERM_TRIP              0xa7
-
 /* ARM/generic versions of sleep/wake - These came from another firmware
  * apparently, but not all the firmware sources were updated so that the
  * elog namespace was coherent. */
@@ -167,6 +170,9 @@ struct elog_event_mem_cache_update {
 	u8 slot;
 	u8 status;
 } __attribute__ ((packed));
+
+/* CPU Thermal Trip */
+#define ELOG_TYPE_THERM_TRIP              0xab
 
 #if CONFIG_ELOG
 /* Eventlog backing storage must be initialized before calling elog_init(). */

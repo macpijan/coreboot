@@ -21,19 +21,16 @@ config BOARD_SPECIFIC_OPTIONS # dummy
 	select MAINBOARD_HAS_NATIVE_VGA_INIT
 	select MAINBOARD_HAS_NATIVE_VGA_INIT_TEXTMODECFG
 	select VGA
-	select INTEL_EDID
 
 config MAINBOARD_DIR
 	string
 	default apple/macbook21
 
-if BOARD_APPLE_MACBOOK21
-
 config MAINBOARD_PART_NUMBER
 	string
-	default "MacBook2,1"
-
-endif
+	default "Macbook1,1" if BOARD_APPLE_MACBOOK11
+	default "MacBook2,1" if BOARD_APPLE_MACBOOK21
+	default "iMac5,2" if BOARD_APPLE_IMAC52
 
 config MMCONF_BASE_ADDRESS
 	hex

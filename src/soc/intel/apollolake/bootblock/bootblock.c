@@ -18,14 +18,16 @@
 #include <bootblock_common.h>
 #include <cpu/x86/mtrr.h>
 #include <device/pci.h>
+#include <intelblocks/pcr.h>
+#include <intelblocks/systemagent.h>
+#include <intelblocks/rtc.h>
 #include <lib.h>
 #include <soc/iomap.h>
 #include <soc/cpu.h>
 #include <soc/flash_ctrlr.h>
 #include <soc/gpio.h>
-#include <soc/iosf.h>
 #include <soc/mmap_boot.h>
-#include <soc/northbridge.h>
+#include <soc/systemagent.h>
 #include <soc/pci_devs.h>
 #include <soc/pm.h>
 #include <soc/uart.h>
@@ -42,40 +44,26 @@ static void tpm_enable(void)
 	gpio_configure_pads(tpm_spi_configs, ARRAY_SIZE(tpm_spi_configs));
 }
 
-static void enable_cmos_upper_bank(void)
+asmlinkage void bootblock_c_entry(uint64_t base_timestamp)
 {
-	uint32_t reg = iosf_read(IOSF_RTC_PORT_ID, RTC_CONFIG);
-	reg |= RTC_CONFIG_UCMOS_ENABLE;
-	iosf_write(IOSF_RTC_PORT_ID, RTC_CONFIG, reg);
-}
+	device_t dev;
 
-void asmlinkage bootblock_c_entry(uint64_t base_timestamp)
-{
-	device_t dev = NB_DEV_ROOT;
+	bootblock_systemagent_early_init();
 
-	/* Set PCI Express BAR */
-	pci_io_write_config32(dev, PCIEXBAR, CONFIG_MMCONF_BASE_ADDRESS | 1);
-	/*
-	 * Clear TSEG register - TSEG register comes out of reset with a
-	 * non-zero default value. Clear this register to ensure that there are
-	 * no surprises in CBMEM handling.
-	 */
-	pci_write_config32(dev, TSEG, 0);
-
-	dev = P2SB_DEV;
-	/* BAR and MMIO enable for IOSF, so that GPIOs can be configured */
-	pci_write_config32(dev, PCI_BASE_ADDRESS_0, CONFIG_IOSF_BASE_ADDRESS);
+	dev = PCH_DEV_P2SB;
+	/* BAR and MMIO enable for PCR-Space, so that GPIOs can be configured */
+	pci_write_config32(dev, PCI_BASE_ADDRESS_0, CONFIG_PCR_BASE_ADDRESS);
 	pci_write_config32(dev, PCI_BASE_ADDRESS_1, 0);
 	pci_write_config16(dev, PCI_COMMAND,
 				PCI_COMMAND_MASTER | PCI_COMMAND_MEMORY);
 
 	/* Decode the ACPI I/O port range for early firmware verification.*/
-	dev = PMC_DEV;
+	dev = PCH_DEV_PMC;
 	pci_write_config16(dev, PCI_BASE_ADDRESS_4, ACPI_PMIO_BASE);
 	pci_write_config16(dev, PCI_COMMAND,
 				PCI_COMMAND_IO | PCI_COMMAND_MASTER);
 
-	enable_cmos_upper_bank();
+	enable_rtc_upper_bank();
 
 	/* Call lib/bootblock.c main */
 	bootblock_main_with_timestamp(base_timestamp);
@@ -89,7 +77,7 @@ static void cache_bios_region(void)
 
 	mtrr = get_free_var_mtrr();
 
-	if (mtrr==-1)
+	if (mtrr == -1)
 		return;
 
 	/* Only the IFD BIOS region is memory mapped (at top of 4G) */
@@ -111,7 +99,7 @@ static void cache_bios_region(void)
  */
 static void enable_spibar(void)
 {
-	device_t dev = SPI_DEV;
+	device_t dev = PCH_DEV_SPI;
 	uint8_t val;
 
 	/* Disable Bus Master and MMIO space. */
@@ -135,7 +123,7 @@ static void enable_spibar(void)
 
 static void enable_pmcbar(void)
 {
-	device_t pmc = PMC_DEV;
+	device_t pmc = PCH_DEV_PMC;
 
 	/* Set PMC base addresses and enable decoding. */
 	pci_write_config32(pmc, PCI_BASE_ADDRESS_0, PMC_BAR0);
@@ -157,7 +145,7 @@ void bootblock_soc_early_init(void)
 
 	/* Prepare UART for serial console. */
 	if (IS_ENABLED(CONFIG_SOC_UART_DEBUG))
-		soc_console_uart_init();
+		pch_uart_init();
 
 	if (IS_ENABLED(CONFIG_TPM_ON_FAST_SPI))
 		tpm_enable();

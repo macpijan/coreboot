@@ -1,3 +1,16 @@
+/*
+ * This file is part of the coreboot project.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; version 2 of the License.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ */
+
 #include <stdint.h>
 #include <stdlib.h>
 #include <device/pci_def.h>
@@ -8,7 +21,6 @@
 #include <cpu/x86/msr.h>
 #include <cpu/amd/car.h>
 #include <cpu/amd/lxdef.h>
-#include <cpu/amd/car.h>
 #include <southbridge/amd/cs5536/cs5536.h>
 #include <spd.h>
 #include "southbridge/amd/cs5536/early_smbus.c"
@@ -30,7 +42,7 @@ int spd_read_byte(unsigned device, unsigned address)
 #include "cpu/amd/geode_lx/syspreinit.c"
 #include "cpu/amd/geode_lx/msrinit.c"
 
-void main(unsigned long bist)
+void asmlinkage mainboard_romstage_entry(unsigned long bist)
 {
 
 	static const struct mem_controller memctrl [] = {

@@ -9,13 +9,13 @@
 #include <cpu/amd/model_fxx_rev.h>
 #include "southbridge/amd/amd8111/early_smbus.c"
 #include <northbridge/amd/amdk8/raminit.h>
-#include "northbridge/amd/amdk8/reset_test.c"
 #include <cpu/x86/bist.h>
 #include <delay.h>
-#include "northbridge/amd/amdk8/debug.c"
+
 #include <superio/winbond/common/winbond.h>
 #include <superio/winbond/w83627hf/w83627hf.h>
 #include "northbridge/amd/amdk8/setup_resource_map.c"
+#include <northbridge/amd/amdk8/pre_f.h>
 
 #define SERIAL_DEV PNP_DEV(0x2e, W83627HF_SP1)
 
@@ -38,7 +38,7 @@ static void memreset_setup(void)
 	}
 }
 
-static void memreset(int controllers, const struct mem_controller *ctrl)
+void memreset(int controllers, const struct mem_controller *ctrl)
 {
 	if (is_cpu_pre_c0()) {
 		udelay(800);
@@ -48,9 +48,9 @@ static void memreset(int controllers, const struct mem_controller *ctrl)
 	}
 }
 
-static void activate_spd_rom(const struct mem_controller *ctrl) { }
+void activate_spd_rom(const struct mem_controller *ctrl) { }
 
-static inline int spd_read_byte(unsigned device, unsigned address)
+int spd_read_byte(unsigned device, unsigned address)
 {
 	return smbus_read_byte(device, address);
 }
@@ -58,7 +58,6 @@ static inline int spd_read_byte(unsigned device, unsigned address)
 #include "southbridge/amd/amd8111/early_ctrl.c"
 #include <northbridge/amd/amdk8/amdk8.h>
 #include "northbridge/amd/amdk8/incoherent_ht.c"
-#include "northbridge/amd/amdk8/coherent_ht.c"
 #include "northbridge/amd/amdk8/raminit.c"
 #include "lib/generic_sdram.c"
 #include "resourcemap.c"

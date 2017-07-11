@@ -3,6 +3,13 @@ config SOC_INTEL_SKYLAKE
 	help
 	  Intel Skylake support
 
+config SOC_INTEL_KABYLAKE
+	bool
+	default n
+	select SOC_INTEL_SKYLAKE
+	help
+	  Intel Kabylake support
+
 if SOC_INTEL_SKYLAKE
 
 config CPU_SPECIFIC_OPTIONS
@@ -35,12 +42,22 @@ config CPU_SPECIFIC_OPTIONS
 	select PCIEXP_COMMON_CLOCK
 	select PCIEXP_CLK_PM
 	select PCIEXP_L1_SUB_STATE
+	select PCIEX_LENGTH_64MB
 	select REG_SCRIPT
 	select RELOCATABLE_MODULES
 	select RELOCATABLE_RAMSTAGE
 	select RTC
 	select SOC_INTEL_COMMON
 	select SOC_INTEL_COMMON_ACPI_WAKE_SOURCE
+	select SOC_INTEL_COMMON_BLOCK
+	select SOC_INTEL_COMMON_BLOCK_GSPI
+	select SOC_INTEL_COMMON_BLOCK_ITSS
+	select SOC_INTEL_COMMON_BLOCK_LPSS
+	select SOC_INTEL_COMMON_BLOCK_PCR
+	select SOC_INTEL_COMMON_BLOCK_RTC
+	select SOC_INTEL_COMMON_BLOCK_SA
+	select SOC_INTEL_COMMON_BLOCK_UART
+	select SOC_INTEL_COMMON_BLOCK_XHCI
 	select SOC_INTEL_COMMON_LPSS_I2C
 	select SOC_INTEL_COMMON_NHLT
 	select SOC_INTEL_COMMON_RESET
@@ -52,6 +69,7 @@ config CPU_SPECIFIC_OPTIONS
 	select TSC_CONSTANT_RATE
 	select TSC_SYNC_MFENCE
 	select UDELAY_TSC
+	select ACPI_NHLT
 
 config MAINBOARD_USES_FSP2_0
 	bool
@@ -64,6 +82,8 @@ config USE_FSP2_0_DRIVER
 	select PLATFORM_USES_FSP2_0
 	select ADD_VBT_DATA_FILE
 	select SOC_INTEL_COMMON_GFX_OPREGION
+	select POSTCAR_CONSOLE
+	select POSTCAR_STAGE
 
 config USE_FSP1_1_DRIVER
 	bool "Build with FSP 1.1"
@@ -75,15 +95,15 @@ config USE_FSP1_1_DRIVER
 
 config CHROMEOS
 	select CHROMEOS_RAMOOPS_DYNAMIC
-	select EC_SOFTWARE_SYNC if EC_GOOGLE_CHROMEEC
-	select SEPARATE_VERSTAGE
-	select VBOOT_EC_SLOW_UPDATE if EC_GOOGLE_CHROMEEC
+
+config VBOOT
+	select VBOOT_EC_SLOW_UPDATE if VBOOT_EC_SOFTWARE_SYNC
+	select VBOOT_SEPARATE_VERSTAGE
 	select VBOOT_OPROM_MATTERS
 	select VBOOT_SAVE_RECOVERY_REASON_ON_REBOOT
 	select VBOOT_STARTS_IN_BOOTBLOCK
 	select VBOOT_VBNV_CMOS
 	select VBOOT_VBNV_CMOS_BACKUP_TO_FLASH
-	select VIRTUAL_DEV_SWITCH
 
 config BOOTBLOCK_RESETS
 	string
@@ -96,10 +116,6 @@ config CBFS_SIZE
 config CPU_ADDR_BITS
 	int
 	default 36
-
-config SOC_INTEL_COMMON_LPSS_I2C_CLOCK_MHZ
-	int
-	default 120
 
 config DCACHE_RAM_BASE
 	hex "Base address of cache-as-RAM"
@@ -137,15 +153,17 @@ config IED_REGION_SIZE
 	hex
 	default 0x400000
 
-config MMCONF_BASE_ADDRESS
-	hex "MMIO Base Address"
-	default 0xe0000000
-
 config MONOTONIC_TIMER_MSR
 	def_bool y
 	select HAVE_MONOTONIC_TIMER
 	help
 	  Provide a monotonic timer using the 24MHz MSR counter.
+
+config PCR_BASE_ADDRESS
+	hex
+	default 0xfd000000
+	help
+	  This option allows you to select MMIO Base Address of sideband bus.
 
 config PRE_GRAPHICS_DELAY
 	int "Graphics initialization delay in ms"
@@ -227,6 +245,50 @@ config NHLT_SSM4567
 	help
 	  Include DSP firmware settings for ssm4567 smart amplifier.
 
+config NHLT_RT5514
+	bool
+	default n
+	help
+	  Include DSP firmware settings for rt5514 DSP.
+
+config NHLT_RT5663
+	bool
+	default n
+	help
+	  Include DSP firmware settings for rt5663 headset codec.
+
+config NHLT_MAX98927
+	bool
+	default n
+	help
+	  Include DSP firmware settings for max98927 amplifier.
+
+choice
+	prompt "Cache-as-ram implementation"
+	default CAR_NEM_ENHANCED
+	help
+	  This option allows you to select how cache-as-ram (CAR) is set up.
+
+config CAR_NEM_ENHANCED
+	bool "Enhanced Non-evict mode"
+	select SOC_INTEL_COMMON_BLOCK_CAR
+	select INTEL_CAR_NEM_ENHANCED
+	help
+	  A current limitation of NEM (Non-Evict mode) is that code and data sizes
+	  are derived from the requirement to not write out any modified cache line.
+	  With NEM, if there is no physical memory behind the cached area,
+	  the modified data will be lost and NEM results will be inconsistent.
+	  ENHANCED NEM guarantees that modified data is always
+	  kept in cache while clean data is replaced.
+
+config USE_SKYLAKE_FSP_CAR
+	bool "Use FSP CAR"
+	select FSP_CAR
+	help
+	  Use FSP APIs to initialize & tear Down the Cache-As-Ram.
+
+endchoice
+
 config SKIP_FSP_CAR
 	bool "Skip cache as RAM setup in FSP"
 	default y
@@ -247,5 +309,13 @@ config NO_FADT_8042
 	default n
 	help
 	  Choose this option if you want to disable 8042 Keyboard
+
+config SOC_INTEL_COMMON_LPSS_CLOCK_MHZ
+	int
+	default 120
+
+config SOC_INTEL_COMMON_BLOCK_GSPI_MAX
+	int
+	default 2
 
 endif

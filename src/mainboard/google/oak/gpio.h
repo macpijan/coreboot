@@ -17,8 +17,9 @@
 #define __MAINBOARD_GOOGLE_OAK_GPIO_H__
 #include <soc/pinmux.h>
 
-#define LID ((board_id() + CONFIG_BOARD_ID_ADJUSTMENT < 7) ? \
-	PAD_EINT12 : PAD_SPI_CK)
+#define LID ((IS_ENABLED(CONFIG_BOARD_GOOGLE_ROWAN)) ? PAD_KPROW1 \
+	: ((board_id() + CONFIG_BOARD_ID_ADJUSTMENT < 7) ? PAD_EINT12 \
+	: PAD_SPI_CK))
 
 
 enum {
@@ -41,6 +42,8 @@ enum {
 	EC_IN_RW	= PAD_DAIPCMIN,
 	/* EC AP suspend */
 	EC_SUSPEND_L	= PAD_KPROW1,
+	/* Cr50 interrupt */
+	CR50_IRQ	= PAD_EINT16,
 };
 
 void setup_chromeos_gpios(void);

@@ -15,11 +15,11 @@
 #include <northbridge/amd/amdk8/amdk8.h>
 #include "southbridge/amd/amd8111/early_smbus.c"
 #include <northbridge/amd/amdk8/raminit.h>
-#include "northbridge/amd/amdk8/reset_test.c"
-#include "northbridge/amd/amdk8/debug.c"
+
 #include <superio/winbond/common/winbond.h>
 #include <superio/winbond/w83627hf/w83627hf.h>
 #include <cpu/x86/bist.h>
+#include <northbridge/amd/amdk8/pre_f.h>
 
 #define SERIAL_DEV PNP_DEV(0x2e, W83627HF_SP1)
 
@@ -38,7 +38,7 @@ static void memreset_setup(void)
 	}
 }
 
-static void memreset(int controllers, const struct mem_controller *ctrl)
+void memreset(int controllers, const struct mem_controller *ctrl)
 {
 	if (is_cpu_pre_c0()) {
 		udelay(800);
@@ -50,7 +50,7 @@ static void memreset(int controllers, const struct mem_controller *ctrl)
 
 #define SMBUS_HUB 0x18
 
-static inline void activate_spd_rom(const struct mem_controller *ctrl)
+void activate_spd_rom(const struct mem_controller *ctrl)
 {
 	int ret,i;
 	unsigned device=(ctrl->channel0[0])>>8;
@@ -75,7 +75,7 @@ static inline void change_i2c_mux(unsigned device)
 	printk(BIOS_DEBUG, "change_i2c_mux 2 ret=%08x\n", ret);
 }
 
-static inline int spd_read_byte(unsigned device, unsigned address)
+int spd_read_byte(unsigned device, unsigned address)
 {
 	return smbus_read_byte(device, address);
 }
@@ -84,7 +84,6 @@ static inline int spd_read_byte(unsigned device, unsigned address)
 #include "northbridge/amd/amdk8/incoherent_ht.c"
 #include "northbridge/amd/amdk8/raminit.c"
 #include "resourcemap.c"
-#include "northbridge/amd/amdk8/coherent_ht.c"
 #include "lib/generic_sdram.c"
 #include "cpu/amd/dualcore/dualcore.c"
 #include <spd.h>

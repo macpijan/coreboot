@@ -33,24 +33,23 @@ unsigned int get_sbdn(unsigned bus);
 #include <northbridge/amd/amdk8/raminit.h>
 #include <delay.h>
 #include <cpu/x86/lapic.h>
-#include "northbridge/amd/amdk8/reset_test.c"
 #include "northbridge/amd/amdk8/early_ht.c"
 #include <superio/winbond/common/winbond.h>
 #include <superio/winbond/w83627ehg/w83627ehg.h>
-#include "southbridge/via/vt8237r/early_smbus.c"
-#include "northbridge/amd/amdk8/debug.c" /* After vt8237r/early_smbus.c! */
+#include <southbridge/via/vt8237r/vt8237r.h>
 #include <cpu/x86/bist.h>
 #include "northbridge/amd/amdk8/setup_resource_map.c"
 #include <spd.h>
+#include <northbridge/amd/amdk8/pre_f.h>
 
 #define SERIAL_DEV PNP_DEV(0x2e, W83627EHG_SP1)
 #define GPIO_DEV PNP_DEV(0x2e, W83627EHG_GPIO_SUSLED_V)
 #define ACPI_DEV PNP_DEV(0x2e, W83627EHG_ACPI)
 
-static void memreset(int controllers, const struct mem_controller *ctrl) { }
-static void activate_spd_rom(const struct mem_controller *ctrl) { }
+void memreset(int controllers, const struct mem_controller *ctrl) { }
+void activate_spd_rom(const struct mem_controller *ctrl) { }
 
-static inline int spd_read_byte(unsigned device, unsigned address)
+int spd_read_byte(unsigned int device, unsigned int address)
 {
 	return smbus_read_byte(device, address);
 }
@@ -74,7 +73,6 @@ void soft_reset(void)
 #include "southbridge/via/k8t890/early_car.c"
 #include <northbridge/amd/amdk8/amdk8.h>
 #include "northbridge/amd/amdk8/incoherent_ht.c"
-#include "northbridge/amd/amdk8/coherent_ht.c"
 #include "northbridge/amd/amdk8/raminit.c"
 #include "lib/generic_sdram.c"
 #include "cpu/amd/dualcore/dualcore.c"

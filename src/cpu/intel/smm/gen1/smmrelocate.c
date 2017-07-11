@@ -92,13 +92,13 @@ static void asmlinkage cpu_smm_do_relocation(void *arg)
 	 * Since one thread runs at a time during the relocation the save state
 	 * is the same for all cpus. */
 	save_state = (void *)(runtime->smbase + SMM_DEFAULT_SIZE -
-                              runtime->save_state_size);
+			      runtime->save_state_size);
 
 	/* The relocated handler runs with all CPUs concurrently. Therefore
 	 * stagger the entry points adjusting SMBASE downwards by save state
 	 * size * CPU num. */
 	save_state->smbase = relo_params->smram_base -
-	                     cpu * runtime->save_state_size;
+			     cpu * runtime->save_state_size;
 	save_state->iedbase = relo_params->ied_base;
 
 	printk(BIOS_DEBUG, "New SMBASE=0x%08x IEDBASE=0x%08x @ %p\n",
@@ -133,12 +133,13 @@ static void fill_in_relocation_params(struct smm_relocation_params *params)
 	/* SMRR has 32-bits of valid address aligned to 4KiB. */
 	params->smrr_base.lo = (params->smram_base & rmask) | MTRR_TYPE_WRBACK;
 	params->smrr_base.hi = 0;
-	params->smrr_mask.lo = (~(tseg_size - 1) & rmask) | MTRR_PHYS_MASK_VALID;
+	params->smrr_mask.lo = (~(tseg_size - 1) & rmask)
+		| MTRR_PHYS_MASK_VALID;
 	params->smrr_mask.hi = 0;
 }
 
 static int install_relocation_handler(int *apic_id_map, int num_cpus,
-                                      struct smm_relocation_params *relo_params)
+				      struct smm_relocation_params *relo_params)
 {
 	/* The default SMM entry happens serially at the default location.
 	 * Therefore, there is only 1 concurrent save state area. Set the
@@ -157,9 +158,8 @@ static int install_relocation_handler(int *apic_id_map, int num_cpus,
 	if (smm_setup_relocation_handler(&smm_params))
 		return -1;
 	int i;
-	for (i = 0; i < num_cpus; i++) {
+	for (i = 0; i < num_cpus; i++)
 		smm_params.runtime->apic_id_to_cpu[i] = apic_id_map[i];
-	}
 	return 0;
 }
 
@@ -183,7 +183,7 @@ static void setup_ied_area(struct smm_relocation_params *params)
 }
 
 static int install_permanent_handler(int *apic_id_map, int num_cpus,
-                                     struct smm_relocation_params *relo_params)
+				     struct smm_relocation_params *relo_params)
 {
 	/* There are num_cpus concurrent stacks and num_cpus concurrent save
 	 * state areas. Lastly, set the stack size to the save state size. */
@@ -201,9 +201,8 @@ static int install_permanent_handler(int *apic_id_map, int num_cpus,
 			    relo_params->smram_size, &smm_params))
 		return -1;
 	int i;
-	for (i = 0; i < num_cpus; i++) {
+	for (i = 0; i < num_cpus; i++)
 		smm_params.runtime->apic_id_to_cpu[i] = apic_id_map[i];
-	}
 	return 0;
 }
 
@@ -228,12 +227,14 @@ static int cpu_smm_setup(void)
 		       num_cpus, CONFIG_MAX_CPUS);
 	}
 
-	if (install_relocation_handler(apic_id_map, num_cpus, &smm_reloc_params)) {
+	if (install_relocation_handler(apic_id_map, num_cpus,
+		&smm_reloc_params)) {
 		printk(BIOS_CRIT, "SMM Relocation handler install failed.\n");
 		return -1;
 	}
 
-	if (install_permanent_handler(apic_id_map, num_cpus, &smm_reloc_params)) {
+	if (install_permanent_handler(apic_id_map, num_cpus,
+		&smm_reloc_params)) {
 		printk(BIOS_CRIT, "SMM Permanent handler install failed.\n");
 		return -1;
 	}

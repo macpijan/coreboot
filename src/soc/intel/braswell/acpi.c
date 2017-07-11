@@ -498,7 +498,7 @@ unsigned long southcluster_write_acpi_tables(device_t device,
 	if (ssdt2->length) {
 		current += ssdt2->length;
 		acpi_add_table(rsdp, ssdt2);
-		printk(BIOS_DEBUG, "ACPI:     * SSDT2 @ %p Length %x\n",ssdt2,
+		printk(BIOS_DEBUG, "ACPI:     * SSDT2 @ %p Length %x\n", ssdt2,
 		       ssdt2->length);
 		current = acpi_align_current(current);
 	} else {
@@ -517,7 +517,7 @@ void southcluster_inject_dsdt(device_t device)
 
 	gnvs = cbmem_find(CBMEM_ID_ACPI_GNVS);
 	if (!gnvs) {
-		gnvs = cbmem_add(CBMEM_ID_ACPI_GNVS, sizeof (*gnvs));
+		gnvs = cbmem_add(CBMEM_ID_ACPI_GNVS, sizeof(*gnvs));
 		if (gnvs)
 			memset(gnvs, 0, sizeof(*gnvs));
 	}
@@ -525,12 +525,10 @@ void southcluster_inject_dsdt(device_t device)
 	if (gnvs) {
 		acpi_create_gnvs(gnvs);
 		/* Fill in the Wifi Region id */
-		if (IS_ENABLED(CONFIG_HAVE_REGULATORY_DOMAIN)) {
+		if (IS_ENABLED(CONFIG_HAVE_REGULATORY_DOMAIN))
 			gnvs->cid1 = wifi_regulatory_domain();
-		} else {
-
+		else
 			gnvs->cid1 = WRDD_DEFAULT_REGULATORY_DOMAIN;
-		}
 		acpi_save_gnvs((unsigned long)gnvs);
 		/* And tell SMI about it */
 		smm_setup_structures(gnvs, NULL, NULL);

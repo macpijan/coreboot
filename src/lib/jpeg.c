@@ -166,7 +166,8 @@ static int readtables(int till)
 	for (;;) {
 		if (getbyte() != 0xff)
 			return -1;
-		if ((m = getbyte()) == till)
+		m = getbyte();
+		if (m == till)
 			break;
 
 		switch (m) {
@@ -267,15 +268,15 @@ void jpeg_fetch_size(unsigned char *buf, int *width, int *height)
 
 int jpeg_check_size(unsigned char *buf, int width, int height)
 {
-  	datap = buf;
+	datap = buf;
 	getbyte();
 	getbyte();
 	readtables(M_SOF0);
 	getword();
 	getbyte();
-        if (height != getword() || width != getword())
+	if (height != getword() || width != getword())
 		return 0;
-        return 1;
+	return 1;
 }
 
 int jpeg_decode(unsigned char *buf, unsigned char *pic,
@@ -353,7 +354,8 @@ int jpeg_decode(unsigned char *buf, unsigned char *pic,
 	if (dscans[0].cid != 1 || dscans[1].cid != 2 || dscans[2].cid != 3)
 		return ERR_NOT_YCBCR_221111;
 
-	if (dscans[0].hv != 0x22 || dscans[1].hv != 0x11 || dscans[2].hv != 0x11)
+	if (dscans[0].hv != 0x22 || dscans[1].hv != 0x11
+		|| dscans[2].hv != 0x11)
 		return ERR_NOT_YCBCR_221111;
 
 	mcusx = width >> 4;
@@ -385,26 +387,37 @@ int jpeg_decode(unsigned char *buf, unsigned char *pic,
 					return ERR_WRONG_MARKER;
 
 			decode_mcus(&glob_in, decdata->dcts, 6, dscans, max);
-			idct(decdata->dcts, decdata->out, decdata->dquant[0], IFIX(128.5), max[0]);
-			idct(decdata->dcts + 64, decdata->out + 64, decdata->dquant[0], IFIX(128.5), max[1]);
-			idct(decdata->dcts + 128, decdata->out + 128, decdata->dquant[0], IFIX(128.5), max[2]);
-			idct(decdata->dcts + 192, decdata->out + 192, decdata->dquant[0], IFIX(128.5), max[3]);
-			idct(decdata->dcts + 256, decdata->out + 256, decdata->dquant[1], IFIX(0.5), max[4]);
-			idct(decdata->dcts + 320, decdata->out + 320, decdata->dquant[2], IFIX(0.5), max[5]);
+			idct(decdata->dcts, decdata->out, decdata->dquant[0],
+				IFIX(128.5), max[0]);
+			idct(decdata->dcts + 64, decdata->out + 64,
+				decdata->dquant[0], IFIX(128.5), max[1]);
+			idct(decdata->dcts + 128, decdata->out + 128,
+				decdata->dquant[0], IFIX(128.5), max[2]);
+			idct(decdata->dcts + 192, decdata->out + 192,
+				decdata->dquant[0], IFIX(128.5), max[3]);
+			idct(decdata->dcts + 256, decdata->out + 256,
+				decdata->dquant[1], IFIX(0.5), max[4]);
+			idct(decdata->dcts + 320, decdata->out + 320,
+				decdata->dquant[2], IFIX(0.5), max[5]);
 
 			switch (depth) {
 			case 32:
-				col221111_32(decdata->out, pic + (my * 16 * mcusx + mx) * 16 * 4, mcusx * 16 * 4);
+				col221111_32(decdata->out, pic
+					+ (my * 16 * mcusx + mx) * 16 * 4,
+					mcusx * 16 * 4);
 				break;
 			case 24:
-				col221111(decdata->out, pic + (my * 16 * mcusx + mx) * 16 * 3, mcusx * 16 * 3);
+				col221111(decdata->out, pic
+					+ (my * 16 * mcusx + mx) * 16 * 3,
+					mcusx * 16 * 3);
 				break;
 			case 16:
-				col221111_16(decdata->out, pic + (my * 16 * mcusx + mx) * (16 * 2), mcusx * (16 * 2));
+				col221111_16(decdata->out, pic
+					+ (my * 16 * mcusx + mx) * (16 * 2),
+					mcusx * (16 * 2));
 				break;
 			default:
 				return ERR_DEPTH_MISMATCH;
-				break;
 			}
 		}
 	}
@@ -443,15 +456,21 @@ static int fillbits(struct in *in, int le, unsigned int bi)
 	}
 	while (le <= 24) {
 		b = *in->p++;
-		if (b == 0xff && (m = *in->p++) != 0) {
-			if (m == M_EOF) {
-				if (in->func && (m = in->func(in->data)) == 0)
-					continue;
+		if (b == 0xff) {
+			m = *in->p++;
+			if (m != 0) {
+				if (m == M_EOF) {
+					if (in->func) {
+						m = in->func(in->data);
+						if (m == 0)
+							continue;
+                                        }
+				}
+				in->marker = m;
+				if (le <= 16)
+					bi = bi << 16, le += 16;
+				break;
 			}
-			in->marker = m;
-			if (le <= 16)
-				bi = bi << 16, le += 16;
-			break;
 		}
 		bi = bi << 8 | b;
 		le += 8;
@@ -465,7 +484,8 @@ static int dec_readmarker(struct in *in)
 	int m;
 
 	in->left = fillbits(in, in->left, in->bits);
-	if ((m = in->marker) == 0)
+	m = in->marker;
+	if (m == 0)
 		return 0;
 	in->left = 0;
 	in->marker = 0;
@@ -476,14 +496,14 @@ static int dec_readmarker(struct in *in)
 #define LEBI_GET(in)	(le = in->left, bi = in->bits)
 #define LEBI_PUT(in)	(in->left = le, in->bits = bi)
 
-#define GETBITS(in, n) (					\
-  (le < (n) ? le = fillbits(in, le, bi), bi = in->bits : 0),	\
-  (le -= (n)),							\
-  bi >> le & ((1 << (n)) - 1)					\
-)
+#define GETBITS(in, n) (						\
+	(le < (n) ? le = fillbits(in, le, bi), bi = in->bits : 0),	\
+	(le -= (n)),							\
+	bi >> le & ((1 << (n)) - 1)					\
+	)
 
 #define UNGETBITS(in, n) (	\
-  le += (n)			\
+	le += (n)			\
 )
 
 
@@ -498,7 +518,9 @@ static int dec_rec2(struct in *in, struct dec_hufftbl *hu, int *runp, int c,
 		*runp = i >> 8 & 15;
 		i >>= 16;
 	} else {
-		for (i = DECBITS; (c = ((c << 1) | GETBITS(in, 1))) >= (hu->maxcode[i]); i++);
+		for (i = DECBITS; (c = ((c << 1) | GETBITS(in, 1)))
+			>= (hu->maxcode[i]); i++)
+			;
 		if (i >= 16) {
 			in->marker = M_BADHUFF;
 			return 0;
@@ -519,25 +541,26 @@ static int dec_rec2(struct in *in, struct dec_hufftbl *hu, int *runp, int c,
 	return c;
 }
 
-#define DEC_REC(in, hu, r, i)	 (	\
-  r = GETBITS(in, DECBITS),		\
-  i = hu->llvals[r],			\
-  i & 128 ?				\
-    (					\
-      UNGETBITS(in, i & 127),		\
-      r = i >> 8 & 15,			\
-      i >> 16				\
-    )					\
-  :					\
-    (					\
-      LEBI_PUT(in),			\
-      i = dec_rec2(in, hu, &r, r, i),	\
-      LEBI_GET(in),			\
-      i					\
-    )					\
+#define DEC_REC(in, hu, r, i)	(		\
+	r = GETBITS(in, DECBITS),		\
+	i = hu->llvals[r],			\
+	i & 128 ?				\
+	(					\
+		UNGETBITS(in, i & 127),		\
+		r = i >> 8 & 15,		\
+		i >> 16				\
+	)					\
+	:					\
+	(					\
+		LEBI_PUT(in),			\
+		i = dec_rec2(in, hu, &r, r, i),	\
+		LEBI_GET(in),			\
+		i				\
+	)					\
 )
 
-static void decode_mcus(struct in *in, int *dct, int n, struct scan *sc, int *maxp)
+static void decode_mcus(struct in *in, int *dct, int n, struct scan *sc,
+	int *maxp)
 {
 	struct dec_hufftbl *hu;
 	int i, r, t;
@@ -568,7 +591,8 @@ static void decode_mcus(struct in *in, int *dct, int n, struct scan *sc, int *ma
 	LEBI_PUT(in);
 }
 
-static void dec_makehuff(struct dec_hufftbl *hu, int *hufflen, unsigned char *huffvals)
+static void dec_makehuff(struct dec_hufftbl *hu, int *hufflen,
+	unsigned char *huffvals)
 {
 	int code, k, i, j, d, x, c, v;
 	for (i = 0; i < (1 << DECBITS); i++)
@@ -594,16 +618,20 @@ static void dec_makehuff(struct dec_hufftbl *hu, int *hufflen, unsigned char *hu
 				c = code << (DECBITS - 1 - i);
 				v = hu->vals[k] & 0x0f;	/* size */
 				for (d = 1 << (DECBITS - 1 - i); --d >= 0;) {
-					if (v + i < DECBITS) {	/* both fit in table */
+					/* both fit in table */
+					if (v + i < DECBITS) {
 						x = d >> (DECBITS - 1 - v -
 							  i);
 						if (v && x < (1 << (v - 1)))
 							x += (-1 << v) + 1;
-						x = x << 16 | (hu-> vals[k] & 0xf0) << 4 |
-							(DECBITS - (i + 1 + v)) | 128;
+						x = x << 16 | (hu->vals[k]
+							& 0xf0) << 4 |
+							(DECBITS - (i + 1 + v))
+							| 128;
 					} else
-						x = v << 16 | (hu-> vals[k] & 0xf0) << 4 |
-						        (DECBITS - (i + 1));
+						x = v << 16 | (hu->vals[k]
+							& 0xf0) << 4 |
+							(DECBITS - (i + 1));
 					hu->llvals[c | d] = x;
 				}
 			}
@@ -632,33 +660,33 @@ static void dec_makehuff(struct dec_hufftbl *hu, int *hufflen, unsigned char *hu
 #define C5IC1 ((PREC)IFIX(0.566454497))	/* c5/c1 */
 #define C7IC1 ((PREC)IFIX(0.198912367))	/* c7/c1 */
 
-#define XPP(a,b) (t = a + b, b = a - b, a = t)
-#define XMP(a,b) (t = a - b, b = a + b, a = t)
-#define XPM(a,b) (t = a + b, b = b - a, a = t)
+#define XPP(a, b) (t = a + b, b = a - b, a = t)
+#define XMP(a, b) (t = a - b, b = a + b, a = t)
+#define XPM(a, b) (t = a + b, b = b - a, a = t)
 
-#define ROT(a,b,s,c) (	t = IMULT(a + b, s),	\
+#define ROT(a, b, s, c) (t = IMULT(a + b, s),	\
 			a = IMULT(a, c - s) + t,	\
 			b = IMULT(b, c + s) - t)
 
-#define IDCT		\
-(			\
-  XPP(t0, t1),		\
-  XMP(t2, t3),		\
-  t2 = IMULT(t2, IC4) - t3,	\
-  XPP(t0, t3),		\
-  XPP(t1, t2),		\
-  XMP(t4, t7),		\
-  XPP(t5, t6),		\
-  XMP(t5, t7),		\
-  t5 = IMULT(t5, IC4),	\
-  ROT(t4, t6, S22, C22),\
-  t6 -= t7,		\
-  t5 -= t6,		\
-  t4 -= t5,		\
-  XPP(t0, t7),		\
-  XPP(t1, t6),		\
-  XPP(t2, t5),		\
-  XPP(t3, t4)		\
+#define IDCT				\
+(					\
+	XPP(t0, t1),			\
+	XMP(t2, t3),			\
+	t2 = IMULT(t2, IC4) - t3,	\
+	XPP(t0, t3),			\
+	XPP(t1, t2),			\
+	XMP(t4, t7),			\
+	XPP(t5, t6),			\
+	XMP(t5, t7),			\
+	t5 = IMULT(t5, IC4),		\
+	ROT(t4, t6, S22, C22),		\
+	t6 -= t7,			\
+	t5 -= t6,			\
+	t4 -= t5,			\
+	XPP(t0, t7),			\
+	XPP(t1, t6),			\
+	XPP(t2, t5),			\
+	XPP(t3, t4)			\
 )
 
 static unsigned char zig2[64] = {
@@ -764,7 +792,7 @@ static void idctqtab(unsigned char *qin, PREC *qout)
 	for (i = 0; i < 8; i++)
 		for (j = 0; j < 8; j++)
 			qout[zig[i * 8 + j]] = qin[zig[i * 8 + j]] *
-			  			IMULT(aaidct[i], aaidct[j]);
+						IMULT(aaidct[i], aaidct[j]);
 }
 
 static void scaleidctqtab(PREC *q, PREC sc)
@@ -809,13 +837,13 @@ static void initcol(PREC q[][64])
 }
 
 /* This is optimized for the stupid sun SUNWspro compiler. */
-#define STORECLAMP(a,x)				\
+#define STORECLAMP(a, x)			\
 (						\
-  (a) = (x),					\
-  (unsigned int)(x) >= 256 ? 			\
-    ((a) = (x) < 0 ? 0 : 255)			\
-  :						\
-    0						\
+	(a) = (x),				\
+	(unsigned int)(x) >= 256 ?		\
+	((a) = (x) < 0 ? 0 : 255)		\
+	:					\
+	0					\
 )
 
 #define CLAMP(x) ((unsigned int)(x) >= 256 ? ((x) < 0 ? 0 : 255) : (x))
@@ -824,98 +852,98 @@ static void initcol(PREC q[][64])
 
 #define CBCRCG(yin, xin)			\
 (						\
-  cb = outc[0 +yin*8+xin],			\
-  cr = outc[64+yin*8+xin],			\
-  cg = (50 * cb + 130 * cr + 128) >> 8		\
+	cb = outc[0  + yin * 8 + xin],		\
+	cr = outc[64 + yin * 8 + xin],		\
+	cg = (50 * cb + 130 * cr + 128) >> 8	\
 )
 
 #else
 
 #define CBCRCG(yin, xin)			\
 (						\
-  cb = outc[0 +yin*8+xin],			\
-  cr = outc[64+yin*8+xin],			\
-  cg = (3 * cb + 8 * cr) >> 4			\
+	cb = outc[0  + yin*8 + xin],		\
+	cr = outc[64 + yin*8 + xin],		\
+	cg = (3 * cb + 8 * cr) >> 4		\
 )
 
 #endif
 
 #define PIC(yin, xin, p, xout)			\
 (						\
-  y = outy[(yin) * 8 + xin],			\
-  STORECLAMP(p[(xout) * 3 + 0], y + cr),	\
-  STORECLAMP(p[(xout) * 3 + 1], y - cg),	\
-  STORECLAMP(p[(xout) * 3 + 2], y + cb)		\
+	y = outy[(yin) * 8 + xin],		\
+	STORECLAMP(p[(xout) * 3 + 0], y + cr),	\
+	STORECLAMP(p[(xout) * 3 + 1], y - cg),	\
+	STORECLAMP(p[(xout) * 3 + 2], y + cb)	\
 )
 
 #ifdef __LITTLE_ENDIAN
-#define PIC_16(yin, xin, p, xout, add)		 \
-(                                                \
-  y = outy[(yin) * 8 + xin],                     \
-  y = ((CLAMP(y + cr + add*2+1) & 0xf8) <<  8) | \
-      ((CLAMP(y - cg + add    ) & 0xfc) <<  3) | \
-      ((CLAMP(y + cb + add*2+1)       ) >>  3),  \
-  p[(xout) * 2 + 0] = y & 0xff,                  \
-  p[(xout) * 2 + 1] = y >> 8                     \
+#define PIC_16(yin, xin, p, xout, add)				\
+(								\
+	y = outy[(yin) * 8 + xin],				\
+	y = ((CLAMP(y + cr + add*2+1) & 0xf8) <<  8) |		\
+		((CLAMP(y - cg + add)     & 0xfc) <<  3) |	\
+		((CLAMP(y + cb + add*2+1))        >>  3),	\
+	p[(xout) * 2 + 0] = y & 0xff,				\
+	p[(xout) * 2 + 1] = y >> 8				\
 )
 #else
 #ifdef CONFIG_PPC
-#define PIC_16(yin, xin, p, xout, add)		 \
-(                                                \
-  y = outy[(yin) * 8 + xin],                     \
-  y = ((CLAMP(y + cr + add*2+1) & 0xf8) <<  7) | \
-      ((CLAMP(y - cg + add*2+1) & 0xf8) <<  2) | \
-      ((CLAMP(y + cb + add*2+1)       ) >>  3),  \
-  p[(xout) * 2 + 0] = y >> 8,                    \
-  p[(xout) * 2 + 1] = y & 0xff                   \
+#define PIC_16(yin, xin, p, xout, add)				\
+(								\
+	y = outy[(yin) * 8 + xin],				\
+	y = ((CLAMP(y + cr + add*2+1) & 0xf8) <<  7) |		\
+		((CLAMP(y - cg + add*2+1) & 0xf8) <<  2) |	\
+		((CLAMP(y + cb + add*2+1))        >>  3),	\
+	p[(xout) * 2 + 0] = y >> 8,				\
+	p[(xout) * 2 + 1] = y & 0xff				\
 )
 #else
-#define PIC_16(yin, xin, p, xout, add)	 	 \
-(                                                \
-  y = outy[(yin) * 8 + xin],                     \
-  y = ((CLAMP(y + cr + add*2+1) & 0xf8) <<  8) | \
-      ((CLAMP(y - cg + add    ) & 0xfc) <<  3) | \
-      ((CLAMP(y + cb + add*2+1)       ) >>  3),  \
-  p[(xout) * 2 + 0] = y >> 8,                    \
-  p[(xout) * 2 + 1] = y & 0xff                   \
+#define PIC_16(yin, xin, p, xout, add)				\
+(								\
+	y = outy[(yin) * 8 + xin],				\
+	y = ((CLAMP(y + cr + add*2+1) & 0xf8) <<  8) |		\
+		((CLAMP(y - cg + add)     & 0xfc) <<  3) |	\
+		((CLAMP(y + cb + add*2+1))        >>  3),	\
+	p[(xout) * 2 + 0] = y >> 8,				\
+	p[(xout) * 2 + 1] = y & 0xff				\
 )
 #endif
 #endif
 
 #define PIC_32(yin, xin, p, xout)		\
 (						\
-  y = outy[(yin) * 8 + xin],			\
-  STORECLAMP(p[(xout) * 4 + 0], y + cr),	\
-  STORECLAMP(p[(xout) * 4 + 1], y - cg),	\
-  STORECLAMP(p[(xout) * 4 + 2], y + cb),	\
-  p[(xout) * 4 + 3] = 0				\
+	y = outy[(yin) * 8 + xin],		\
+	STORECLAMP(p[(xout) * 4 + 0], y + cr),	\
+	STORECLAMP(p[(xout) * 4 + 1], y - cg),	\
+	STORECLAMP(p[(xout) * 4 + 2], y + cb),	\
+	p[(xout) * 4 + 3] = 0			\
 )
 
-#define PIC221111(xin)						\
-(								\
-  CBCRCG(0, xin),						\
-  PIC(xin / 4 * 8 + 0, (xin & 3) * 2 + 0, pic0, xin * 2 + 0),	\
-  PIC(xin / 4 * 8 + 0, (xin & 3) * 2 + 1, pic0, xin * 2 + 1),	\
-  PIC(xin / 4 * 8 + 1, (xin & 3) * 2 + 0, pic1, xin * 2 + 0),	\
-  PIC(xin / 4 * 8 + 1, (xin & 3) * 2 + 1, pic1, xin * 2 + 1)	\
+#define PIC221111(xin)							\
+(									\
+	CBCRCG(0, xin),							\
+	PIC(xin / 4 * 8 + 0, (xin & 3) * 2 + 0, pic0, xin * 2 + 0),	\
+	PIC(xin / 4 * 8 + 0, (xin & 3) * 2 + 1, pic0, xin * 2 + 1),	\
+	PIC(xin / 4 * 8 + 1, (xin & 3) * 2 + 0, pic1, xin * 2 + 0),	\
+	PIC(xin / 4 * 8 + 1, (xin & 3) * 2 + 1, pic1, xin * 2 + 1)	\
 )
 
-#define PIC221111_16(xin)                                               \
-(                                                               	\
-  CBCRCG(0, xin),                                               	\
-  PIC_16(xin / 4 * 8 + 0, (xin & 3) * 2 + 0, pic0, xin * 2 + 0, 3),     \
-  PIC_16(xin / 4 * 8 + 0, (xin & 3) * 2 + 1, pic0, xin * 2 + 1, 0),     \
-  PIC_16(xin / 4 * 8 + 1, (xin & 3) * 2 + 0, pic1, xin * 2 + 0, 1),     \
-  PIC_16(xin / 4 * 8 + 1, (xin & 3) * 2 + 1, pic1, xin * 2 + 1, 2)      \
+#define PIC221111_16(xin)						       \
+(									       \
+	CBCRCG(0, xin),							       \
+	PIC_16(xin / 4 * 8 + 0, (xin & 3) * 2 + 0, pic0, xin * 2 + 0, 3),      \
+	PIC_16(xin / 4 * 8 + 0, (xin & 3) * 2 + 1, pic0, xin * 2 + 1, 0),      \
+	PIC_16(xin / 4 * 8 + 1, (xin & 3) * 2 + 0, pic1, xin * 2 + 0, 1),      \
+	PIC_16(xin / 4 * 8 + 1, (xin & 3) * 2 + 1, pic1, xin * 2 + 1, 2)       \
 )
 
-#define PIC221111_32(xin)					\
-(								\
-  CBCRCG(0, xin),						\
-  PIC_32(xin / 4 * 8 + 0, (xin & 3) * 2 + 0, pic0, xin * 2 + 0),\
-  PIC_32(xin / 4 * 8 + 0, (xin & 3) * 2 + 1, pic0, xin * 2 + 1),\
-  PIC_32(xin / 4 * 8 + 1, (xin & 3) * 2 + 0, pic1, xin * 2 + 0),\
-  PIC_32(xin / 4 * 8 + 1, (xin & 3) * 2 + 1, pic1, xin * 2 + 1)	\
+#define PIC221111_32(xin)						\
+(									\
+	CBCRCG(0, xin),							\
+	PIC_32(xin / 4 * 8 + 0, (xin & 3) * 2 + 0, pic0, xin * 2 + 0),	\
+	PIC_32(xin / 4 * 8 + 0, (xin & 3) * 2 + 1, pic0, xin * 2 + 1),	\
+	PIC_32(xin / 4 * 8 + 1, (xin & 3) * 2 + 0, pic1, xin * 2 + 0),	\
+	PIC_32(xin / 4 * 8 + 1, (xin & 3) * 2 + 1, pic1, xin * 2 + 1)	\
 )
 
 static void col221111(int *out, unsigned char *pic, int width)
@@ -931,9 +959,8 @@ static void col221111(int *out, unsigned char *pic, int width)
 	outc = out + 64 * 4;
 	for (i = 2; i > 0; i--) {
 		for (j = 4; j > 0; j--) {
-			for (k = 0; k < 8; k++) {
+			for (k = 0; k < 8; k++)
 				PIC221111(k);
-			}
 			outc += 8;
 			outy += 16;
 			pic0 += 2 * width;
@@ -956,9 +983,8 @@ static void col221111_16(int *out, unsigned char *pic, int width)
 	outc = out + 64 * 4;
 	for (i = 2; i > 0; i--) {
 		for (j = 4; j > 0; j--) {
-			for (k = 0; k < 8; k++) {
-			    PIC221111_16(k);
-			}
+			for (k = 0; k < 8; k++)
+				PIC221111_16(k);
 			outc += 8;
 			outy += 16;
 			pic0 += 2 * width;
@@ -981,9 +1007,8 @@ static void col221111_32(int *out, unsigned char *pic, int width)
 	outc = out + 64 * 4;
 	for (i = 2; i > 0; i--) {
 		for (j = 4; j > 0; j--) {
-			for (k = 0; k < 8; k++) {
+			for (k = 0; k < 8; k++)
 				PIC221111_32(k);
-			}
 			outc += 8;
 			outy += 16;
 			pic0 += 2 * width;

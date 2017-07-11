@@ -16,7 +16,7 @@
 #include <console/console.h>
 #include <fsp/util.h>
 #include <memory_info.h>
-#include <smbios.h>
+#include <soc/intel/common/smbios.h>
 #include <soc/meminit.h>
 #include <stddef.h> /* required for FspmUpd.h */
 #include <fsp/soc_binding.h>
@@ -73,11 +73,12 @@ static void set_lpddr4_defaults(FSP_M_CONFIG *cfg)
 	cfg->Ch2_Option = 0x3;
 	cfg->Ch3_Option = 0x3;
 
-	/* Weak on-die termination. */
-	cfg->Ch0_OdtConfig = 0;
-	cfg->Ch1_OdtConfig = 0;
-	cfg->Ch2_OdtConfig = 0;
-	cfg->Ch3_OdtConfig = 0;
+	/* Set CA ODT with default setting of ODT pins of LPDDR4 modules pulled
+	   up to 1.1V. */
+	cfg->Ch0_OdtConfig = ODT_A_B_HIGH_HIGH;
+	cfg->Ch1_OdtConfig = ODT_A_B_HIGH_HIGH;
+	cfg->Ch2_OdtConfig = ODT_A_B_HIGH_HIGH;
+	cfg->Ch3_OdtConfig = ODT_A_B_HIGH_HIGH;
 }
 
 void meminit_lpddr4(FSP_M_CONFIG *cfg, int speed)
@@ -304,38 +305,24 @@ void save_lpddr4_dimm_info(const struct lpddr4_cfg *lp4cfg, size_t mem_sku)
 				continue;
 
 			/* Populate the DIMM information */
-			dest_dimm->dimm_size = src_dimm->SizeInMb;
-			dest_dimm->ddr_type = memory_info_hob->MemoryType;
-			dest_dimm->ddr_frequency =
-					memory_info_hob->MemoryFrequencyInMHz;
-			dest_dimm->channel_num = channel_info->ChannelId;
-			dest_dimm->dimm_num = src_dimm->DimmId;
-			strncpy((char *)dest_dimm->module_part_number,
-					lp4cfg->skus[mem_sku].part_num,
-					sizeof(dest_dimm->module_part_number));
-
-			switch (memory_info_hob->DataWidth) {
-			case 8:
-				dest_dimm->bus_width = MEMORY_BUS_WIDTH_8;
-				break;
-			case 16:
-				dest_dimm->bus_width = MEMORY_BUS_WIDTH_16;
-				break;
-			case 32:
-				dest_dimm->bus_width = MEMORY_BUS_WIDTH_32;
-				break;
-			case 64:
-				dest_dimm->bus_width = MEMORY_BUS_WIDTH_64;
-				break;
-			case 128:
-				dest_dimm->bus_width = MEMORY_BUS_WIDTH_128;
-				break;
-			default:
-				printk(BIOS_ERR, "Incorrect DIMM Data Width");
-			}
+			dimm_info_fill(dest_dimm,
+				src_dimm->SizeInMb,
+				memory_info_hob->MemoryType,
+				memory_info_hob->MemoryFrequencyInMHz,
+				channel_info->ChannelId,
+				src_dimm->DimmId,
+				lp4cfg->skus[mem_sku].part_num,
+				strlen(lp4cfg->skus[mem_sku].part_num),
+				memory_info_hob->DataWidth);
 			index++;
 		}
 	}
 	mem_info->dimm_cnt = index;
 	printk(BIOS_DEBUG, "%d DIMMs found\n", mem_info->dimm_cnt);
+}
+
+uint8_t fsp_memory_soc_version(void)
+{
+	/* Bump this value when the memory configuration parameters change. */
+	return 1;
 }

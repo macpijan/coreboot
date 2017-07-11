@@ -27,15 +27,14 @@
 #include <lib.h>
 #include <spd.h>
 #include <cpu/amd/model_fxx_rev.h>
-#include "southbridge/nvidia/mcp55/early_smbus.c"
+#include <southbridge/nvidia/mcp55/mcp55.h>
 #include <northbridge/amd/amdk8/raminit.h>
 #include <delay.h>
 #include <cpu/x86/lapic.h>
-#include "northbridge/amd/amdk8/reset_test.c"
 #include <superio/winbond/common/winbond.h>
 #include <superio/winbond/w83627ehg/w83627ehg.h>
 #include <cpu/x86/bist.h>
-#include "northbridge/amd/amdk8/debug.c"
+
 #include "northbridge/amd/amdk8/setup_resource_map.c"
 
 #define SERIAL_DEV PNP_DEV(0x2e, W83627EHG_SP1)
@@ -53,19 +52,16 @@ unsigned get_sbdn(unsigned bus)
 	return (dev >> 15) & 0x1f;
 }
 
-static void memreset(int controllers, const struct mem_controller *ctrl) { }
-static void activate_spd_rom(const struct mem_controller *ctrl) { }
+void memreset(int controllers, const struct mem_controller *ctrl) { }
+void activate_spd_rom(const struct mem_controller *ctrl) { }
 
-static inline int spd_read_byte(unsigned device, unsigned address)
+int spd_read_byte(unsigned device, unsigned address)
 {
 	return smbus_read_byte(device, address);
 }
 
-#include "southbridge/nvidia/mcp55/early_ctrl.c"
 #include <northbridge/amd/amdk8/f.h>
 #include "northbridge/amd/amdk8/incoherent_ht.c"
-#include "northbridge/amd/amdk8/coherent_ht.c"
-#include "northbridge/amd/amdk8/raminit_f.c"
 #include "lib/generic_sdram.c"
 #include "resourcemap.c"
 #include "cpu/amd/dualcore/dualcore.c"

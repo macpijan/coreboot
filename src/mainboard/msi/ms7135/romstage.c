@@ -26,7 +26,6 @@
 #include <cpu/x86/lapic.h>
 #include <pc80/mc146818rtc.h>
 #include <cpu/x86/lapic.h>
-#include "northbridge/amd/amdk8/reset_test.c"
 #include <superio/winbond/common/winbond.h>
 #include <superio/winbond/w83627thg/w83627thg.h>
 #include <cpu/amd/model_fxx_rev.h>
@@ -35,12 +34,12 @@
 #include <southbridge/nvidia/ck804/early_smbus.h>
 #include <northbridge/amd/amdk8/raminit.h>
 #include <delay.h>
-#include "northbridge/amd/amdk8/debug.c"
+
 #include <cpu/x86/bist.h>
 #include "northbridge/amd/amdk8/setup_resource_map.c"
-#include "northbridge/amd/amdk8/coherent_ht.c"
 #include "cpu/amd/dualcore/dualcore.c"
 #include <spd.h>
+#include <northbridge/amd/amdk8/pre_f.h>
 
 #if CONFIG_HAVE_OPTION_TABLE
 #include "option_table.h"
@@ -48,10 +47,10 @@
 
 #define SERIAL_DEV PNP_DEV(0x4e, W83627THG_SP1)
 
-static void memreset(int controllers, const struct mem_controller *ctrl) { }
-static void activate_spd_rom(const struct mem_controller *ctrl) { }
+void memreset(int controllers, const struct mem_controller *ctrl) { }
+void activate_spd_rom(const struct mem_controller *ctrl) { }
 
-static inline int spd_read_byte(unsigned device, unsigned address)
+int spd_read_byte(unsigned device, unsigned address)
 {
 	return smbus_read_byte(device, address);
 }

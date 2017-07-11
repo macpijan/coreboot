@@ -474,8 +474,10 @@ void northbridge_smi_handler(void);
 void southbridge_smi_handler(void);
 #else
 void cpu_smi_handler(unsigned int node, smm_state_save_area_t *state_save);
-void northbridge_smi_handler(unsigned int node, smm_state_save_area_t *state_save);
-void southbridge_smi_handler(unsigned int node, smm_state_save_area_t *state_save);
+void northbridge_smi_handler(unsigned int node,
+	smm_state_save_area_t *state_save);
+void southbridge_smi_handler(unsigned int node,
+	smm_state_save_area_t *state_save);
 #endif /* CONFIG_SMM_TSEG */
 void mainboard_smi_gpi(u32 gpi_sts);
 int  mainboard_smi_apmc(u8 data);
@@ -511,13 +513,13 @@ struct smm_module_params {
 };
 
 /* smm_handler_t is called with arg of smm_module_params pointer. */
-typedef void asmlinkage (*smm_handler_t)(void *);
+typedef asmlinkage void (*smm_handler_t)(void *);
 
 #ifdef __SMM__
 /* SMM Runtime helpers. */
 
 /* Entry point for SMM modules. */
-void asmlinkage smm_handler_start(void *params);
+asmlinkage void smm_handler_start(void *params);
 
 /* Retrieve SMM save state for a given CPU. WARNING: This does not take into
  * account CPUs which are configured to not save their state to RAM. */

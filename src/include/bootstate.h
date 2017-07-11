@@ -124,8 +124,10 @@ struct boot_state_callback {
 #if IS_ENABLED(CONFIG_DEBUG_BOOT_STATE)
 #define BOOT_STATE_CALLBACK_LOC __FILE__ ":" STRINGIFY(__LINE__)
 #define BOOT_STATE_CALLBACK_INIT_DEBUG .location = BOOT_STATE_CALLBACK_LOC,
-#define INIT_BOOT_STATE_CALLBACK_DEBUG(bscb_) \
-	bscb_->location = BOOT_STATE_CALLBACK_LOC;
+#define INIT_BOOT_STATE_CALLBACK_DEBUG(bscb_) 			\
+	do {							\
+		bscb_->location = BOOT_STATE_CALLBACK_LOC;	\
+	} while (0)
 #else
 #define BOOT_STATE_CALLBACK_INIT_DEBUG
 #define INIT_BOOT_STATE_CALLBACK_DEBUG(bscb_)
@@ -144,18 +146,20 @@ struct boot_state_callback {
 
 /* Initialize an allocated boot_state_callback. */
 #define INIT_BOOT_STATE_CALLBACK(bscb_, func_, arg_)	\
-	INIT_BOOT_STATE_CALLBACK_DEBUG(bscb_)		\
-	bscb_->callback = func_;			\
-	bscb_->arg = arg_
+	do {						\
+		INIT_BOOT_STATE_CALLBACK_DEBUG(bscb_)	\
+		bscb_->callback = func_;		\
+		bscb_->arg = arg_			\
+	} while (0)
 
 /* The following 2 functions schedule a callback to be called on entry/exit
  * to a given state. Note that there are no ordering guarantees between the
  * individual callbacks on a given state. 0 is returned on success < 0 on
  * error. */
 int boot_state_sched_on_entry(struct boot_state_callback *bscb,
-                              boot_state_t state);
+				boot_state_t state);
 int boot_state_sched_on_exit(struct boot_state_callback *bscb,
-                             boot_state_t state);
+				boot_state_t state);
 /* Schedule an array of entries of size num. */
 struct boot_state_init_entry;
 void boot_state_sched_entries(struct boot_state_init_entry *entries,
@@ -179,7 +183,7 @@ struct boot_state_init_entry {
 };
 
 #if ENV_RAMSTAGE
-#define BOOT_STATE_INIT_ATTR  __attribute__ ((used,section (".bs_init")))
+#define BOOT_STATE_INIT_ATTR  __attribute__ ((used, section(".bs_init")))
 #else
 #define BOOT_STATE_INIT_ATTR  __attribute__ ((unused))
 #endif
@@ -193,7 +197,7 @@ struct boot_state_init_entry {
 	};								\
 	static struct boot_state_init_entry *				\
 		bsie_ ## func_ ##_## state_ ##_## when_ BOOT_STATE_INIT_ATTR = \
-		& func_ ##_## state_ ##_## when_;
+		&func_ ##_## state_ ##_## when_;
 
 /* Hook per arch when coreboot is exiting to payload or ACPI OS resume. It's
  * the very last thing done before the transition. */

@@ -26,18 +26,19 @@
 #include <device/pci.h>
 #include <fsp/api.h>
 #include <fsp/util.h>
+#include <intelblocks/itss.h>
 #include <romstage_handoff.h>
 #include <soc/iomap.h>
+#include <soc/itss.h>
 #include <soc/cpu.h>
 #include <soc/flash_ctrlr.h>
 #include <soc/intel/common/vbt.h>
-#include <soc/itss.h>
 #include <soc/nvs.h>
 #include <soc/pci_devs.h>
 #include <spi-generic.h>
 #include <soc/pm.h>
 #include <soc/p2sb.h>
-#include <soc/northbridge.h>
+#include <soc/systemagent.h>
 
 #include "chip.h"
 
@@ -54,68 +55,82 @@ static const char *soc_acpi_name(struct device *dev)
 
 	switch (dev->path.pci.devfn) {
 	/* DSDT: acpi/northbridge.asl */
-	case NB_DEVFN:
+	case SA_DEVFN_ROOT:
 		return "MCHC";
 	/* DSDT: acpi/lpc.asl */
-	case LPC_DEVFN:
+	case PCH_DEVFN_LPC:
 		return "LPCB";
 	/* DSDT: acpi/xhci.asl */
-	case XHCI_DEVFN:
+	case PCH_DEVFN_XHCI:
 		return "XHCI";
 	/* DSDT: acpi/pch_hda.asl */
-	case HDA_DEVFN:
+	case PCH_DEVFN_HDA:
 		return "HDAS";
 	/* DSDT: acpi/lpss.asl */
-	case LPSS_DEVFN_UART0:
+	case PCH_DEVFN_UART0:
 		return "URT1";
-	case LPSS_DEVFN_UART1:
+	case PCH_DEVFN_UART1:
 		return "URT2";
-	case LPSS_DEVFN_UART2:
+	case PCH_DEVFN_UART2:
 		return "URT3";
-	case LPSS_DEVFN_UART3:
+	case PCH_DEVFN_UART3:
 		return "URT4";
-	case LPSS_DEVFN_SPI0:
+	case PCH_DEVFN_SPI0:
 		return "SPI1";
-	case LPSS_DEVFN_SPI1:
+	case PCH_DEVFN_SPI1:
 		return "SPI2";
-	case LPSS_DEVFN_SPI2:
+	case PCH_DEVFN_SPI2:
 		return "SPI3";
-	case LPSS_DEVFN_PWM:
+	case PCH_DEVFN_PWM:
 		return "PWM";
-	case LPSS_DEVFN_I2C0:
+	case PCH_DEVFN_I2C0:
 		return "I2C0";
-	case LPSS_DEVFN_I2C1:
+	case PCH_DEVFN_I2C1:
 		return "I2C1";
-	case LPSS_DEVFN_I2C2:
+	case PCH_DEVFN_I2C2:
 		return "I2C2";
-	case LPSS_DEVFN_I2C3:
+	case PCH_DEVFN_I2C3:
 		return "I2C3";
-	case LPSS_DEVFN_I2C4:
+	case PCH_DEVFN_I2C4:
 		return "I2C4";
-	case LPSS_DEVFN_I2C5:
+	case PCH_DEVFN_I2C5:
 		return "I2C5";
-	case LPSS_DEVFN_I2C6:
+	case PCH_DEVFN_I2C6:
 		return "I2C6";
-	case LPSS_DEVFN_I2C7:
+	case PCH_DEVFN_I2C7:
 		return "I2C7";
 	/* Storage */
-	case SDCARD_DEVFN:
+	case PCH_DEVFN_SDCARD:
 		return "SDCD";
-	case EMMC_DEVFN:
+	case PCH_DEVFN_EMMC:
 		return "EMMC";
-	case SDIO_DEVFN:
+	case PCH_DEVFN_SDIO:
 		return "SDIO";
 	/* PCIe */
-	case PCIEB0_DEVFN:
+	case PCH_DEVFN_PCIE1:
 		return "RP01";
 	}
 
 	return NULL;
 }
 
+static void pci_set_subsystem(device_t dev, unsigned vendor, unsigned device)
+{
+	if (!vendor || !device)
+		pci_write_config32(dev, PCI_SUBSYSTEM_VENDOR_ID,
+				pci_read_config32(dev, PCI_VENDOR_ID));
+	else
+		pci_write_config32(dev, PCI_SUBSYSTEM_VENDOR_ID,
+				(device << 16) | vendor);
+}
+
+struct pci_operations soc_pci_ops = {
+	.set_subsystem = &pci_set_subsystem
+};
+
 static void pci_domain_set_resources(device_t dev)
 {
-       assign_resources(dev->link_list);
+	assign_resources(dev->link_list);
 }
 
 static struct device_operations pci_domain_ops = {
@@ -140,11 +155,10 @@ static struct device_operations cpu_bus_ops = {
 static void enable_dev(device_t dev)
 {
 	/* Set the operations if it is a special bus type */
-	if (dev->path.type == DEVICE_PATH_DOMAIN) {
+	if (dev->path.type == DEVICE_PATH_DOMAIN)
 		dev->ops = &pci_domain_ops;
-	} else if (dev->path.type == DEVICE_PATH_CPU_CLUSTER) {
+	else if (dev->path.type == DEVICE_PATH_CPU_CLUSTER)
 		dev->ops = &cpu_bus_ops;
-	}
 }
 
 /*
@@ -192,15 +206,15 @@ static void pcie_update_device_tree(unsigned int devfn0, int num_funcs)
 
 static void pcie_override_devicetree_after_silicon_init(void)
 {
-	pcie_update_device_tree(PCIEA0_DEVFN, 4);
-	pcie_update_device_tree(PCIEB0_DEVFN, 2);
+	pcie_update_device_tree(PCH_DEVFN_PCIE1, 4);
+	pcie_update_device_tree(PCH_DEVFN_PCIE5, 2);
 }
 
 /* Configure package power limits */
 static void set_power_limits(void)
 {
 	static struct soc_intel_apollolake_config *cfg;
-	struct device *dev = NB_DEV_ROOT;
+	struct device *dev = SA_DEV_ROOT;
 	msr_t rapl_msr_reg, limit;
 	uint32_t power_unit;
 	uint32_t tdp, min_power, max_power;
@@ -313,100 +327,100 @@ static void soc_final(void *data)
 	global_reset_lock();
 }
 
-static void disable_dev(struct device *dev, FSP_S_CONFIG *silconfig) {
-
+static void disable_dev(struct device *dev, FSP_S_CONFIG *silconfig)
+{
 	switch (dev->path.pci.devfn) {
-	case ISH_DEVFN:
+	case PCH_DEVFN_ISH:
 		silconfig->IshEnable = 0;
 		break;
-	case SATA_DEVFN:
+	case PCH_DEVFN_SATA:
 		silconfig->EnableSata = 0;
 		break;
-	case PCIEB0_DEVFN:
+	case PCH_DEVFN_PCIE5:
 		silconfig->PcieRootPortEn[0] = 0;
 		silconfig->PcieRpHotPlug[0] = 0;
 		break;
-	case PCIEB1_DEVFN:
+	case PCH_DEVFN_PCIE6:
 		silconfig->PcieRootPortEn[1] = 0;
 		silconfig->PcieRpHotPlug[1] = 0;
 		break;
-	case PCIEA0_DEVFN:
+	case PCH_DEVFN_PCIE1:
 		silconfig->PcieRootPortEn[2] = 0;
 		silconfig->PcieRpHotPlug[2] = 0;
 		break;
-	case PCIEA1_DEVFN:
+	case PCH_DEVFN_PCIE2:
 		silconfig->PcieRootPortEn[3] = 0;
 		silconfig->PcieRpHotPlug[3] = 0;
 		break;
-	case PCIEA2_DEVFN:
+	case PCH_DEVFN_PCIE3:
 		silconfig->PcieRootPortEn[4] = 0;
 		silconfig->PcieRpHotPlug[4] = 0;
 		break;
-	case PCIEA3_DEVFN:
+	case PCH_DEVFN_PCIE4:
 		silconfig->PcieRootPortEn[5] = 0;
 		silconfig->PcieRpHotPlug[5] = 0;
 		break;
-	case XHCI_DEVFN:
+	case PCH_DEVFN_XHCI:
 		silconfig->Usb30Mode = 0;
 		break;
-	case XDCI_DEVFN:
+	case PCH_DEVFN_XDCI:
 		silconfig->UsbOtg = 0;
 		break;
-	case LPSS_DEVFN_I2C0:
+	case PCH_DEVFN_I2C0:
 		silconfig->I2c0Enable = 0;
 		break;
-	case LPSS_DEVFN_I2C1:
+	case PCH_DEVFN_I2C1:
 		silconfig->I2c1Enable = 0;
 		break;
-	case LPSS_DEVFN_I2C2:
+	case PCH_DEVFN_I2C2:
 		silconfig->I2c2Enable = 0;
 		break;
-	case LPSS_DEVFN_I2C3:
+	case PCH_DEVFN_I2C3:
 		silconfig->I2c3Enable = 0;
 		break;
-	case LPSS_DEVFN_I2C4:
+	case PCH_DEVFN_I2C4:
 		silconfig->I2c4Enable = 0;
 		break;
-	case LPSS_DEVFN_I2C5:
+	case PCH_DEVFN_I2C5:
 		silconfig->I2c5Enable = 0;
 		break;
-	case LPSS_DEVFN_I2C6:
+	case PCH_DEVFN_I2C6:
 		silconfig->I2c6Enable = 0;
 		break;
-	case LPSS_DEVFN_I2C7:
+	case PCH_DEVFN_I2C7:
 		silconfig->I2c7Enable = 0;
 		break;
-	case LPSS_DEVFN_UART0:
+	case PCH_DEVFN_UART0:
 		silconfig->Hsuart0Enable = 0;
 		break;
-	case LPSS_DEVFN_UART1:
+	case PCH_DEVFN_UART1:
 		silconfig->Hsuart1Enable = 0;
 		break;
-	case LPSS_DEVFN_UART2:
+	case PCH_DEVFN_UART2:
 		silconfig->Hsuart2Enable = 0;
 		break;
-	case LPSS_DEVFN_UART3:
+	case PCH_DEVFN_UART3:
 		silconfig->Hsuart3Enable = 0;
 		break;
-	case LPSS_DEVFN_SPI0:
+	case PCH_DEVFN_SPI0:
 		silconfig->Spi0Enable = 0;
 		break;
-	case LPSS_DEVFN_SPI1:
+	case PCH_DEVFN_SPI1:
 		silconfig->Spi1Enable = 0;
 		break;
-	case LPSS_DEVFN_SPI2:
+	case PCH_DEVFN_SPI2:
 		silconfig->Spi2Enable = 0;
 		break;
-	case SDCARD_DEVFN:
+	case PCH_DEVFN_SDCARD:
 		silconfig->SdcardEnabled = 0;
 		break;
-	case EMMC_DEVFN:
+	case PCH_DEVFN_EMMC:
 		silconfig->eMMCEnabled = 0;
 		break;
-	case SDIO_DEVFN:
+	case PCH_DEVFN_SDIO:
 		silconfig->SdioEnabled = 0;
 		break;
-	case SMBUS_DEVFN:
+	case PCH_DEVFN_SMBUS:
 		silconfig->SmbusEnable = 0;
 		break;
 	default:
@@ -419,7 +433,7 @@ static void disable_dev(struct device *dev, FSP_S_CONFIG *silconfig) {
 
 static void parse_devicetree(FSP_S_CONFIG *silconfig)
 {
-	struct device *dev = NB_DEV_ROOT;
+	struct device *dev = SA_DEV_ROOT;
 
 	if (!dev) {
 		printk(BIOS_ERR, "Could not find root device\n");
@@ -434,14 +448,14 @@ static void parse_devicetree(FSP_S_CONFIG *silconfig)
 
 void platform_fsp_silicon_init_params_cb(FSPS_UPD *silupd)
 {
-        FSP_S_CONFIG *silconfig = &silupd->FspsConfig;
+	FSP_S_CONFIG *silconfig = &silupd->FspsConfig;
 	static struct soc_intel_apollolake_config *cfg;
 	uint8_t port;
 
 	/* Load VBT before devicetree-specific config. */
 	silconfig->GraphicsConfigPtr = (uintptr_t)vbt;
 
-	struct device *dev = NB_DEV_ROOT;
+	struct device *dev = SA_DEV_ROOT;
 
 	if (!dev || !dev->chip_info) {
 		printk(BIOS_ERR, "BUG! Could not find SOC devicetree config\n");
@@ -475,7 +489,9 @@ void platform_fsp_silicon_init_params_cb(FSPS_UPD *silupd)
 
 	silconfig->LPSS_S0ixEnable = cfg->lpss_s0ix_enable;
 
-	/* Disable monitor mwait since it is broken due to a hardware bug without a fix */
+	/* Disable monitor mwait since it is broken due to a hardware bug
+	 * without a fix
+	 */
 	silconfig->MonitorMwaitEnable = 0;
 
 	silconfig->SkipMpInit = 1;

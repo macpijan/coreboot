@@ -221,7 +221,7 @@ static u32 northbridge_get_base_reg(struct device *dev, int reg)
 }
 
 static void fill_in_relocation_params(struct device *dev,
-                                      struct smm_relocation_params *params)
+				      struct smm_relocation_params *params)
 {
 	u32 tseg_size;
 	u32 tsegmb;
@@ -255,7 +255,8 @@ static void fill_in_relocation_params(struct device *dev,
 	/* SMRR has 32-bits of valid address aligned to 4KiB. */
 	params->smrr_base.lo = (params->smram_base & rmask) | MTRR_TYPE_WRBACK;
 	params->smrr_base.hi = 0;
-	params->smrr_mask.lo = (~(tseg_size - 1) & rmask) | MTRR_PHYS_MASK_VALID;
+	params->smrr_mask.lo = (~(tseg_size - 1) & rmask)
+		| MTRR_PHYS_MASK_VALID;
 	params->smrr_mask.hi = 0;
 
 	/* The EMRR and UNCORE_EMRR are at IEDBASE + 2MiB */
@@ -266,14 +267,15 @@ static void fill_in_relocation_params(struct device *dev,
 	 * on the number of physical address bits supported. */
 	params->emrr_base.lo = emrr_base | MTRR_TYPE_WRBACK;
 	params->emrr_base.hi = 0;
-	params->emrr_mask.lo = (~(emrr_size - 1) & rmask) | MTRR_PHYS_MASK_VALID;
+	params->emrr_mask.lo = (~(emrr_size - 1) & rmask)
+		| MTRR_PHYS_MASK_VALID;
 	params->emrr_mask.hi = (1 << (phys_bits - 32)) - 1;
 
 	/* UNCORE_EMRR has 39 bits of valid address aligned to 4KiB. */
 	params->uncore_emrr_base.lo = emrr_base;
 	params->uncore_emrr_base.hi = 0;
 	params->uncore_emrr_mask.lo = (~(emrr_size - 1) & rmask) |
-	                              MTRR_PHYS_MASK_VALID;
+				      MTRR_PHYS_MASK_VALID;
 	params->uncore_emrr_mask.hi = (1 << (39 - 32)) - 1;
 }
 
@@ -297,7 +299,9 @@ static void setup_ied_area(struct smm_relocation_params *params)
 
 	/* According to the BWG MP init section 2MiB of memory at IEDBASE +
 	 * 2MiB should be zeroed as well. However, I suspect what is intended
-	 * is to clear the memory covered by EMRR. TODO(adurbin): figure out if 	 * this is really required. */
+	 * is to clear the memory covered by EMRR. TODO(adurbin): figure out if
+	 * this is really required.
+	 */
 	//memset(ied_base + (2 << 20), 0, (2 << 20));
 }
 
@@ -328,9 +332,8 @@ void smm_initialize(void)
 	 */
 	smm_initiate_relocation();
 
-	if (smm_reloc_params.smm_save_state_in_msrs) {
+	if (smm_reloc_params.smm_save_state_in_msrs)
 		printk(BIOS_DEBUG, "Doing parallel SMM relocation.\n");
-	}
 }
 
 /* The default SMM entry can happen in parallel or serially. If the

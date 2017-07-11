@@ -31,11 +31,12 @@
 #include <fsp/api.h>
 #include <fsp/memmap.h>
 #include <fsp/util.h>
+#include <reset.h>
 #include <soc/cpu.h>
 #include <soc/flash_ctrlr.h>
 #include <soc/intel/common/mrc_cache.h>
 #include <soc/iomap.h>
-#include <soc/northbridge.h>
+#include <soc/systemagent.h>
 #include <soc/pci_devs.h>
 #include <soc/pm.h>
 #include <soc/romstage.h>
@@ -80,10 +81,10 @@ static uint32_t fsp_version CAR_GLOBAL;
 static void soc_early_romstage_init(void)
 {
 	/* Set MCH base address and enable bit */
-	pci_write_config32(NB_DEV_ROOT, MCHBAR, MCH_BASE_ADDR | 1);
+	pci_write_config32(SA_DEV_ROOT, MCHBAR, MCH_BASE_ADDR | 1);
 
 	/* Enable decoding for HPET. Needed for FSP global pointer storage */
-	pci_write_config8(P2SB_DEV, P2SB_HPTC, P2SB_HPTC_ADDRESS_SELECT_0 |
+	pci_write_config8(PCH_DEV_P2SB, P2SB_HPTC, P2SB_HPTC_ADDRESS_SELECT_0 |
 						P2SB_HPTC_ADDRESS_ENABLE);
 }
 
@@ -136,38 +137,37 @@ static bool punit_init(void)
 	reg = read32(bios_rest_cpl);
 	if (reg == 0xffffffff) {
 		/* P-unit not found */
-		printk(BIOS_DEBUG, "Punit MMIO not available \n");
+		printk(BIOS_DEBUG, "Punit MMIO not available\n");
 		return false;
-	} else {
-		/* Set Punit interrupt pin IPIN offset 3D */
-		pci_write_config8(PUNIT_DEVFN, PCI_INTERRUPT_PIN, 0x2);
+	}
+	/* Set Punit interrupt pin IPIN offset 3D */
+	pci_write_config8(SA_DEV_PUNIT, PCI_INTERRUPT_PIN, 0x2);
 
-		/* Set PUINT IRQ to 24 and INTPIN LOCK */
-		write32((void *)(MCH_BASE_ADDR + PUNIT_THERMAL_DEVICE_IRQ),
-			PUINT_THERMAL_DEVICE_IRQ_VEC_NUMBER |
-			PUINT_THERMAL_DEVICE_IRQ_LOCK);
+	/* Set PUINT IRQ to 24 and INTPIN LOCK */
+	write32((void *)(MCH_BASE_ADDR + PUNIT_THERMAL_DEVICE_IRQ),
+		PUINT_THERMAL_DEVICE_IRQ_VEC_NUMBER |
+		PUINT_THERMAL_DEVICE_IRQ_LOCK);
 
-		data = read32((void *)(MCH_BASE_ADDR + 0x7818));
-		data &= 0xFFFFE01F;
-		data |= 0x20 | 0x200;
-		write32((void *)(MCH_BASE_ADDR + 0x7818), data);
+	data = read32((void *)(MCH_BASE_ADDR + 0x7818));
+	data &= 0xFFFFE01F;
+	data |= 0x20 | 0x200;
+	write32((void *)(MCH_BASE_ADDR + 0x7818), data);
 
-		/* Stage0 BIOS Reset Complete (RST_CPL) */
-		write32(bios_rest_cpl, 0x1);
+	/* Stage0 BIOS Reset Complete (RST_CPL) */
+	write32(bios_rest_cpl, 0x1);
 
-		/*
-		 * Poll for bit 8 in same reg (RST_CPL).
-		 * We wait here till 1 ms for the bit to get set.
-		 */
-		stopwatch_init_msecs_expire(&sw, 1);
-		while (!(read32(bios_rest_cpl) & 0x100)) {
-			if (stopwatch_expired(&sw)) {
-				printk(BIOS_DEBUG,
-				       "Failed to set RST_CPL bit\n");
-				return false;
-			}
-			udelay(100);
+	/*
+	 * Poll for bit 8 in same reg (RST_CPL).
+	 * We wait here till 1 ms for the bit to get set.
+	 */
+	stopwatch_init_msecs_expire(&sw, 1);
+	while (!(read32(bios_rest_cpl) & 0x100)) {
+		if (stopwatch_expired(&sw)) {
+			printk(BIOS_DEBUG,
+			       "Failed to set RST_CPL bit\n");
+			return false;
 		}
+		udelay(100);
 	}
 	return true;
 }
@@ -221,7 +221,8 @@ asmlinkage void car_stage_entry(void)
 	top_of_ram = (uintptr_t) cbmem_top();
 	/* cbmem_top() needs to be at least 16 MiB aligned */
 	assert(ALIGN_DOWN(top_of_ram, 16*MiB) == top_of_ram);
-	postcar_frame_add_mtrr(&pcf, top_of_ram - 16*MiB, 16*MiB, MTRR_TYPE_WRBACK);
+	postcar_frame_add_mtrr(&pcf, top_of_ram - 16*MiB, 16*MiB,
+		MTRR_TYPE_WRBACK);
 
 	/* Cache the memory-mapped boot media. */
 	if (IS_ENABLED(CONFIG_BOOT_DEVICE_MEMORY_MAPPED))
@@ -245,7 +246,8 @@ asmlinkage void car_stage_entry(void)
 static void fill_console_params(FSPM_UPD *mupd)
 {
 	if (IS_ENABLED(CONFIG_CONSOLE_SERIAL)) {
-		mupd->FspmConfig.SerialDebugPortDevice = CONFIG_UART_FOR_CONSOLE;
+		mupd->FspmConfig.SerialDebugPortDevice =
+			CONFIG_UART_FOR_CONSOLE;
 		/* use MMIO port type */
 		mupd->FspmConfig.SerialDebugPortType = 2;
 		/* use 4 byte register stride */
@@ -257,9 +259,26 @@ static void fill_console_params(FSPM_UPD *mupd)
 	}
 }
 
+static void check_full_retrain(const FSPM_UPD *mupd)
+{
+	struct chipset_power_state *ps;
+
+	if (mupd->FspmArchUpd.BootMode != FSP_BOOT_WITH_FULL_CONFIGURATION)
+		return;
+
+	ps = car_get_var_ptr(&power_state);
+
+	if (ps->gen_pmcon1 & WARM_RESET_STS) {
+		printk(BIOS_INFO, "Full retrain unsupported on warm reboot.\n");
+		hard_reset();
+	}
+}
+
 void platform_fsp_memory_init_params_cb(FSPM_UPD *mupd, uint32_t version)
 {
 	struct region_device rdev;
+
+	check_full_retrain(mupd);
 
 	fill_console_params(mupd);
 	mainboard_memory_init_params(mupd);

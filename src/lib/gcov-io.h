@@ -105,8 +105,8 @@ permissions described in the GCC Runtime Library Exception, version
 	basic_block: header int32:flags*
 	arcs: header int32:block_no arc*
 	arc:  int32:dest_block int32:flags
-        lines: header int32:block_no line*
-               int32:0 string:NULL
+	lines: header int32:block_no line*
+		int32:0 string:NULL
 	line:  int32:line_no | int32:0 string:filename
 
    The BASIC_BLOCK record holds per-bb flags.  The number of blocks
@@ -126,9 +126,9 @@ permissions described in the GCC Runtime Library Exception, version
    blocks they are for.
 
    The data file contains the following records.
-        data: {unit summary:object summary:program* function-data*}*
+	data: {unit summary:object summary:program* function-data*}*
 	unit: header int32:checksum
-        function-data:	announce_function present counts
+	function-data:	announce_function present counts
 	announce_function: header int32:ident
 		int32:lineno_checksum int32:cfg_checksum
 	present: header int32:present
@@ -181,35 +181,35 @@ permissions described in the GCC Runtime Library Exception, version
 /* About the target */
 
 #if BITS_PER_UNIT == 8
-typedef unsigned gcov_unsigned_t __attribute__ ((mode (SI)));
-typedef unsigned gcov_position_t __attribute__ ((mode (SI)));
+typedef unsigned int gcov_unsigned_t __attribute__ ((mode(SI)));
+typedef unsigned int gcov_position_t __attribute__ ((mode(SI)));
 #if LONG_LONG_TYPE_SIZE > 32
-typedef signed gcov_type __attribute__ ((mode (DI)));
+typedef signed gcov_type __attribute__ ((mode(DI)));
 #else
-typedef signed gcov_type __attribute__ ((mode (SI)));
+typedef signed gcov_type __attribute__ ((mode(SI)));
 #endif
 #else
 #if BITS_PER_UNIT == 16
-typedef unsigned gcov_unsigned_t __attribute__ ((mode (HI)));
-typedef unsigned gcov_position_t __attribute__ ((mode (HI)));
+typedef unsigned int gcov_unsigned_t __attribute__ ((mode(HI)));
+typedef unsigned int gcov_position_t __attribute__ ((mode(HI)));
 #if LONG_LONG_TYPE_SIZE > 32
-typedef signed gcov_type __attribute__ ((mode (SI)));
+typedef signed gcov_type __attribute__ ((mode(SI)));
 #else
-typedef signed gcov_type __attribute__ ((mode (HI)));
+typedef signed gcov_type __attribute__ ((mode(HI)));
 #endif
 #else
-typedef unsigned gcov_unsigned_t __attribute__ ((mode (QI)));
-typedef unsigned gcov_position_t __attribute__ ((mode (QI)));
+typedef unsigned int gcov_unsigned_t __attribute__ ((mode(QI)));
+typedef unsigned int gcov_position_t __attribute__ ((mode(QI)));
 #if LONG_LONG_TYPE_SIZE > 32
-typedef signed gcov_type __attribute__ ((mode (HI)));
+typedef signed gcov_type __attribute__ ((mode(HI)));
 #else
-typedef signed gcov_type __attribute__ ((mode (QI)));
+typedef signed gcov_type __attribute__ ((mode(QI)));
 #endif
 #endif
 #endif
 
 
-#if defined (TARGET_POSIX_IO)
+#if defined(TARGET_POSIX_IO)
 #define GCOV_LOCKED 1
 #else
 #define GCOV_LOCKED 0
@@ -218,8 +218,8 @@ typedef signed gcov_type __attribute__ ((mode (QI)));
 #else /* !IN_LIBGCOV */
 /* About the host */
 
-typedef unsigned gcov_unsigned_t;
-typedef unsigned gcov_position_t;
+typedef unsigned int gcov_unsigned_t;
+typedef unsigned int gcov_position_t;
 /* gcov_type is typedef'd elsewhere for the compiler */
 #if IN_GCOV
 #define GCOV_LINKAGE static
@@ -231,7 +231,7 @@ typedef HOST_WIDEST_INT gcov_type;
 #define GCOV_TYPE_SIZE (LONG_LONG_TYPE_SIZE > 32 ? 64 : 32)
 #endif
 
-#if defined (HOST_HAS_F_SETLKW)
+#if defined(HOST_HAS_F_SETLKW)
 #define GCOV_LOCKED 1
 #else
 #define GCOV_LOCKED 0
@@ -270,7 +270,7 @@ typedef HOST_WIDEST_INT gcov_type;
 #pragma GCC poison gcov_read_string gcov_sync gcov_time gcov_magic
 
 #ifdef HAVE_GAS_HIDDEN
-#define ATTRIBUTE_HIDDEN  __attribute__ ((__visibility__ ("hidden")))
+#define ATTRIBUTE_HIDDEN  __attribute__ ((__visibility__("hidden")))
 #else
 #define ATTRIBUTE_HIDDEN
 #endif
@@ -300,11 +300,11 @@ typedef HOST_WIDEST_INT gcov_type;
 #include "gcov-iov.h"
 
 /* Convert a magic or version number to a 4 character string.  */
-#define GCOV_UNSIGNED2STRING(ARRAY,VALUE)	\
-  ((ARRAY)[0] = (char)((VALUE) >> 24),		\
-   (ARRAY)[1] = (char)((VALUE) >> 16),		\
-   (ARRAY)[2] = (char)((VALUE) >> 8),		\
-   (ARRAY)[3] = (char)((VALUE) >> 0))
+#define GCOV_UNSIGNED2STRING(ARRAY, VALUE)	\
+	((ARRAY)[0] = (char)((VALUE) >> 24),	\
+	(ARRAY)[1] = (char)((VALUE) >> 16),	\
+	(ARRAY)[2] = (char)((VALUE) >> 8),	\
+	(ARRAY)[3] = (char)((VALUE) >> 0))
 
 /* The record tags.  Values [1..3f] are for tags which may be in either
    file.  Values [41..9f] for those in the note file and [a1..ff] for
@@ -320,7 +320,7 @@ typedef HOST_WIDEST_INT gcov_type;
 #define GCOV_TAG_ARCS_LENGTH(NUM)  (1 + (NUM) * 2)
 #define GCOV_TAG_ARCS_NUM(LENGTH)  (((LENGTH) - 1) / 2)
 #define GCOV_TAG_LINES		 ((gcov_unsigned_t)0x01450000)
-#define GCOV_TAG_COUNTER_BASE 	 ((gcov_unsigned_t)0x01a10000)
+#define GCOV_TAG_COUNTER_BASE	 ((gcov_unsigned_t)0x01a10000)
 #define GCOV_TAG_COUNTER_LENGTH(NUM) ((NUM) * 2)
 #define GCOV_TAG_COUNTER_NUM(LENGTH) ((LENGTH) / 2)
 #define GCOV_TAG_OBJECT_SUMMARY  ((gcov_unsigned_t)0xa1000000) /* Obsolete */
@@ -329,7 +329,7 @@ typedef HOST_WIDEST_INT gcov_type;
 	(1 + GCOV_COUNTERS_SUMMABLE * (2 + 3 * 2))
 
 /* Counters that are collected.  */
-#define GCOV_COUNTER_ARCS 	0  /* Arc transitions.  */
+#define GCOV_COUNTER_ARCS	0  /* Arc transitions.  */
 #define GCOV_COUNTERS_SUMMABLE	1  /* Counters which can be
 				      summed.  */
 #define GCOV_FIRST_VALUE_COUNTER 1 /* The first of counters used for value
@@ -355,7 +355,7 @@ typedef HOST_WIDEST_INT gcov_type;
 
 /* Number of counters used for value profiling.  */
 #define GCOV_N_VALUE_COUNTERS \
-  (GCOV_LAST_VALUE_COUNTER - GCOV_FIRST_VALUE_COUNTER + 1)
+	(GCOV_LAST_VALUE_COUNTER - GCOV_FIRST_VALUE_COUNTER + 1)
 
   /* A list of human readable names of the counters */
 #define GCOV_COUNTER_NAMES	{"arcs", "interval", "pow2", "single", \
@@ -376,10 +376,10 @@ typedef HOST_WIDEST_INT gcov_type;
 	(GCOV_TAG_COUNTER_BASE + ((gcov_unsigned_t)(COUNT) << 17))
 /* Convert a tag to a counter.  */
 #define GCOV_COUNTER_FOR_TAG(TAG)					\
-	((unsigned)(((TAG) - GCOV_TAG_COUNTER_BASE) >> 17))
+	((unsigned int)(((TAG) - GCOV_TAG_COUNTER_BASE) >> 17))
 /* Check whether a tag is a counter tag.  */
 #define GCOV_TAG_IS_COUNTER(TAG)				\
-	(!((TAG) & 0xFFFF) && GCOV_COUNTER_FOR_TAG (TAG) < GCOV_COUNTERS)
+	(!((TAG) & 0xFFFF) && GCOV_COUNTER_FOR_TAG(TAG) < GCOV_COUNTERS)
 
 /* The tag level mask has 1's in the position of the inner levels, &
    the lsb of the current level, and zero on the current and outer
@@ -387,39 +387,37 @@ typedef HOST_WIDEST_INT gcov_type;
 #define GCOV_TAG_MASK(TAG) (((TAG) - 1) ^ (TAG))
 
 /* Return nonzero if SUB is an immediate subtag of TAG.  */
-#define GCOV_TAG_IS_SUBTAG(TAG,SUB)				\
-	(GCOV_TAG_MASK (TAG) >> 8 == GCOV_TAG_MASK (SUB) 	\
+#define GCOV_TAG_IS_SUBTAG(TAG, SUB)				\
+	(GCOV_TAG_MASK(TAG) >> 8 == GCOV_TAG_MASK(SUB)		\
 	 && !(((SUB) ^ (TAG)) & ~GCOV_TAG_MASK(TAG)))
 
 /* Return nonzero if SUB is at a sublevel to TAG.  */
-#define GCOV_TAG_IS_SUBLEVEL(TAG,SUB)				\
-	(GCOV_TAG_MASK (TAG) > GCOV_TAG_MASK (SUB))
+#define GCOV_TAG_IS_SUBLEVEL(TAG, SUB)				\
+	(GCOV_TAG_MASK(TAG) > GCOV_TAG_MASK(SUB))
 
 /* Basic block flags.  */
 #define GCOV_BLOCK_UNEXPECTED	(1 << 1)
 
 /* Arc flags.  */
-#define GCOV_ARC_ON_TREE 	(1 << 0)
+#define GCOV_ARC_ON_TREE	(1 << 0)
 #define GCOV_ARC_FAKE		(1 << 1)
 #define GCOV_ARC_FALLTHROUGH	(1 << 2)
 
 /* Structured records.  */
 
 /* Cumulative counter data.  */
-struct gcov_ctr_summary
-{
-  gcov_unsigned_t num;		/* number of counters.  */
-  gcov_unsigned_t runs;		/* number of program runs */
-  gcov_type sum_all;		/* sum of all counters accumulated.  */
-  gcov_type run_max;		/* maximum value on a single run.  */
-  gcov_type sum_max;    	/* sum of individual run max values.  */
+struct gcov_ctr_summary {
+	gcov_unsigned_t num;		/* number of counters.  */
+	gcov_unsigned_t runs;		/* number of program runs */
+	gcov_type sum_all;		/* sum of all counters accumulated.  */
+	gcov_type run_max;		/* maximum value on a single run.  */
+	gcov_type sum_max;	/* sum of individual run max values.  */
 };
 
 /* Object & program summary record.  */
-struct gcov_summary
-{
-  gcov_unsigned_t checksum;	/* checksum of program */
-  struct gcov_ctr_summary ctrs[GCOV_COUNTERS_SUMMABLE];
+struct gcov_summary {
+	gcov_unsigned_t checksum;	/* checksum of program */
+	struct gcov_ctr_summary ctrs[GCOV_COUNTERS_SUMMABLE];
 };
 
 /* Structures embedded in coverage program.  The structures generated
@@ -427,10 +425,9 @@ struct gcov_summary
 
 #if IN_LIBGCOV
 /* Information about counters for a single function.  */
-struct gcov_ctr_info
-{
-  gcov_unsigned_t num;		/* number of counters.  */
-  gcov_type *values;		/* their values.  */
+struct gcov_ctr_info {
+	gcov_unsigned_t num;		/* number of counters.  */
+	gcov_type *values;		/* their values.  */
 };
 
 /* Information about a single function.  This uses the trailing array
@@ -439,74 +436,73 @@ struct gcov_ctr_info
    comdat functions was selected -- it points to the gcov_info object
    of the object file containing the selected comdat function.  */
 
-struct gcov_fn_info
-{
-  const struct gcov_info *key;		/* comdat key */
-  gcov_unsigned_t ident;		/* unique ident of function */
-  gcov_unsigned_t lineno_checksum;	/* function lineo_checksum */
-  gcov_unsigned_t cfg_checksum;		/* function cfg checksum */
-  struct gcov_ctr_info ctrs[0];		/* instrumented counters */
+struct gcov_fn_info {
+	const struct gcov_info *key;		/* comdat key */
+	gcov_unsigned_t ident;		/* unique ident of function */
+	gcov_unsigned_t lineno_checksum;	/* function lineo_checksum */
+	gcov_unsigned_t cfg_checksum;		/* function cfg checksum */
+	struct gcov_ctr_info ctrs[0];		/* instrumented counters */
 };
 
 /* Type of function used to merge counters.  */
 typedef void (*gcov_merge_fn) (gcov_type *, gcov_unsigned_t);
 
 /* Information about a single object file.  */
-struct gcov_info
-{
-  gcov_unsigned_t version;	/* expected version number */
-  struct gcov_info *next;	/* link to next, used by libgcov */
+struct gcov_info {
+	gcov_unsigned_t version;	/* expected version number */
+	struct gcov_info *next;	/* link to next, used by libgcov */
 
-  gcov_unsigned_t stamp;	/* uniquifying time stamp */
-  const char *filename;		/* output file name */
+	gcov_unsigned_t stamp;	/* uniquifying time stamp */
+	const char *filename;		/* output file name */
 
-  gcov_merge_fn merge[GCOV_COUNTERS];  /* merge functions (null for
-					  unused) */
+	gcov_merge_fn merge[GCOV_COUNTERS];  /* merge functions (null for
+						unused) */
 
-  unsigned n_functions;		/* number of functions */
-  const struct gcov_fn_info *const *functions; /* pointer to pointers
-					          to function information  */
+	unsigned int n_functions;		     /* number of functions */
+	const struct gcov_fn_info *const *functions; /* pointer to pointers to
+							function information  */
 };
 
 /* Register a new object file module.  */
-extern void __gcov_init (struct gcov_info *) ATTRIBUTE_HIDDEN;
+extern void __gcov_init(struct gcov_info *) ATTRIBUTE_HIDDEN;
 
 #ifndef __COREBOOT__
 /* Called before fork, to avoid double counting.  */
-extern void __gcov_flush (void) ATTRIBUTE_HIDDEN;
+extern void __gcov_flush(void) ATTRIBUTE_HIDDEN;
 #endif
 
 /* The merge function that just sums the counters.  */
-extern void __gcov_merge_add (gcov_type *, unsigned) ATTRIBUTE_HIDDEN;
+extern void __gcov_merge_add(gcov_type *, unsigned int) ATTRIBUTE_HIDDEN;
 
 /* The merge function to choose the most common value.  */
-extern void __gcov_merge_single (gcov_type *, unsigned) ATTRIBUTE_HIDDEN;
+extern void __gcov_merge_single(gcov_type *, unsigned int) ATTRIBUTE_HIDDEN;
 
 /* The merge function to choose the most common difference between
    consecutive values.  */
-extern void __gcov_merge_delta (gcov_type *, unsigned) ATTRIBUTE_HIDDEN;
+extern void __gcov_merge_delta(gcov_type *, unsigned int) ATTRIBUTE_HIDDEN;
 
 /* The merge function that just ors the counters together.  */
-extern void __gcov_merge_ior (gcov_type *, unsigned) ATTRIBUTE_HIDDEN;
+extern void __gcov_merge_ior(gcov_type *, unsigned int) ATTRIBUTE_HIDDEN;
 
 /* The profiler functions.  */
-extern void __gcov_interval_profiler (gcov_type *, gcov_type, int, unsigned);
-extern void __gcov_pow2_profiler (gcov_type *, gcov_type);
-extern void __gcov_one_value_profiler (gcov_type *, gcov_type);
-extern void __gcov_indirect_call_profiler (gcov_type *, gcov_type, void *, void *);
-extern void __gcov_average_profiler (gcov_type *, gcov_type);
-extern void __gcov_ior_profiler (gcov_type *, gcov_type);
+extern void __gcov_interval_profiler(gcov_type *, gcov_type, int, unsigned int);
+extern void __gcov_pow2_profiler(gcov_type *, gcov_type);
+extern void __gcov_one_value_profiler(gcov_type *, gcov_type);
+extern void __gcov_indirect_call_profiler(gcov_type *, gcov_type, void *,
+	void *);
+extern void __gcov_average_profiler(gcov_type *, gcov_type);
+extern void __gcov_ior_profiler(gcov_type *, gcov_type);
 
 #ifndef inhibit_libc
 /* The wrappers around some library functions..  */
-extern pid_t __gcov_fork (void) ATTRIBUTE_HIDDEN;
-extern int __gcov_execl (const char *, char *, ...) ATTRIBUTE_HIDDEN;
-extern int __gcov_execlp (const char *, char *, ...) ATTRIBUTE_HIDDEN;
-extern int __gcov_execle (const char *, char *, ...) ATTRIBUTE_HIDDEN;
-extern int __gcov_execv (const char *, char *const []) ATTRIBUTE_HIDDEN;
-extern int __gcov_execvp (const char *, char *const []) ATTRIBUTE_HIDDEN;
-extern int __gcov_execve (const char *, char  *const [], char *const [])
-  ATTRIBUTE_HIDDEN;
+extern pid_t __gcov_fork(void) ATTRIBUTE_HIDDEN;
+extern int __gcov_execl(const char *, char *, ...) ATTRIBUTE_HIDDEN;
+extern int __gcov_execlp(const char *, char *, ...) ATTRIBUTE_HIDDEN;
+extern int __gcov_execle(const char *, char *, ...) ATTRIBUTE_HIDDEN;
+extern int __gcov_execv(const char *, char *const []) ATTRIBUTE_HIDDEN;
+extern int __gcov_execvp(const char *, char *const []) ATTRIBUTE_HIDDEN;
+extern int __gcov_execve(const char *, char  *const [], char *const [])
+	ATTRIBUTE_HIDDEN;
 #endif
 
 #endif /* IN_LIBGCOV */
@@ -518,25 +514,27 @@ extern int __gcov_execve (const char *, char  *const [], char *const [])
 
 GCOV_LINKAGE struct gcov_var
 {
-  FILE *file;
-  gcov_position_t start;	/* Position of first byte of block */
-  unsigned offset;		/* Read/write position within the block.  */
-  unsigned length;		/* Read limit in the block.  */
-  unsigned overread;		/* Number of words overread.  */
-  int error;			/* < 0 overflow, > 0 disk error.  */
-  int mode;	                /* < 0 writing, > 0 reading */
+	FILE *file;
+	gcov_position_t start;	/* Position of first byte of block */
+	unsigned int offset;	/* Read/write position within the block.  */
+	unsigned int length;	/* Read limit in the block.  */
+	unsigned int overread;	/* Number of words overread.  */
+	int error;		/* < 0 overflow, > 0 disk error.  */
+	int mode;		/* < 0 writing, > 0 reading */
 #if IN_LIBGCOV
-  /* Holds one block plus 4 bytes, thus all coverage reads & writes
-     fit within this buffer and we always can transfer GCOV_BLOCK_SIZE
-     to and from the disk. libgcov never backtracks and only writes 4
-     or 8 byte objects.  */
-  gcov_unsigned_t buffer[GCOV_BLOCK_SIZE + 1];
+	/* Holds one block plus 4 bytes, thus all coverage reads & writes
+	 * fit within this buffer and we always can transfer GCOV_BLOCK_SIZE
+	 * to and from the disk. libgcov never backtracks and only writes 4
+	 * or 8 byte objects.
+	 */
+	gcov_unsigned_t buffer[GCOV_BLOCK_SIZE + 1];
 #else
-  int endian;			/* Swap endianness.  */
-  /* Holds a variable length block, as the compiler can write
-     strings and needs to backtrack.  */
-  size_t alloc;
-  gcov_unsigned_t *buffer;
+	int endian;			/* Swap endianness.  */
+	/* Holds a variable length block, as the compiler can write
+	 * strings and needs to backtrack.
+	 */
+	size_t alloc;
+	gcov_unsigned_t *buffer;
 #endif
 } gcov_var ATTRIBUTE_HIDDEN;
 
@@ -550,83 +548,83 @@ GCOV_LINKAGE struct gcov_var
    functions for writing.  Your file may become corrupted if you break
    these invariants.  */
 #if IN_LIBGCOV
-GCOV_LINKAGE int gcov_open (const char */*name*/) ATTRIBUTE_HIDDEN;
+GCOV_LINKAGE int gcov_open(const char */*name*/) ATTRIBUTE_HIDDEN;
 #else
-GCOV_LINKAGE int gcov_open (const char */*name*/, int /*direction*/);
-GCOV_LINKAGE int gcov_magic (gcov_unsigned_t, gcov_unsigned_t);
+GCOV_LINKAGE int gcov_open(const char */*name*/, int /*direction*/);
+GCOV_LINKAGE int gcov_magic(gcov_unsigned_t, gcov_unsigned_t);
 #endif
-GCOV_LINKAGE int gcov_close (void) ATTRIBUTE_HIDDEN;
+GCOV_LINKAGE int gcov_close(void) ATTRIBUTE_HIDDEN;
 
 /* Available everywhere.  */
-static gcov_position_t gcov_position (void);
-static int gcov_is_error (void);
+static gcov_position_t gcov_position(void);
+static int gcov_is_error(void);
 
-GCOV_LINKAGE gcov_unsigned_t gcov_read_unsigned (void) ATTRIBUTE_HIDDEN;
-GCOV_LINKAGE gcov_type gcov_read_counter (void) ATTRIBUTE_HIDDEN;
-GCOV_LINKAGE void gcov_read_summary (struct gcov_summary *) ATTRIBUTE_HIDDEN;
+GCOV_LINKAGE gcov_unsigned_t gcov_read_unsigned(void) ATTRIBUTE_HIDDEN;
+GCOV_LINKAGE gcov_type gcov_read_counter(void) ATTRIBUTE_HIDDEN;
+GCOV_LINKAGE void gcov_read_summary(struct gcov_summary *) ATTRIBUTE_HIDDEN;
 
 #if IN_LIBGCOV
 /* Available only in libgcov */
-GCOV_LINKAGE void gcov_write_counter (gcov_type) ATTRIBUTE_HIDDEN;
-GCOV_LINKAGE void gcov_write_tag_length (gcov_unsigned_t, gcov_unsigned_t)
-    ATTRIBUTE_HIDDEN;
-GCOV_LINKAGE void gcov_write_summary (gcov_unsigned_t /*tag*/,
+GCOV_LINKAGE void gcov_write_counter(gcov_type) ATTRIBUTE_HIDDEN;
+GCOV_LINKAGE void gcov_write_tag_length(gcov_unsigned_t, gcov_unsigned_t)
+	ATTRIBUTE_HIDDEN;
+GCOV_LINKAGE void gcov_write_summary(gcov_unsigned_t /*tag*/,
 				      const struct gcov_summary *)
-    ATTRIBUTE_HIDDEN;
-static void gcov_rewrite (void);
-GCOV_LINKAGE void gcov_seek (gcov_position_t /*position*/) ATTRIBUTE_HIDDEN;
+	ATTRIBUTE_HIDDEN;
+static void gcov_rewrite(void);
+GCOV_LINKAGE void gcov_seek(gcov_position_t /*position*/) ATTRIBUTE_HIDDEN;
 #else
 /* Available outside libgcov */
-GCOV_LINKAGE const char *gcov_read_string (void);
-GCOV_LINKAGE void gcov_sync (gcov_position_t /*base*/,
+GCOV_LINKAGE const char *gcov_read_string(void);
+GCOV_LINKAGE void gcov_sync(gcov_position_t /*base*/,
 			     gcov_unsigned_t /*length */);
 #endif
 
 #if !IN_GCOV
 /* Available outside gcov */
-GCOV_LINKAGE void gcov_write_unsigned (gcov_unsigned_t) ATTRIBUTE_HIDDEN;
+GCOV_LINKAGE void gcov_write_unsigned(gcov_unsigned_t) ATTRIBUTE_HIDDEN;
 #endif
 
 #if !IN_GCOV && !IN_LIBGCOV
 /* Available only in compiler */
-GCOV_LINKAGE void gcov_write_string (const char *);
-GCOV_LINKAGE gcov_position_t gcov_write_tag (gcov_unsigned_t);
-GCOV_LINKAGE void gcov_write_length (gcov_position_t /*position*/);
+GCOV_LINKAGE void gcov_write_string(const char *);
+GCOV_LINKAGE gcov_position_t gcov_write_tag(gcov_unsigned_t);
+GCOV_LINKAGE void gcov_write_length(gcov_position_t /*position*/);
 #endif
 
 #if IN_GCOV > 0
 /* Available in gcov */
-GCOV_LINKAGE time_t gcov_time (void);
+GCOV_LINKAGE time_t gcov_time(void);
 #endif
 
 /* Save the current position in the gcov file.  */
 
 static inline gcov_position_t
-gcov_position (void)
+gcov_position(void)
 {
-  gcc_assert (gcov_var.mode > 0);
-  return gcov_var.start + gcov_var.offset;
+	gcc_assert(gcov_var.mode > 0);
+	return gcov_var.start + gcov_var.offset;
 }
 
 /* Return nonzero if the error flag is set.  */
 
 static inline int
-gcov_is_error (void)
+gcov_is_error(void)
 {
-  return gcov_var.file ? gcov_var.error : 1;
+	return gcov_var.file ? gcov_var.error : 1;
 }
 
 #if IN_LIBGCOV
 /* Move to beginning of file and initialize for writing.  */
 
 static inline void
-gcov_rewrite (void)
+gcov_rewrite(void)
 {
-  gcc_assert (gcov_var.mode > 0);
-  gcov_var.mode = -1;
-  gcov_var.start = 0;
-  gcov_var.offset = 0;
-  fseek (gcov_var.file, 0L, SEEK_SET);
+	gcc_assert(gcov_var.mode > 0);
+	gcov_var.mode = -1;
+	gcov_var.start = 0;
+	gcov_var.offset = 0;
+	fseek(gcov_var.file, 0L, SEEK_SET);
 }
 #endif
 

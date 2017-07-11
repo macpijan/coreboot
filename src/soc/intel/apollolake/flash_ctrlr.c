@@ -60,7 +60,7 @@ static void _get_spi_flash_ctx(struct spi_flash_ctx *ctx)
 	uint32_t bar;
 
 	/* FIXME: use device definition */
-	ctx->pci_dev = SPI_DEV;
+	ctx->pci_dev = PCH_DEV_SPI;
 
 	bar = pci_read_config32(ctx->pci_dev, PCI_BASE_ADDRESS_0);
 	ctx->mmio_base = bar & ~PCI_BASE_ADDRESS_MEM_ATTR_MASK;
@@ -68,7 +68,8 @@ static void _get_spi_flash_ctx(struct spi_flash_ctx *ctx)
 }
 
 /* Read register from the SPI flash controller. 'reg' is the register offset. */
-static uint32_t _spi_flash_ctrlr_reg_read(struct spi_flash_ctx *ctx, uint16_t reg)
+static uint32_t _spi_flash_ctrlr_reg_read(struct spi_flash_ctx *ctx,
+	uint16_t reg)
 {
 	uintptr_t addr =  ALIGN_DOWN(ctx->mmio_base + reg, 4);
 	return read32((void *)addr);
@@ -116,7 +117,7 @@ static void fill_xfer_fifo(struct spi_flash_ctx *ctx, const void *data,
 	len = min(len, SPIBAR_FDATA_FIFO_SIZE);
 
 	/* YES! memcpy() works. FDATAn does not require 32-bit accesses. */
-	memcpy((void*)(ctx->mmio_base + SPIBAR_FDATA(0)), data, len);
+	memcpy((void *)(ctx->mmio_base + SPIBAR_FDATA(0)), data, len);
 }
 
 /* Drain FDATAn FIFO after a read transaction populates data. */
@@ -125,7 +126,7 @@ static void drain_xfer_fifo(struct spi_flash_ctx *ctx, void *dest, size_t len)
 	len = min(len, SPIBAR_FDATA_FIFO_SIZE);
 
 	/* YES! memcpy() works. FDATAn does not require 32-bit accesses. */
-	memcpy(dest, (void*)(ctx->mmio_base + SPIBAR_FDATA(0)), len);
+	memcpy(dest, (void *)(ctx->mmio_base + SPIBAR_FDATA(0)), len);
 }
 
 /* Fire up a transfer using the hardware sequencer. */
@@ -190,7 +191,7 @@ unsigned int spi_crop_chunk(unsigned int cmd_len, unsigned int buf_len)
 /*
  * Write-protection status for BIOS region (BIOS_CONTROL register):
  * EISS/WPD bits	00	01	10	11
- * 			--	--	--	--
+ *			--	--	--	--
  * normal mode		RO	RW	RO	RO
  * SMM mode		RO	RW	RO	RW
  */

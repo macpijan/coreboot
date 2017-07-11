@@ -13,8 +13,8 @@
  * GNU General Public License for more details.
  */
 
-#include "ec.h"
-#include "gpio.h"
+#include <variant/ec.h>
+#include <variant/gpio.h>
 
 DefinitionBlock(
 	"dsdt.aml",
@@ -42,6 +42,8 @@ DefinitionBlock(
 		}
 		Device (PCI0)
 		{
+			/* Image processing unit */
+			#include <soc/intel/skylake/acpi/ipu.asl>
 			#include <soc/intel/skylake/acpi/systemagent.asl>
 			#include <soc/intel/skylake/acpi/pch.asl>
 		}
@@ -60,5 +62,11 @@ DefinitionBlock(
 		#include <ec/google/chromeec/acpi/superio.asl>
 		/* ACPI code for EC functions */
 		#include <ec/google/chromeec/acpi/ec.asl>
+	}
+
+	Scope (\_SB)
+	{
+		/* Dynamic Platform Thermal Framework */
+		#include <variant/acpi/dptf.asl>
 	}
 }

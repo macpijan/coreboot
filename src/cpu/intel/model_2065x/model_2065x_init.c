@@ -42,7 +42,7 @@
  */
 static acpi_cstate_t cstate_map[] = {
 	{	/* 0: C0 */
-	},{	/* 1: C1 */
+	}, {	/* 1: C1 */
 		.latency = 1,
 		.power = 1000,
 		.resource = {
@@ -115,7 +115,7 @@ int cpu_get_apic_id_map(int *apic_id_map)
 {
 	int i;
 	struct cpuid_result result;
-	unsigned threads_per_package, threads_per_core;
+	unsigned int threads_per_package, threads_per_core;
 
 	/* Logical processors (threads) per core */
 	result = cpuid_ext(0xb, 0);
@@ -176,7 +176,7 @@ static void configure_misc(void)
 
 	msr = rdmsr(IA32_MISC_ENABLE);
 	msr.lo |= (1 << 0);	  /* Fast String enable */
-	msr.lo |= (1 << 3); 	  /* TM1/TM2/EMTTM enable */
+	msr.lo |= (1 << 3);	  /* TM1/TM2/EMTTM enable */
 	msr.lo |= (1 << 16);	  /* Enhanced SpeedStep Enable */
 	wrmsr(IA32_MISC_ENABLE, msr);
 
@@ -258,7 +258,7 @@ static void configure_mca(void)
 static void intel_cores_init(struct device *cpu)
 {
 	struct cpuid_result result;
-	unsigned threads_per_package, threads_per_core, i;
+	unsigned int threads_per_package, threads_per_core, i;
 
 	/* Logical processors (threads) per core */
 	result = cpuid_ext(0xb, 0);
@@ -321,7 +321,8 @@ static void model_2065x_init(struct device *cpu)
 	/* Print processor name */
 	fill_processor_name(processor_name);
 	printk(BIOS_INFO, "CPU: %s.\n", processor_name);
-	printk(BIOS_INFO, "CPU:lapic=%ld, boot_cpu=%d\n", lapicid (), boot_cpu ());
+	printk(BIOS_INFO, "CPU:lapic=%ld, boot_cpu=%d\n", lapicid(),
+		boot_cpu());
 
 	/* Setup MTRRs based on physical address size */
 	x86_setup_mtrrs_with_detect();

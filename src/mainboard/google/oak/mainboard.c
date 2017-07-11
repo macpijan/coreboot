@@ -127,11 +127,15 @@ static void configure_usb(void)
 	setup_usb_host();
 
 	if (board_id() + CONFIG_BOARD_ID_ADJUSTMENT > 3) {
-		/* Enable current limit */
-		gpio_output(PAD_CM2MCLK, 1);
-		/* Configure USB OC pins*/
+		/* Type C port 0 Over current alert pin */
 		gpio_input_pullup(PAD_MSDC3_DSL);
-		gpio_input_pullup(PAD_CMPCLK);
+		if (!IS_ENABLED(CONFIG_BOARD_GOOGLE_ROWAN)) {
+			/* Enable USB3 type A port 0 5V load switch */
+			gpio_output(PAD_CM2MCLK, 1);
+			/* USB3 Type A port 0 power over current alert pin */
+			gpio_input_pullup(PAD_CMPCLK);
+		}
+		/* Type C port 1 over current alert pin */
 		if (board_id() + CONFIG_BOARD_ID_ADJUSTMENT < 7)
 			gpio_input_pullup(PAD_PCM_SYNC);
 	}
@@ -148,6 +152,9 @@ static void configure_usb(void)
 
 static void configure_usb_hub(void)
 {
+	if (IS_ENABLED(CONFIG_BOARD_GOOGLE_ROWAN))
+		return;
+
 	/* set usb hub reset pin (low active) to high */
 	if (board_id() + CONFIG_BOARD_ID_ADJUSTMENT > 4)
 		gpio_output(PAD_UTXD3, 1);
@@ -175,8 +182,6 @@ static void configure_backlight(void)
 
 static void configure_display(void)
 {
-	mtcmos_display_power_on();
-
 	/* board from Rev2 */
 	gpio_output(PAD_CMMCLK, 1); /* PANEL_3V3_ENABLE */
 	/* vgp2 set to 3.3V for ps8640 */
@@ -200,11 +205,54 @@ static void configure_display(void)
 	udelay(100);
 }
 
-static void display_startup(void)
+static void configure_backlight_rowan(void)
 {
-	struct edid edid;
+	gpio_output(PAD_DAIPCMOUT, 0);	/* PANEL_LCD_POWER_EN */
+	gpio_output(PAD_DISP_PWM0, 0);	/* DISP_PWM0 */
+	gpio_output(PAD_PCM_TX, 0);	/* PANEL_POWER_EN */
+}
+
+static void configure_display_rowan(void)
+{
+	gpio_output(PAD_UCTS2, 1); /* VDDIO_EN */
+	/* delay 15 ms for panel vddio to stabilize */
+	mdelay(15);
+
+	gpio_output(PAD_SRCLKENAI2, 1); /* LCD_RESET */
+	udelay(20);
+	gpio_output(PAD_SRCLKENAI2, 0); /* LCD_RESET */
+	udelay(20);
+	gpio_output(PAD_SRCLKENAI2, 1); /* LCD_RESET */
+	mdelay(20);
+
+	/* Rowan panel avdd */
+	gpio_output(PAD_URTS2, 1);
+
+	/* Rowan panel avee */
+	gpio_output(PAD_URTS0, 1);
+
+	/* panel.delay.prepare */
+	mdelay(20);
+}
+
+static const struct edid rowan_boe_edid = {
+	.panel_bits_per_color = 8,
+	.panel_bits_per_pixel = 24,
+	.mode = {
+		.name = "1536x2048@60Hz",
+		.pixel_clock = 241646,
+		.lvds_dual_channel = 1,
+		.refresh = 60,
+		.ha = 1536, .hbl = 404, .hso = 200, .hspw = 4, .hborder = 0,
+		.va = 2048, .vbl = 28, .vso = 12, .vspw = 2, .vborder = 0,
+		.phsync = '-', .pvsync = '-',
+		.x_mm = 147, .y_mm = 196,
+	},
+};
+
+static int read_edid_from_ps8640(struct edid *edid)
+{
 	u8 i2c_bus, i2c_addr;
-	int ret;
 
 	if (board_id() + CONFIG_BOARD_ID_ADJUSTMENT > 6) {
 		i2c_bus = 0;
@@ -217,25 +265,48 @@ static void display_startup(void)
 	mtk_i2c_bus_init(i2c_bus);
 
 	ps8640_init(i2c_bus, i2c_addr);
-	if (ps8640_get_edid(i2c_bus, i2c_addr, &edid)) {
+	if (ps8640_get_edid(i2c_bus, i2c_addr, edid)) {
 		printk(BIOS_ERR, "Can't get panel's edid\n");
-		return;
+		return -1;
 	}
 
-	edid.x_resolution = edid.mode.ha;
-	edid.y_resolution = edid.mode.va;
-	edid.bytes_per_line = edid.mode.ha * edid.framebuffer_bits_per_pixel /
-			      8;
+	return 0;
+}
 
-	mtk_ddp_init();
-	ret = mtk_dsi_init(MIPI_DSI_MODE_VIDEO | MIPI_DSI_MODE_VIDEO_SYNC_PULSE,
-			   MIPI_DSI_FMT_RGB888, 4, &edid);
+static void display_startup(void)
+{
+	struct edid edid;
+	int ret;
+	u32 mipi_dsi_flags;
+	bool dual_dsi_mode;
+
+	if (IS_ENABLED(CONFIG_BOARD_GOOGLE_ROWAN)) {
+		edid = rowan_boe_edid;
+		dual_dsi_mode = true;
+		mipi_dsi_flags = MIPI_DSI_MODE_VIDEO |
+				 MIPI_DSI_MODE_VIDEO_SYNC_PULSE |
+				 MIPI_DSI_MODE_LPM | MIPI_DSI_MODE_EOT_PACKET |
+				 MIPI_DSI_CLOCK_NON_CONTINUOUS;
+	} else {
+		if (read_edid_from_ps8640(&edid) < 0)
+			return;
+
+		dual_dsi_mode = false;
+		mipi_dsi_flags = MIPI_DSI_MODE_VIDEO |
+				 MIPI_DSI_MODE_VIDEO_SYNC_PULSE;
+	}
+
+	edid_set_framebuffer_bits_per_pixel(&edid, 32, 0);
+
+	mtk_ddp_init(dual_dsi_mode);
+	ret = mtk_dsi_init(mipi_dsi_flags, MIPI_DSI_FMT_RGB888, 4,
+			   dual_dsi_mode, &edid);
 	if (ret < 0) {
 		printk(BIOS_ERR, "dsi init fail\n");
 		return;
 	}
 
-	mtk_ddp_mode_set(&edid);
+	mtk_ddp_mode_set(&edid, dual_dsi_mode);
 
 	set_vbe_mode_info_valid(&edid, (uintptr_t)0);
 }
@@ -249,7 +320,7 @@ static void mainboard_init(device_t dev)
 		mt6391_gpio_output(MT6391_KP_ROW2, 1);
 
 	/* Config SD card detection pin */
-	gpio_input(PAD_EINT1); /* SD_DET */
+	gpio_input_pullup(PAD_EINT1); /* SD_DET */
 
 	configure_audio();
 
@@ -257,8 +328,14 @@ static void mainboard_init(device_t dev)
 	mtk_dsi_pin_drv_ctrl();
 
 	if (display_init_required()) {
-		configure_backlight();
-		configure_display();
+		mtcmos_display_power_on();
+		if (IS_ENABLED(CONFIG_BOARD_GOOGLE_ROWAN)) {
+			configure_backlight_rowan();
+			configure_display_rowan();
+		} else {
+			configure_backlight();
+			configure_display();
+		}
 		display_startup();
 	} else {
 		printk(BIOS_INFO, "Skipping display init.\n");

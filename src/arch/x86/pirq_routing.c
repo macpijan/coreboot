@@ -23,17 +23,17 @@
 static void check_pirq_routing_table(struct irq_routing_table *rt)
 {
 	uint8_t *addr = (uint8_t *)rt;
-	uint8_t sum=0;
+	uint8_t sum = 0;
 	int i;
 
 	printk(BIOS_INFO, "Checking Interrupt Routing Table consistency...\n");
 
 	if (sizeof(struct irq_routing_table) != rt->size) {
-		printk(BIOS_WARNING, "Inconsistent Interrupt Routing Table size (0x%x/0x%x).\n",
-			       (unsigned int) sizeof(struct irq_routing_table),
-			       rt->size
-			);
-		rt->size=sizeof(struct irq_routing_table);
+		printk(BIOS_WARNING,
+			"Inconsistent Interrupt Routing Table size (0x%x/0x%x).\n",
+			(unsigned int) sizeof(struct irq_routing_table),
+			rt->size);
+		rt->size = sizeof(struct irq_routing_table);
 	}
 
 	for (i = 0; i < rt->size; i++)
@@ -46,19 +46,20 @@ static void check_pirq_routing_table(struct irq_routing_table *rt)
 	sum = rt->checksum - sum;
 
 	if (sum != rt->checksum) {
-		printk(BIOS_WARNING, "Interrupt Routing Table checksum is: 0x%02x but should be: 0x%02x.\n",
-			       rt->checksum, sum);
+		printk(BIOS_WARNING,
+			"Interrupt Routing Table checksum is: 0x%02x but should be: 0x%02x.\n",
+			rt->checksum, sum);
 		rt->checksum = sum;
 	}
 
 	if (rt->signature != PIRQ_SIGNATURE || rt->version != PIRQ_VERSION ||
-	    rt->size % 16 ) {
+	    rt->size % 16) {
 		printk(BIOS_WARNING, "Interrupt Routing Table not valid.\n");
 		return;
 	}
 
 	sum = 0;
-	for (i=0; i<rt->size; i++)
+	for (i = 0; i < rt->size; i++)
 		sum += addr[i];
 
 	/* We're manually fixing the checksum above. This warning can probably
@@ -73,14 +74,17 @@ static void check_pirq_routing_table(struct irq_routing_table *rt)
 	printk(BIOS_INFO, "done.\n");
 }
 
-static int verify_copy_pirq_routing_table(unsigned long addr, const struct irq_routing_table *routing_table)
+static int verify_copy_pirq_routing_table(unsigned long addr,
+	const struct irq_routing_table *routing_table)
 {
 	int i;
 	uint8_t *rt_orig, *rt_curr;
 
-	rt_curr = (uint8_t*)addr;
-	rt_orig = (uint8_t*)routing_table;
-	printk(BIOS_INFO, "Verifying copy of Interrupt Routing Table at 0x%08lx... ", addr);
+	rt_curr = (uint8_t *)addr;
+	rt_orig = (uint8_t *)routing_table;
+	printk(BIOS_INFO,
+		"Verifying copy of Interrupt Routing Table at 0x%08lx... ",
+		addr);
 	for (i = 0; i < routing_table->size; i++) {
 		if (*(rt_curr + i) != *(rt_orig + i)) {
 			printk(BIOS_INFO, "failed\n");
@@ -96,12 +100,11 @@ static int verify_copy_pirq_routing_table(unsigned long addr, const struct irq_r
 #endif
 
 #if CONFIG_PIRQ_ROUTE
-static u8 pirq_get_next_free_irq(u8* pirq, u16 bitmap)
+static u8 pirq_get_next_free_irq(u8 *pirq, u16 bitmap)
 {
 	int i, link;
 	u8 irq = 0;
-	for (i = 2; i <= 15; i++)
-	{
+	for (i = 2; i <= 15; i++) {
 		/* Can we assign this IRQ ? */
 		if (!((bitmap >> i) & 1))
 			continue;
@@ -153,7 +156,7 @@ static void pirq_route_irqs(unsigned long addr)
 			printk(BIOS_DEBUG, "INT: %c link: %x bitmap: %x  ",
 				'A' + intx, link, bitmap);
 
-			if (!bitmap|| !link || link > CONFIG_MAX_PIRQ_LINKS) {
+			if (!bitmap || !link || link > CONFIG_MAX_PIRQ_LINKS) {
 
 				printk(BIOS_DEBUG, "not routed\n");
 				irq_slot[intx] = irq;
@@ -161,13 +164,11 @@ static void pirq_route_irqs(unsigned long addr)
 			}
 
 			/* yet not routed */
-			if (!pirq[link - 1])
-			{
+			if (!pirq[link - 1]) {
 				irq = pirq_get_next_free_irq(pirq, bitmap);
 				if (irq)
 					pirq[link - 1] = irq;
-			}
-			else
+			} else
 				irq = pirq[link - 1];
 
 			printk(BIOS_DEBUG, "IRQ: %d\n", irq);
@@ -186,13 +187,15 @@ static void pirq_route_irqs(unsigned long addr)
 }
 #endif
 
-unsigned long copy_pirq_routing_table(unsigned long addr, const struct irq_routing_table *routing_table)
+unsigned long copy_pirq_routing_table(unsigned long addr,
+	const struct irq_routing_table *routing_table)
 {
 	/* Align the table to be 16 byte aligned. */
 	addr = ALIGN(addr, 16);
 
 	/* This table must be between 0xf0000 & 0x100000 */
-	printk(BIOS_INFO, "Copying Interrupt Routing Table to 0x%08lx... ", addr);
+	printk(BIOS_INFO, "Copying Interrupt Routing Table to 0x%08lx... ",
+		addr);
 	memcpy((void *)addr, routing_table, routing_table->size);
 	printk(BIOS_INFO, "done.\n");
 #if CONFIG_DEBUG_PIRQ

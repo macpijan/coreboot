@@ -26,19 +26,17 @@
 #include <cpu/x86/bist.h>
 #include <cpu/amd/car.h>
 #include <delay.h>
-#include "southbridge/via/vt8237r/early_smbus.c"
+#include <southbridge/via/vt8237r/vt8237r.h>
 #include <superio/ite/common/ite.h>
 #include <superio/ite/it8716f/it8716f.h>
 #include <spd.h>
 
 #define SERIAL_DEV PNP_DEV(0x2e, IT8716F_SP1)
 
-static int spd_read_byte(u16 device, u16 address)
+int spd_read_byte(unsigned device, unsigned address)
 {
 	return smbus_read_byte(device, address);
 }
-
-#include "northbridge/via/cn700/raminit.c"
 
 static const struct mem_controller ctrl = {
 	.d0f0 = 0x0000,
@@ -58,7 +56,7 @@ void main(unsigned long bist)
 	ite_enable_serial(SERIAL_DEV, CONFIG_TTYS0_BASE);
 	console_init();
 	enable_smbus();
-	smbus_fixup(&ctrl);
+	smbus_fixup(ctrl.channel0, ARRAY_SIZE(ctrl.channel0));
 	report_bist_failure(bist);
 	ddr_ram_setup(&ctrl);
 }

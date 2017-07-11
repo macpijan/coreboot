@@ -32,7 +32,7 @@ static void smbus_delay(void)
 
 static int smbus_wait_until_ready(u16 smbus_base)
 {
-	unsigned loops = SMBUS_TIMEOUT;
+	unsigned int loops = SMBUS_TIMEOUT;
 	unsigned char byte;
 	do {
 		smbus_delay();
@@ -45,7 +45,7 @@ static int smbus_wait_until_ready(u16 smbus_base)
 
 static int smbus_wait_until_done(u16 smbus_base)
 {
-	unsigned loops = SMBUS_TIMEOUT;
+	unsigned int loops = SMBUS_TIMEOUT;
 	unsigned char byte;
 	do {
 		smbus_delay();
@@ -56,14 +56,15 @@ static int smbus_wait_until_done(u16 smbus_base)
 	return loops ? 0 : -1;
 }
 
-int do_smbus_read_byte(unsigned smbus_base, unsigned device, unsigned address)
+int do_smbus_read_byte(unsigned int smbus_base, unsigned int device,
+	unsigned int address)
 {
 	unsigned char global_status_register;
 	unsigned char byte;
 
-	if (smbus_wait_until_ready(smbus_base) < 0) {
+	if (smbus_wait_until_ready(smbus_base) < 0)
 		return SMBUS_WAIT_UNTIL_READY_TIMEOUT;
-	}
+
 	/* Setup transaction */
 	/* Disable interrupts */
 	outb(inb(smbus_base + SMBHSTCTL) & (~1), smbus_base + SMBHSTCTL);
@@ -85,9 +86,8 @@ int do_smbus_read_byte(unsigned smbus_base, unsigned device, unsigned address)
 	     smbus_base + SMBHSTCTL);
 
 	/* Poll for transaction completion */
-	if (smbus_wait_until_done(smbus_base) < 0) {
+	if (smbus_wait_until_done(smbus_base) < 0)
 		return SMBUS_WAIT_UNTIL_DONE_TIMEOUT;
-	}
 
 	global_status_register = inb(smbus_base + SMBHSTSTAT);
 
@@ -96,14 +96,13 @@ int do_smbus_read_byte(unsigned smbus_base, unsigned device, unsigned address)
 
 	/* Read results of transaction */
 	byte = inb(smbus_base + SMBHSTDAT0);
-	if (global_status_register != (1 << 1)) {
+	if (global_status_register != (1 << 1))
 		return SMBUS_ERROR;
-	}
 	return byte;
 }
 
-int do_smbus_write_byte(unsigned smbus_base, unsigned device,
-			unsigned address, unsigned data)
+int do_smbus_write_byte(unsigned int smbus_base, unsigned int device,
+			unsigned int address, unsigned int data)
 {
 	unsigned char global_status_register;
 

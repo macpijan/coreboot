@@ -25,12 +25,12 @@
 #define SMRR_PHYS_BASE			0x1f2
 #define SMRR_PHYS_MASK			0x1f3
 
-#define MTRR_PHYS_BASE(reg) 		(0x200 + 2 * (reg))
-#define MTRR_PHYS_MASK(reg) 		(MTRR_PHYS_BASE(reg) + 1)
+#define MTRR_PHYS_BASE(reg)		(0x200 + 2 * (reg))
+#define MTRR_PHYS_MASK(reg)		(MTRR_PHYS_BASE(reg) + 1)
 #define  MTRR_PHYS_MASK_VALID		(1 << 11)
 
-#define NUM_FIXED_RANGES 		88
-#define RANGES_PER_FIXED_MTRR 		8
+#define NUM_FIXED_RANGES		88
+#define RANGES_PER_FIXED_MTRR		8
 #define MTRR_FIX_64K_00000		0x250
 #define MTRR_FIX_16K_80000		0x258
 #define MTRR_FIX_16K_A0000		0x259
@@ -43,7 +43,7 @@
 #define MTRR_FIX_4K_F0000		0x26e
 #define MTRR_FIX_4K_F8000		0x26f
 
-#if !defined (__ASSEMBLER__) && !defined(__PRE_RAM__)
+#if !defined(__ASSEMBLER__) && !defined(__PRE_RAM__)
 
 #include <stdint.h>
 #include <stddef.h>
@@ -87,7 +87,8 @@ void mtrr_use_temp_range(uintptr_t begin, size_t size, int type);
 #endif
 
 #if !defined(__ASSEMBLER__) && defined(__PRE_RAM__) && !defined(__ROMCC__)
-void set_var_mtrr(unsigned reg, unsigned base, unsigned size, unsigned type);
+void set_var_mtrr(unsigned int reg, unsigned int base, unsigned int size,
+	unsigned int type);
 int get_free_var_mtrr(void);
 #endif
 
@@ -99,9 +100,9 @@ static inline unsigned int fms(unsigned int x)
 	int r;
 
 	__asm__("bsrl %1,%0\n\t"
-	        "jnz 1f\n\t"
-	        "movl $0,%0\n"
-	        "1:" : "=r" (r) : "g" (x));
+		"jnz 1f\n\t"
+		"movl $0,%0\n"
+		"1:" : "=r" (r) : "g" (x));
 	return r;
 }
 
@@ -111,9 +112,9 @@ static inline unsigned int fls(unsigned int x)
 	int r;
 
 	__asm__("bsfl %1,%0\n\t"
-	        "jnz 1f\n\t"
-	        "movl $32,%0\n"
-	        "1:" : "=r" (r) : "g" (x));
+		"jnz 1f\n\t"
+		"movl $32,%0\n"
+		"1:" : "=r" (r) : "g" (x));
 	return r;
 }
 #endif
@@ -131,7 +132,7 @@ static inline unsigned int fls(unsigned int x)
  */
 #define CACHE_TMP_RAMTOP (16<<20)
 
-#if ((CONFIG_XIP_ROM_SIZE & (CONFIG_XIP_ROM_SIZE -1)) != 0)
+#if ((CONFIG_XIP_ROM_SIZE & (CONFIG_XIP_ROM_SIZE - 1)) != 0)
 # error "CONFIG_XIP_ROM_SIZE is not a power of 2"
 #endif
 
@@ -146,7 +147,8 @@ static inline unsigned int fls(unsigned int x)
 #  define CACHE_ROM_SIZE CONFIG_ROM_SIZE
 # else
 #  define CACHE_ROM_SIZE _ALIGN_UP_POW2(CONFIG_ROM_SIZE)
-#  if (CACHE_ROM_SIZE < CONFIG_ROM_SIZE) || (CACHE_ROM_SIZE >= (2 * CONFIG_ROM_SIZE))
+#  if (CACHE_ROM_SIZE < CONFIG_ROM_SIZE) || (CACHE_ROM_SIZE >= \
+	(2 * CONFIG_ROM_SIZE))
 #   error "CACHE_ROM_SIZE is not optimal."
 #  endif
 # endif

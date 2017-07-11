@@ -84,6 +84,22 @@ Field (ERAM, ByteAcc, NoLock, Preserve)
 			BANA, 128
 }
 
+/*
+ * Switches the battery information page (16 bytes ERAM @0xa0) with an
+ * optional compile-time delay.
+ *
+ * Arg0:
+ *   bit7-4: Battery number
+ *   bit3-0: Information page number
+ */
+Method(BPAG, 1, NotSerialized)
+{
+	Store(Arg0, PAGE)
+#ifdef BATTERY_PAGE_DELAY_MS
+	Sleep(BATTERY_PAGE_DELAY_MS)
+#endif
+}
+
 /* Arg0: Battery
  * Arg1: Battery Status Package
  * Arg2: charging
@@ -93,25 +109,40 @@ Method(BSTA, 4, NotSerialized)
 {
 	Acquire(ECLK, 0xffff)
 	Store(0, Local0)
-	Or(1, Arg0, PAGE)
+	^BPAG(Or(1, Arg0))
 	Store(BAMA, Local1)
-	Store(Arg0, PAGE) /* Battery dynamic information */
+	^BPAG(Arg0) /* Battery dynamic information */
 
+	/*
+	 * Present rate is a 16bit signed int, positive while charging
+	 * and negative while discharging.
+	 */
 	Store(BAPR, Local2)
 
-	if (Arg2) // charging
+	If (Arg2) // Charging
 	{
 		Or(2, Local0, Local0)
-
-		If (LGreaterEqual (Local2, 0x8000)) {
+	}
+	Else
+	{
+		If (Arg3) // Discharging
+		{
+			Or(1, Local0, Local0)
+			// Negate present rate
+			Subtract(0x10000, Local2, Local2)
+		}
+		Else // Full battery, force to 0
+		{
 			Store(0, Local2)
 		}
 	}
 
-	if (Arg3) // discharging
-	{
-		Or(1, Local0, Local0)
-		Subtract(0x10000, Local2, Local2)
+	/*
+	 * The present rate value must be positive now, if it is not we have an
+	 * EC bug or inconsistency and force the value to 0.
+	 */
+	If (LGreaterEqual (Local2, 0x8000)) {
+		Store(0, Local2)
 	}
 
 	Store(Local0, Index(Arg1, 0x00))
@@ -132,12 +163,12 @@ Method(BSTA, 4, NotSerialized)
 Method(BINF, 2, NotSerialized)
 {
 	Acquire(ECLK, 0xffff)
-	Or(1, Arg1, PAGE) /* Battery 0 static information */
+	^BPAG(Or(1, Arg1)) /* Battery 0 static information */
 	Xor(BAMA, 1, Index(Arg0, 0))
 	Store(BAMA, Local0)
-	Store(Arg1, PAGE)
+	^BPAG(Arg1)
 	Store(BAFC, Local2)
-	Or(2, Arg1, PAGE)
+	^BPAG(Or(2, Arg1))
 	Store(BADC, Local1)
 
 	if (Local0)
@@ -162,13 +193,13 @@ Method(BINF, 2, NotSerialized)
 	}
 	Store (SERN, Index (Arg0, 10)) // Serial Number
 
-	Or(4, Arg1, PAGE)
+	^BPAG(Or(4, Arg1))
 	Name (TYPE, Buffer() { 0, 0, 0, 0, 0 })
 	Store(BATY, TYPE)
 	Store(TYPE, Index (Arg0, 11)) // Battery type
-	Or(5, Arg1, PAGE)
+	^BPAG(Or(5, Arg1))
 	Store(BAOE, Index (Arg0, 12)) // OEM information
-	Or(6, Arg1, PAGE)
+	^BPAG(Or(6, Arg1))
 	Store(BANA, Index (Arg0, 9))  // Model number
 	Release(ECLK)
 	Return (Arg0)

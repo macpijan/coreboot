@@ -5,6 +5,8 @@ config BOARD_SPECIFIC_OPTIONS
 	select SOC_INTEL_APOLLOLAKE
 	select BOARD_ROMSIZE_KB_16384
 	select HAVE_ACPI_TABLES
+	select DRIVER_INTEL_I210
+	select USE_SIEMENS_HWILIB
 
 config MAINBOARD_DIR
 	string
@@ -13,5 +15,9 @@ config MAINBOARD_DIR
 config MAINBOARD_PART_NUMBER
 	string
 	default "MC APL1"
+
+config MAX_CPUS
+	int
+	default 4
 
 endif # BOARD_SIEMENS_MC_APL1

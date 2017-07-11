@@ -520,7 +520,7 @@ struct sys_info {
 
 #ifdef __PRE_RAM__
 #include <arch/early_variables.h>
-struct sys_info sysinfo_car CAR_GLOBAL;
+extern struct sys_info sysinfo_car;
 #endif
 
 #include <reset.h>
@@ -583,5 +583,9 @@ static inline void wait_all_core0_mem_trained(struct sys_info *sysinfo)
 
 }
 #endif
+
+void dqs_restore_MC_NVRAM(unsigned int dev);
+void train_ram_on_node(unsigned nodeid, unsigned coreid,
+			       struct sys_info *sysinfo, unsigned retcall);
 
 #endif /* AMDK8_F_H */

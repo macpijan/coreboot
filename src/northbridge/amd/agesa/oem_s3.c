@@ -21,6 +21,7 @@
 #include <cpu/amd/agesa/s3_resume.h>
 #include <northbridge/amd/agesa/agesawrapper.h>
 #include <AGESA.h>
+#include <northbridge/amd/agesa/agesa_helper.h>
 
 typedef enum {
 	S3DataTypeNonVolatile = 0,	///< NonVolatile Data Type
@@ -57,35 +58,40 @@ static void get_s3nv_data(S3_DATA_TYPE S3DataType, uintptr_t *pos, uintptr_t *le
 	}
 }
 
-#if defined(__PRE_RAM__)
-
-AGESA_STATUS OemInitResume(AMD_RESUME_PARAMS *ResumeParams)
+AGESA_STATUS OemInitResume(AMD_S3_PARAMS *dataBlock)
 {
-	AMD_S3_PARAMS *dataBlock = &ResumeParams->S3DataBlock;
 	uintptr_t pos, size;
-
 	get_s3nv_data(S3DataTypeNonVolatile, &pos, &size);
 
-	/* TODO: Our NvStorage is really const. */
-	dataBlock->NvStorageSize = *(UINT32 *) pos;
-	dataBlock->NvStorage = (void *) (pos + sizeof(UINT32));
+	u32 len = *(u32*)pos;
+
+	/* Test for uninitialized s3nv data in SPI. */
+	if (len == 0 || len == (u32)-1ULL)
+		return AGESA_FATAL;
+
+	dataBlock->NvStorageSize = len;
+	dataBlock->NvStorage = (void *) (pos + sizeof(u32));
 	return AGESA_SUCCESS;
 }
 
-AGESA_STATUS OemS3LateRestore(AMD_S3LATE_PARAMS *S3LateParams)
+AGESA_STATUS OemS3LateRestore(AMD_S3_PARAMS *dataBlock)
 {
-	AMD_S3_PARAMS *dataBlock = &S3LateParams->S3DataBlock;
-	void *dst;
-	size_t len;
+	char *heap = cbmem_find(CBMEM_ID_RESUME_SCRATCH);
+	if (heap == NULL)
+		return AGESA_FATAL;
 
-	ResumeHeap(&dst, &len);
-	dataBlock->VolatileStorageSize = len;
-	dataBlock->VolatileStorage = dst;
+	printk(BIOS_DEBUG, "Using resume HEAP at %08x\n",
+		(unsigned int)(uintptr_t) heap);
 
+	/* Return allocated CBMEM size, we do not keep track of
+	 * how much was actually used.
+	 */
+	dataBlock->VolatileStorageSize = HIGH_MEMORY_SCRATCH;
+	dataBlock->VolatileStorage = heap;
 	return AGESA_SUCCESS;
 }
 
-#else
+#if ENV_RAMSTAGE
 
 static int spi_SaveS3info(u32 pos, u32 size, u8 *buf, u32 len)
 {
@@ -112,9 +118,8 @@ static int spi_SaveS3info(u32 pos, u32 size, u8 *buf, u32 len)
 
 static u8 MTRRStorage[S3_DATA_MTRR_SIZE];
 
-AGESA_STATUS OemS3Save(AMD_S3SAVE_PARAMS *S3SaveParams)
+AGESA_STATUS OemS3Save(AMD_S3_PARAMS *dataBlock)
 {
-	AMD_S3_PARAMS *dataBlock = &S3SaveParams->S3DataBlock;
 	u32 MTRRStorageSize = 0;
 	uintptr_t pos, size;
 
@@ -125,6 +130,11 @@ AGESA_STATUS OemS3Save(AMD_S3SAVE_PARAMS *S3SaveParams)
 	if (size && dataBlock->NvStorageSize)
 		spi_SaveS3info(pos, size, dataBlock->NvStorage,
 			dataBlock->NvStorageSize);
+	else
+		printk(BIOS_EMERG,
+			"Error: Cannot store memory training results in SPI.\n"
+			"Error: S3 resume will not be possible.\n"
+		);
 
 	/* To be consumed in AmdS3LateRestore. */
 	char *heap = cbmem_add(CBMEM_ID_RESUME_SCRATCH, HIGH_MEMORY_SCRATCH);
@@ -144,6 +154,8 @@ AGESA_STATUS OemS3Save(AMD_S3SAVE_PARAMS *S3SaveParams)
 	return AGESA_SUCCESS;
 }
 
+#endif /* ENV_RAMSTAGE */
+
 const void *OemS3Saved_MTRR_Storage(void)
 {
 	uintptr_t pos, size;
@@ -153,5 +165,3 @@ const void *OemS3Saved_MTRR_Storage(void)
 
 	return (void*)(pos + sizeof(UINT32));
 }
-
-#endif

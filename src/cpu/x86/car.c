@@ -46,8 +46,8 @@ void *car_get_var_ptr(void *var)
 {
 	char *migrated_base = NULL;
 	int offset;
-	void * _car_start = _car_relocatable_data_start;
-	void * _car_end = _car_relocatable_data_end;
+	void *_car_start = _car_relocatable_data_start;
+	void *_car_end = _car_relocatable_data_end;
 
 	/* If the cache-as-ram has not been migrated return the pointer
 	 * passed in. */
@@ -62,7 +62,7 @@ void *car_get_var_ptr(void *var)
 	}
 
 #if IS_ENABLED(CONFIG_PLATFORM_USES_FSP1_0)
-	migrated_base=(char *)find_saved_temp_mem(
+	migrated_base = (char *)find_saved_temp_mem(
 			*(void **)CBMEM_FSP_HOB_PTR);
 	/* FSP 1.0 migrates the entire DCACHE RAM */
 	offset = (char *)var - (char *)CONFIG_DCACHE_RAM_BASE;
@@ -72,7 +72,7 @@ void *car_get_var_ptr(void *var)
 #endif
 
 	if (migrated_base == NULL)
-		die( "CAR: Could not find migration base!\n");
+		die("CAR: Could not find migration base!\n");
 
 	return &migrated_base[offset];
 }
@@ -83,9 +83,9 @@ void *car_get_var_ptr(void *var)
  */
 void *car_sync_var_ptr(void *var)
 {
-	void ** mig_var = car_get_var_ptr(var);
-	void * _car_start = _car_relocatable_data_start;
-	void * _car_end = _car_relocatable_data_end;
+	void **mig_var = car_get_var_ptr(var);
+	void *_car_start = _car_relocatable_data_start;
+	void *_car_end = _car_relocatable_data_end;
 
 	/* Not moved or migrated yet. */
 	if (mig_var == var)

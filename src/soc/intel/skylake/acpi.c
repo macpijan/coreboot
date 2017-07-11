@@ -146,9 +146,6 @@ static int cstate_set_non_s0ix[] = {
 	C_STATE_C1E,
 	C_STATE_C3,
 	C_STATE_C7S_LONG_LAT,
-	C_STATE_C8,
-	C_STATE_C9,
-	C_STATE_C10
 };
 
 static int get_cores_per_package(void)
@@ -229,8 +226,8 @@ void acpi_fill_fadt(acpi_fadt_t *fadt)
 	const struct device *dev = dev_find_slot(0, PCH_DEVFN_LPC);
 	config_t *config = dev->chip_info;
 
-	/* Use ACPI 5.0 revision */
-	fadt->header.revision = ACPI_FADT_REV_ACPI_5_0;
+	/* Use ACPI 3.0 revision */
+	fadt->header.revision = ACPI_FADT_REV_ACPI_3_0;
 
 	fadt->sci_int = acpi_sci_irq();
 	fadt->smi_cmd = APM_CNT;
@@ -571,7 +568,7 @@ void southcluster_inject_dsdt(device_t device)
 
 	gnvs = cbmem_find(CBMEM_ID_ACPI_GNVS);
 	if (!gnvs) {
-		gnvs = cbmem_add(CBMEM_ID_ACPI_GNVS, sizeof (*gnvs));
+		gnvs = cbmem_add(CBMEM_ID_ACPI_GNVS, sizeof(*gnvs));
 		if (gnvs)
 			memset(gnvs, 0, sizeof(*gnvs));
 	}
@@ -613,7 +610,8 @@ int soc_fill_acpi_wake(uint32_t *pm1, uint32_t **gpe0)
 	 * Chipset state in the suspend well (but not RTC) is lost in Deep S3
 	 * so enable Deep S3 wake events that are configured by the mainboard
 	 */
-	if (ps->prev_sleep_state == ACPI_S3 && config->deep_s3_enable) {
+	if (ps->prev_sleep_state == ACPI_S3 &&
+	    (config->deep_s3_enable_ac || config->deep_s3_enable_dc)) {
 		pm1_en |= PWRBTN_STS; /* Always enabled as wake source */
 		if (config->deep_sx_config & DSX_EN_LAN_WAKE_PIN)
 			gpe0_std |= LAN_WAK_EN;
@@ -656,11 +654,11 @@ const char *soc_acpi_name(struct device *dev)
 	case PCH_DEVFN_I2C1:	return "I2C1";
 	case PCH_DEVFN_I2C2:	return "I2C2";
 	case PCH_DEVFN_I2C3:	return "I2C3";
-	case PCH_DEVFN_ME:	return "MEI1";
-	case PCH_DEVFN_ME_2:	return "MEI2";
-	case PCH_DEVFN_ME_IDER:	return "MEID";
-	case PCH_DEVFN_ME_KT:	return "MEKT";
-	case PCH_DEVFN_ME_3:	return "MEI3";
+	case PCH_DEVFN_CSE:	return "CSE1";
+	case PCH_DEVFN_CSE_2:	return "CSE2";
+	case PCH_DEVFN_CSE_IDER:	return "CSED";
+	case PCH_DEVFN_CSE_KT:	return "CSKT";
+	case PCH_DEVFN_CSE_3:	return "CSE3";
 	case PCH_DEVFN_SATA:	return "SATA";
 	case PCH_DEVFN_UART2:	return "UAR2";
 	case PCH_DEVFN_I2C4:	return "I2C4";

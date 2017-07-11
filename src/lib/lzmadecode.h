@@ -38,30 +38,28 @@ typedef UInt32 SizeT;
 
 #define LZMA_PROPERTIES_SIZE 5
 
-typedef struct _CLzmaProperties
-{
-  int lc;
-  int lp;
-  int pb;
-}CLzmaProperties;
+typedef struct _CLzmaProperties {
+	int lc;
+	int lp;
+	int pb;
+} CLzmaProperties;
 
-int LzmaDecodeProperties(CLzmaProperties *propsRes, const unsigned char *propsData, int size);
+int LzmaDecodeProperties(CLzmaProperties *propsRes,
+	const unsigned char *propsData, int size);
 
-#define LzmaGetNumProbs(Properties) (LZMA_BASE_SIZE + (LZMA_LIT_SIZE << ((Properties)->lc + (Properties)->lp)))
+#define LzmaGetNumProbs(Properties) (LZMA_BASE_SIZE + (LZMA_LIT_SIZE \
+	<< ((Properties)->lc + (Properties)->lp)))
 
 #define kLzmaNeedInitId (-2)
 
-typedef struct _CLzmaDecoderState
-{
-  CLzmaProperties Properties;
-  CProb *Probs;
-
-
+typedef struct _CLzmaDecoderState {
+	CLzmaProperties Properties;
+	CProb *Probs;
 } CLzmaDecoderState;
 
 
 int LzmaDecode(CLzmaDecoderState *vs,
-    const unsigned char *inStream, SizeT inSize, SizeT *inSizeProcessed,
-    unsigned char *outStream, SizeT outSize, SizeT *outSizeProcessed);
+	const unsigned char *inStream, SizeT inSize, SizeT *inSizeProcessed,
+	unsigned char *outStream, SizeT outSize, SizeT *outSizeProcessed);
 
 #endif

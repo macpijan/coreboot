@@ -19,15 +19,15 @@
 
 #define DCACHE_RAM_ROMSTAGE_STACK_SIZE 0x2000
 
-void * asmlinkage romstage_main(unsigned long bist)
+asmlinkage void *romstage_main(unsigned long bist)
 {
 	int i;
 	void *romstage_stack_after_car;
 	const int num_guards = 4;
 	const u32 stack_guard = 0xdeadbeef;
 	u32 *stack_base = (void *)(CONFIG_DCACHE_RAM_BASE +
-	                           CONFIG_DCACHE_RAM_SIZE -
-	                           DCACHE_RAM_ROMSTAGE_STACK_SIZE);
+				   CONFIG_DCACHE_RAM_SIZE -
+				   DCACHE_RAM_ROMSTAGE_STACK_SIZE);
 
 	for (i = 0; i < num_guards; i++)
 		stack_base[i] = stack_guard;
@@ -47,7 +47,7 @@ void * asmlinkage romstage_main(unsigned long bist)
 	return romstage_stack_after_car;
 }
 
-void asmlinkage romstage_after_car(void)
+asmlinkage void romstage_after_car(void)
 {
 	/* Load the ramstage. */
 	run_ramstage();

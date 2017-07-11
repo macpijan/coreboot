@@ -42,6 +42,10 @@
 #include <soc/smm.h>
 #include <soc/systemagent.h>
 
+/* MP initialization support. */
+static const void *microcode_patch;
+static int ht_disabled;
+
 /* Convert time in seconds to POWER_LIMIT_1_TIME MSR value */
 static const u8 power_limit_time_sec_to_msr[] = {
 	[0]   = 0x00,
@@ -117,8 +121,8 @@ void set_power_limits(u8 power_limit_1_time)
 {
 	msr_t msr = rdmsr(MSR_PLATFORM_INFO);
 	msr_t limit;
-	unsigned power_unit;
-	unsigned tdp, min_power, max_power, max_time, tdp_pl2;
+	unsigned int power_unit;
+	unsigned int tdp, min_power, max_power, max_time, tdp_pl2;
 	u8 power_limit_1_val;
 	device_t dev = SA_DEV_ROOT;
 	config_t *conf = dev->chip_info;
@@ -336,11 +340,10 @@ static void set_energy_perf_bias(u8 policy)
 static void configure_mca(void)
 {
 	msr_t msr;
-	const unsigned int mcg_cap_msr = 0x179;
 	int i;
 	int num_banks;
 
-	msr = rdmsr(mcg_cap_msr);
+	msr = rdmsr(IA32_MCG_CAP);
 	num_banks = msr.lo & 0xff;
 	msr.lo = msr.hi = 0;
 	/*
@@ -348,8 +351,13 @@ static void configure_mca(void)
 	 * of these banks are core vs package scope. For now every CPU clears
 	 * every bank.
 	 */
-	for (i = 0; i < num_banks; i++)
+	for (i = 0; i < num_banks; i++) {
+		/* Clear the machine check status */
 		wrmsr(IA32_MC0_STATUS + (i * 4), msr);
+		/* Initialize machine checks */
+		wrmsr(IA32_MC0_CTL + i * 4,
+			(msr_t) {.lo = 0xffffffff, .hi = 0xffffffff});
+	}
 }
 
 /* All CPUs including BSP will run the following function. */
@@ -376,6 +384,9 @@ static void cpu_core_init(device_t cpu)
 
 	/* Enable Turbo */
 	enable_turbo();
+
+	/* Configure SGX */
+	configure_sgx(microcode_patch);
 }
 
 static struct device_operations cpu_dev_ops = {
@@ -389,6 +400,7 @@ static struct cpu_device_id cpu_table[] = {
 	{ X86_VENDOR_INTEL, CPUID_SKYLAKE_HR0 },
 	{ X86_VENDOR_INTEL, CPUID_KABYLAKE_G0 },
 	{ X86_VENDOR_INTEL, CPUID_KABYLAKE_H0 },
+	{ X86_VENDOR_INTEL, CPUID_KABYLAKE_Y0 },
 	{ X86_VENDOR_INTEL, CPUID_KABYLAKE_HA0 },
 	{ X86_VENDOR_INTEL, CPUID_KABYLAKE_HB0 },
 	{ 0, 0 },
@@ -399,17 +411,13 @@ static const struct cpu_driver driver __cpu_driver = {
 	.id_table = cpu_table,
 };
 
-/* MP initialization support. */
-static const void *microcode_patch;
-static int ht_disabled;
-
 static int get_cpu_count(void)
 {
 	msr_t msr;
 	int num_threads;
 	int num_cores;
 
-	msr = rdmsr(CORE_THREAD_COUNT_MSR);
+	msr = rdmsr(MSR_CORE_THREAD_COUNT);
 	num_threads = (msr.lo >> 0) & 0xffff;
 	num_cores = (msr.lo >> 16) & 0xffff;
 	printk(BIOS_DEBUG, "CPU has %u cores, %u threads enabled.\n",
@@ -433,6 +441,17 @@ static int adjust_apic_id(int index, int apic_id)
 		return 2 * index;
 	else
 		return index;
+}
+
+/* Check whether the current CPU is the sibling hyperthread. */
+int is_secondary_thread(void)
+{
+	int apic_id;
+	apic_id = lapicid();
+
+	if (!ht_disabled && (apic_id & 1))
+		return 1;
+	return 0;
 }
 
 static void per_cpu_smm_trigger(void)
@@ -467,7 +486,7 @@ static const struct mp_ops mp_ops = {
 	 * that are set prior to ramstage.
 	 * Real MTRRs programming are being done after resource allocation.
 	 */
-	.pre_mp_init = NULL,
+	.pre_mp_init = soc_fsp_load,
 	.get_cpu_count = get_cpu_count,
 	.get_smm_info = smm_info,
 	.get_microcode_info = get_microcode_info,
@@ -484,12 +503,19 @@ static void soc_init_cpus(void *unused)
 	assert(dev != NULL);
 	struct bus *cpu_bus = dev->link_list;
 
-	if (mp_init_with_smm(cpu_bus, &mp_ops)) {
+	if (mp_init_with_smm(cpu_bus, &mp_ops))
 		printk(BIOS_ERR, "MP initialization failure.\n");
-	}
 
 	/* Thermal throttle activation offset */
 	configure_thermal_target();
+
+	/*
+	 * TODO: somehow calling configure_sgx() in cpu_core_init() is not
+	 * successful on the BSP (other threads are fine). Have to run it again
+	 * here to get SGX enabled on BSP. This behavior needs to root-caused
+	 * and we shall not have this redundant call.
+	 */
+	configure_sgx(microcode_patch);
 }
 
 /* Ensure to re-program all MTRRs based on DRAM resource settings */
@@ -501,15 +527,25 @@ static void soc_post_cpus_init(void *unused)
 
 int soc_skip_ucode_update(u32 current_patch_id, u32 new_patch_id)
 {
-	msr_t msr;
-	/* If PRMRR/SGX is supported the FIT microcode load will set the msr
+	msr_t msr1;
+	msr_t msr2;
+
+	/*
+	 * If PRMRR/SGX is supported the FIT microcode load will set the msr
 	 * 0x08b with the Patch revision id one less than the id in the
 	 * microcode binary. The PRMRR support is indicated in the MSR
-	 * MTRRCAP[12]. Check for this feature and avoid reloading the
-	 * same microcode during CPU initialization.
+	 * MTRRCAP[12]. If SGX is not enabled, check and avoid reloading the
+	 * same microcode during CPU initialization. If SGX is enabled, as
+	 * part of SGX BIOS initialization steps, the same microcode needs to
+	 * be reloaded after the core PRMRR MSRs are programmed.
 	 */
-	msr = rdmsr(MTRR_CAP_MSR);
-	return (msr.lo & PRMRR_SUPPORTED) && (current_patch_id == new_patch_id - 1);
+	msr1 = rdmsr(MTRR_CAP_MSR);
+	msr2 = rdmsr(PRMRR_PHYS_BASE_MSR);
+	if (msr2.lo && (current_patch_id == new_patch_id - 1))
+		return 0;
+	else
+		return (msr1.lo & PRMRR_SUPPORTED) &&
+			(current_patch_id == new_patch_id - 1);
 }
 
 /*

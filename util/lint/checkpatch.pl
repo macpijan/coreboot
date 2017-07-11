@@ -45,6 +45,7 @@ my %use_type = ();
 my @use = ();
 my %ignore_type = ();
 my @ignore = ();
+my @exclude = ();
 my $help = 0;
 my $configuration_file = ".checkpatch.conf";
 my $max_line_length = 80;
@@ -86,6 +87,7 @@ Options:
   --list-types               list the possible message types
   --types TYPE(,TYPE2...)    show only these comma separated message types
   --ignore TYPE(,TYPE2...)   ignore various comma separated message types
+  --exclude DIR(,DIR22...)   exclude directories
   --show-types               show the specific message type in the output
   --max-line-length=n        set the maximum line length, if exceeded, warn
   --min-conf-desc-length=n   set the min description length, if shorter, warn
@@ -190,6 +192,7 @@ GetOptions(
 	'subjective!'	=> \$check,
 	'strict!'	=> \$check,
 	'ignore=s'	=> \@ignore,
+	'exclude=s'	=> \@exclude,
 	'types=s'	=> \@use,
 	'show-types!'	=> \$show_types,
 	'list-types!'	=> \$list_types,
@@ -2277,6 +2280,16 @@ sub process {
 			$found_file = 1;
 		}
 
+		my $skipme = 0;
+		foreach (@exclude) {
+			if ($realfile =~ m@^(?:$_/)@) {
+				$skipme = 1;
+			}
+		}
+		if ($skipme) {
+			next;
+		}
+
 #make up the handle for any error we report on this line
 		if ($showfile) {
 			$prefix = "$realfile:$realline: "
@@ -3723,6 +3736,7 @@ sub process {
 # function brace can't be on same line, except for #defines of do while,
 # or if closed on same line
 		if (($line=~/$Type\s*$Ident\(.*\).*\s*{/) and
+		    ($line!~/struct.*__attribute__\(\(.*\)\)/) and
 		    !($line=~/\#\s*define.*do\s\{/) and !($line=~/}/)) {
 			if (ERROR("OPEN_BRACE",
 				  "open brace '{' following function declarations go on the next line\n" . $herecurr) &&

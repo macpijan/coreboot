@@ -25,10 +25,10 @@
  */
 
 enum AzaliaPinCfgPortConnectivity {
-	AZALIA_PINCFG_PORT_JACK                = 0b00,
-	AZALIA_PINCFG_PORT_NC                  = 0b01,
-	AZALIA_PINCFG_PORT_FIXED               = 0b10,
-	AZALIA_PINCFG_PORT_MULTIPLE            = 0b11,
+	AZALIA_PINCFG_PORT_JACK                = 0,
+	AZALIA_PINCFG_PORT_NC                  = 1,
+	AZALIA_PINCFG_PORT_FIXED               = 2,
+	AZALIA_PINCFG_PORT_MULTIPLE            = 3,
 };
 
 enum AzaliaPinCfgLocationGross {
@@ -113,7 +113,7 @@ enum AzaliaPinCfgMisc {
 
 union AzaliaPinConfiguration {
 	unsigned int value;
-	struct __attribute__((aligned(4),packed)) {
+	struct __attribute__((aligned(4), packed)) {
 		enum AzaliaPinCfgPortConnectivity   port:2;
 		unsigned char                       location:6;
 		enum AzaliaPinCfgDefaultDevice      device:4;

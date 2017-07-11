@@ -45,7 +45,7 @@
 #define IA32_PLATFORM_DCA_CAP		0x1f8
 #define IA32_MISC_ENABLE		0x1a0
 #define MSR_TEMPERATURE_TARGET		0x1a2
-#define IA32_PERF_CTL 			0x199
+#define IA32_PERF_CTL			0x199
 #define IA32_THERM_INTERRUPT		0x19b
 #define IA32_ENERGY_PERFORMANCE_BIAS	0x1b0
 #define  ENERGY_POLICY_PERFORMANCE	0
@@ -53,7 +53,7 @@
 #define  ENERGY_POLICY_POWERSAVE	15
 #define IA32_PACKAGE_THERM_INTERRUPT	0x1b2
 #define MSR_LT_LOCK_MEMORY		0x2e7
-#define IA32_MC0_STATUS 		0x401
+#define IA32_MC0_STATUS			0x401
 
 #define MSR_PIC_MSG_CONTROL		0x2e
 #define MSR_PLATFORM_INFO		0xce
@@ -180,10 +180,10 @@ void romstage_common(const struct romstage_params *params);
  *  +32: MTRR mask 1 63:32
  *  ...
  */
-void * asmlinkage romstage_main(unsigned long bist);
+asmlinkage void *romstage_main(unsigned long bist);
 /* romstage_after_car() is the C function called after cache-as-ram has
  * been torn down. It is responsible for loading the ramstage. */
-void asmlinkage romstage_after_car(void);
+asmlinkage void romstage_after_car(void);
 #endif
 
 #ifdef __SMM__

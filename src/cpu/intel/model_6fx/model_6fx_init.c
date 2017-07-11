@@ -21,9 +21,9 @@
 #include <cpu/x86/mtrr.h>
 #include <cpu/x86/msr.h>
 #include <cpu/x86/lapic.h>
+#include <cpu/intel/hyperthreading.h>
 #include <cpu/intel/microcode.h>
 #include <cpu/intel/speedstep.h>
-#include <cpu/intel/hyperthreading.h>
 #include <cpu/x86/cache.h>
 #include <cpu/x86/name.h>
 #include <cpu/intel/common/common.h>
@@ -34,12 +34,11 @@ static void configure_c_states(void)
 	msr_t msr;
 
 	msr = rdmsr(MSR_PMG_CST_CONFIG_CONTROL);
-
 	msr.lo |= (1 << 15); // config lock until next reset
 	msr.lo |= (1 << 14); // Deeper Sleep
-	msr.lo |= (1 << 10); // Enable IO MWAIT redirection
-	msr.lo &= ~(1 << 9); // Issue a  single stop grant cycle upon stpclk
-	msr.lo |= (1 << 3); // Dynamic L2
+	msr.lo |= (1 << 10); // Enable I/O MWAIT redirection for C-States
+	msr.lo &= ~(1 << 9); // Issue a single stop grant cycle upon stpclk
+	msr.lo |= (1 << 3); // dynamic L2
 
 	/* Number of supported C-States */
 	msr.lo &= ~7;
@@ -47,14 +46,16 @@ static void configure_c_states(void)
 
 	wrmsr(MSR_PMG_CST_CONFIG_CONTROL, msr);
 
-	/* Set Processor MWAIT IO BASE */
+	/* Set Processor MWAIT IO BASE (P_BLK) */
 	msr.hi = 0;
-	msr.lo = ((PMB0_BASE + 4) & 0xffff) | (((PMB1_BASE + 9) & 0xffff) << 16);
+	msr.lo = ((PMB0_BASE + 4) & 0xffff) | (((PMB1_BASE + 9) & 0xffff)
+		<< 16);
 	wrmsr(MSR_PMG_IO_BASE_ADDR, msr);
 
 	/* Set C_LVL controls and IO Capture Address */
 	msr.hi = 0;
-	msr.lo = (PMB0_BASE + 4) | ((HIGHEST_CLEVEL - 2) << 16); // -2 because LVL0+1 aren't counted
+	// -2 because LVL0+1 aren't counted
+	msr.lo = (PMB0_BASE + 4) | ((HIGHEST_CLEVEL - 2) << 16);
 	wrmsr(MSR_PMG_IO_CAPTURE_ADDR, msr);
 }
 
@@ -66,7 +67,7 @@ static void configure_misc(void)
 	msr_t msr;
 
 	msr = rdmsr(IA32_MISC_ENABLE);
-	msr.lo |= (1 << 3); 	/* TM1 enable */
+	msr.lo |= (1 << 3);	/* TM1 enable */
 	msr.lo |= (1 << 13);	/* TM2 enable */
 	msr.lo |= (1 << 17);	/* Bidirectional PROCHOT# */
 
@@ -94,10 +95,10 @@ static void configure_misc(void)
 
 	// set maximum CPU speed
 	msr = rdmsr(IA32_PERF_STS);
-	int busratio_max=(msr.hi >> (40-32)) & 0x1f;
+	int busratio_max = (msr.hi >> (40-32)) & 0x1f;
 
 	msr = rdmsr(IA32_PLATFORM_ID);
-	int vid_max=msr.lo & 0x3f;
+	int vid_max = msr.lo & 0x3f;
 
 	msr.lo &= ~0xffff;
 	msr.lo |= busratio_max << 8;

@@ -25,21 +25,27 @@
 /* While in romstage, console loglevel is built-time constant.
  * With ROMCC we inline this test with help from preprocessor.
  */
-#define console_log_level(msg_level) (CONFIG_DEFAULT_CONSOLE_LOGLEVEL >= msg_level)
+#define console_log_level(msg_level) \
+	(msg_level <= CONFIG_DEFAULT_CONSOLE_LOGLEVEL)
 
 #define CALL_CONSOLE_TX(loglevel, tx_func, x) \
-	do { 						\
-		if (console_log_level(loglevel)) { 	\
-			tx_func(x);		 	\
+	do {						\
+		if (console_log_level(loglevel)) {	\
+			tx_func(x);			\
 			console_tx_flush();		\
 		}	\
 	} while (0)
 
-#define __console_tx_char(level, x)	CALL_CONSOLE_TX(level, console_tx_byte, x)
-#define __console_tx_hex8(level, x)	CALL_CONSOLE_TX(level, console_tx_hex8, x)
-#define __console_tx_hex16(level, x)	CALL_CONSOLE_TX(level, console_tx_hex16, x)
-#define __console_tx_hex32(level, x)	CALL_CONSOLE_TX(level, console_tx_hex32, x)
-#define __console_tx_string(level, x)	CALL_CONSOLE_TX(level, console_tx_string, x)
+#define __console_tx_char(level, x)	\
+	CALL_CONSOLE_TX(level, console_tx_byte, x)
+#define __console_tx_hex8(level, x)	\
+	CALL_CONSOLE_TX(level, console_tx_hex8, x)
+#define __console_tx_hex16(level, x)	\
+	CALL_CONSOLE_TX(level, console_tx_hex16, x)
+#define __console_tx_hex32(level, x)	\
+	CALL_CONSOLE_TX(level, console_tx_hex32, x)
+#define __console_tx_string(level, x)	\
+	CALL_CONSOLE_TX(level, console_tx_string, x)
 
 #define print_emerg(STR)         __console_tx_string(BIOS_EMERG, STR)
 #define print_alert(STR)         __console_tx_string(BIOS_ALERT, STR)

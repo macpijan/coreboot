@@ -93,7 +93,8 @@ func MakeLogs(outDir string) {
 	}
 
 	RunAndSave(outDir+"/inteltool.log", "../inteltool/inteltool", inteltoolArgs)
-	RunAndSave(outDir+"/ectool.log", "../ectool/ectool")
+	RunAndSave(outDir+"/ectool.log", "../ectool/ectool", "-d")
+	RunAndSave(outDir+"/superiotool.log", "../superiotool/superiotool", "-ade")
 
 	SysDir := "/sys/class/sound/card0/"
 	files, _ := ioutil.ReadDir(SysDir)

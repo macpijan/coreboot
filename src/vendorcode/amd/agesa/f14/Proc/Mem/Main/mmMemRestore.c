@@ -347,7 +347,9 @@ MemMRestoreDqsTimings (
         if (!MemMSetCSRNb (&NBArray[Node], Reg->SpecialCases, PciAddress, *((UINT32 *) OrMask) & Reg->RegisterList[j].AndMask)) {
           return FALSE;   // Restore fails
         }
-        OrMask += (Reg->RegisterList[j].Type.RegisterSize == 0) ? 4 : Reg->RegisterList[j].Type.RegisterSize;
+        if (Reg->RegisterList[j].Type.RegisterSize != 3)
+          OrMask += (Reg->RegisterList[j].Type.RegisterSize == 0) ? 4 :
+            Reg->RegisterList[j].Type.RegisterSize;
       }
 
       if (MaxNode < Node) {
@@ -370,7 +372,9 @@ MemMRestoreDqsTimings (
           if (!MemMSetCSRNb (&NBArray[Node], CReg->SpecialCases, PciAddress, *((UINT32 *) OrMask) & CReg->RegisterList[j].AndMask)) {
             return FALSE;   // Restore fails
           }
-          OrMask += (CReg->RegisterList[j].Type.RegisterSize == 0) ? 4 : CReg->RegisterList[j].Type.RegisterSize;
+          if (CReg->RegisterList[j].Type.RegisterSize != 3)
+            OrMask += (CReg->RegisterList[j].Type.RegisterSize == 0) ? 4 :
+              CReg->RegisterList[j].Type.RegisterSize;
         }
       }
     } else if (((State == ST_PRE_ESR) && (Device.CommonDeviceHeader->Type == DEV_TYPE_MSR_PRE_ESR)) ||
@@ -524,7 +528,8 @@ MemMSetCSRNb (
           IDS_HDT_CONSOLE (MEM_FLOW, "\tSTOP: DIMM config changed\n");
           RetVal = FALSE;
         }
-        if (((Value & 0x4000) == 0) && (NBPtr->GetMemClkFreqId (NBPtr, NBPtr->DCTPtr->Timings.TargetSpeed) != ((Value & 7) + 1))) {
+        if (((Value & 0x4000) == 0) && (NBPtr->GetMemClkFreqId (NBPtr,
+          NBPtr->DCTPtr->Timings.TargetSpeed) != (Value & 0x1f))) {
           IDS_HDT_CONSOLE (MEM_FLOW, "\tSTOP: MemClk has changed\n");
           RetVal = FALSE;
         }

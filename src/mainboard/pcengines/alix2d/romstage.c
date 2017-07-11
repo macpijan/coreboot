@@ -23,7 +23,6 @@
 #include <lib.h>
 #include <cpu/x86/bist.h>
 #include <cpu/x86/msr.h>
-#include <cpu/amd/car.h>
 #include <cpu/amd/lxdef.h>
 #include <cpu/amd/car.h>
 #include <southbridge/amd/cs5536/cs5536.h>
@@ -122,7 +121,7 @@ static void mb_gpio_init(void)
 	outl(1 << 11, GPIO_IO_BASE + GPIOH_OUTPUT_VALUE);       /* Led 3 disabled */
 }
 
-void main(unsigned long bist)
+void asmlinkage mainboard_romstage_entry(unsigned long bist)
 {
 	static const struct mem_controller memctrl[] = {
 		{.channel0 = {DIMM0}},

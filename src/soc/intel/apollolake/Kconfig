@@ -18,6 +18,7 @@ config CPU_SPECIFIC_OPTIONS
 	# CPU specific options
 	select CPU_INTEL_FIRMWARE_INTERFACE_TABLE
 	select IOAPIC
+	select PCR_COMMON_IOSF_1_0
 	select SMP
 	select SSE2
 	select SUPPORT_CPU_UCODE_IN_CBFS
@@ -29,6 +30,7 @@ config CPU_SPECIFIC_OPTIONS
 	select CACHE_RELOCATED_RAMSTAGE_OUTSIDE_CBMEM if RELOCATABLE_RAMSTAGE
 	select COLLECT_TIMESTAMPS
 	select COMMON_FADT
+	select FSP_PLATFORM_MEMORY_SETTINGS_VERSIONS
 	select GENERIC_GPIO_LIB
 	select HAVE_INTEL_FIRMWARE
 	select HAVE_SMI_HANDLER
@@ -41,6 +43,7 @@ config CPU_SPECIFIC_OPTIONS
 	select PCIEXP_COMMON_CLOCK
 	select PCIEXP_CLK_PM
 	select PCIEXP_L1_SUB_STATE
+	select PCIEX_LENGTH_256MB
 	select POSTCAR_CONSOLE
 	select POSTCAR_STAGE
 	select REG_SCRIPT
@@ -50,6 +53,14 @@ config CPU_SPECIFIC_OPTIONS
 	select SOC_INTEL_COMMON
 	select SOC_INTEL_COMMON_ACPI
 	select SOC_INTEL_COMMON_ACPI_WAKE_SOURCE
+	select SOC_INTEL_COMMON_BLOCK
+	select SOC_INTEL_COMMON_BLOCK_ITSS
+	select SOC_INTEL_COMMON_BLOCK_LPSS
+	select SOC_INTEL_COMMON_BLOCK_PCR
+	select SOC_INTEL_COMMON_BLOCK_SA
+	select SOC_INTEL_COMMON_BLOCK_RTC
+	select SOC_INTEL_COMMON_BLOCK_SA
+	select SOC_INTEL_COMMON_BLOCK_UART
 	select SOC_INTEL_COMMON_LPSS_I2C
 	select SOC_INTEL_COMMON_SMI
 	select SOC_INTEL_COMMON_SPI_FLASH_PROTECT
@@ -61,18 +72,20 @@ config CPU_SPECIFIC_OPTIONS
 	select HAVE_HARD_RESET
 	select SOC_INTEL_COMMON
 	select SOC_INTEL_COMMON_GFX_OPREGION
+	select SOC_INTEL_COMMON_BLOCK
+	select SOC_INTEL_COMMON_BLOCK_CSE
 	select ADD_VBT_DATA_FILE
 
 config CHROMEOS
 	select CHROMEOS_RAMOOPS_DYNAMIC
-	select EC_SOFTWARE_SYNC if EC_GOOGLE_CHROMEEC
-	select SEPARATE_VERSTAGE
+
+config VBOOT
+	select VBOOT_SEPARATE_VERSTAGE
 	select VBOOT_OPROM_MATTERS
 	select VBOOT_SAVE_RECOVERY_REASON_ON_REBOOT
 	select VBOOT_STARTS_IN_BOOTBLOCK
 	select VBOOT_VBNV_CMOS
 	select VBOOT_VBNV_CMOS_BACKUP_TO_FLASH
-	select VIRTUAL_DEV_SWITCH
 
 config TPM_ON_FAST_SPI
 	bool
@@ -86,13 +99,11 @@ config SOC_INTEL_COMMON_RESET
 	bool
 	default y
 
-config MMCONF_BASE_ADDRESS
-	hex "PCI MMIO Base Address"
-	default 0xe0000000
-
-config IOSF_BASE_ADDRESS
-	hex "MMIO Base Address of sideband bus"
+config PCR_BASE_ADDRESS
+	hex
 	default 0xd0000000
+	help
+	  This option allows you to select MMIO Base Address of sideband bus.
 
 config DCACHE_RAM_BASE
 	hex "Base address of cache-as-RAM"
@@ -116,8 +127,7 @@ config CPU_ADDR_BITS
 	int
 	default 36
 
-config SOC_INTEL_COMMON_LPSS_I2C_CLOCK_MHZ
-	depends on SOC_INTEL_COMMON_LPSS_I2C
+config SOC_INTEL_COMMON_LPSS_CLOCK_MHZ
 	int
 	default 133
 
@@ -251,6 +261,7 @@ config NHLT_DA7219
 	default n
 	help
 	  Include DSP firmware settings for headset codec.
+
 choice
 	prompt "Cache-as-ram implementation"
 	default CAR_CQOS
@@ -259,6 +270,8 @@ choice
 
 config CAR_NEM
 	bool "Non-evict mode"
+	select SOC_INTEL_COMMON_BLOCK_CAR
+	select INTEL_CAR_NEM
 	help
 	  Traditionally, CAR is set up by using Non-Evict mode. This method
 	  does not allow CAR and cache to co-exist, because cache fills are
@@ -266,12 +279,33 @@ config CAR_NEM
 
 config CAR_CQOS
 	bool "Cache Quality of Service"
+	select SOC_INTEL_COMMON_BLOCK_CAR
+	select INTEL_CAR_CQOS
 	help
 	  Cache Quality of Service allows more fine-grained control of cache
 	  usage. As result, it is possible to set up portion of L2 cache for
 	  CAR and use remainder for actual caching.
 
+config USE_APOLLOLAKE_FSP_CAR
+	bool "Use FSP CAR"
+	select FSP_CAR
+	help
+	  Use FSP APIs to initialize & tear down the Cache-As-Ram.
+
 endchoice
+
+#
+# Each bit in QOS mask controls this many bytes. This is calculated as:
+# (CACHE_WAYS / CACHE_BITS_PER_MASK) * CACHE_LINE_SIZE * CACHE_SETS
+#
+
+config CACHE_QOS_SIZE_PER_BIT
+	hex
+	default 0x20000 # 128 KB
+
+config L2_CACHE_SIZE
+	hex
+	default 0x100000
 
 config SPI_FLASH_INCLUDE_ALL_DRIVERS
 	bool

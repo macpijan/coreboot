@@ -79,7 +79,8 @@ static struct lb_record *lb_first_record(struct lb_header *header)
 static struct lb_record *lb_last_record(struct lb_header *header)
 {
 	struct lb_record *rec;
-	rec = (void *)(((char *)header) + sizeof(*header) + header->table_bytes);
+	rec = (void *)(((char *)header) + sizeof(*header)
+		+ header->table_bytes);
 	return rec;
 }
 
@@ -87,9 +88,8 @@ struct lb_record *lb_new_record(struct lb_header *header)
 {
 	struct lb_record *rec;
 	rec = lb_last_record(header);
-	if (header->table_entries) {
+	if (header->table_entries)
 		header->table_bytes += rec->size;
-	}
 	rec = lb_last_record(header);
 	header->table_entries++;
 	rec->tag = LB_TAG_UNUSED;
@@ -286,9 +286,8 @@ static void lb_boot_media_params(struct lb_header *header)
 	bmp->boot_media_size = region_device_sz(boot_dev);
 
 	bmp->fmap_offset = ~(uint64_t)0;
-	if (find_fmap_directory(&fmrd) == 0) {
+	if (find_fmap_directory(&fmrd) == 0)
 		bmp->fmap_offset = region_device_offset(&fmrd);
-	}
 }
 
 static void lb_ram_code(struct lb_header *header)
@@ -376,7 +375,7 @@ static struct cmos_checksum *lb_cmos_checksum(struct lb_header *header)
 	cmos_checksum->size = (sizeof(*cmos_checksum));
 
 	cmos_checksum->range_start = LB_CKS_RANGE_START * 8;
-	cmos_checksum->range_end = ( LB_CKS_RANGE_END * 8 ) + 7;
+	cmos_checksum->range_end = (LB_CKS_RANGE_END * 8) + 7;
 	cmos_checksum->location = LB_CKS_LOC * 8;
 	cmos_checksum->type = CHECKSUM_PCBIOS;
 
@@ -396,7 +395,7 @@ static void lb_strings(struct lb_header *header)
 		{ LB_TAG_COMPILE_TIME,   coreboot_compile_time,   },
 	};
 	unsigned int i;
-	for(i = 0; i < ARRAY_SIZE(strings); i++) {
+	for (i = 0; i < ARRAY_SIZE(strings); i++) {
 		struct lb_string *rec;
 		size_t len;
 		rec = (struct lb_string *)lb_new_record(header);
@@ -427,7 +426,8 @@ void __attribute__((weak)) lb_board(struct lb_header *header) { /* NOOP */ }
  */
 void __attribute__((weak)) lb_spi_flash(struct lb_header *header) { /* NOOP */ }
 
-static struct lb_forward *lb_forward(struct lb_header *header, struct lb_header *next_header)
+static struct lb_forward *lb_forward(struct lb_header *header,
+	struct lb_header *next_header)
 {
 	struct lb_record *rec;
 	struct lb_forward *forward;
@@ -443,12 +443,12 @@ static unsigned long lb_table_fini(struct lb_header *head)
 {
 	struct lb_record *rec, *first_rec;
 	rec = lb_last_record(head);
-	if (head->table_entries) {
+	if (head->table_entries)
 		head->table_bytes += rec->size;
-	}
 
 	first_rec = lb_first_record(head);
-	head->table_checksum = compute_ip_checksum(first_rec, head->table_bytes);
+	head->table_checksum = compute_ip_checksum(first_rec,
+		head->table_bytes);
 	head->header_checksum = 0;
 	head->header_checksum = compute_ip_checksum(head, sizeof(*head));
 	printk(BIOS_DEBUG,
@@ -465,7 +465,7 @@ size_t write_coreboot_forwarding_table(uintptr_t entry, uintptr_t target)
 		(void *)entry);
 
 	head = lb_table_init(entry);
-	lb_forward(head, (struct lb_header*)target);
+	lb_forward(head, (struct lb_header *)target);
 
 	return (uintptr_t)lb_table_fini(head) - entry;
 }
@@ -486,12 +486,15 @@ static uintptr_t write_coreboot_table(uintptr_t rom_table_end)
 				CBFS_COMPONENT_CMOS_LAYOUT, NULL);
 		if (option_table) {
 			struct lb_record *rec_dest = lb_new_record(head);
-			/* Copy the option config table, it's already a lb_record... */
+			/* Copy the option config table, it's already a
+			 * lb_record...
+			 */
 			memcpy(rec_dest,  option_table, option_table->size);
 			/* Create cmos checksum entry in coreboot table */
 			lb_cmos_checksum(head);
 		} else {
-			printk(BIOS_ERR, "cmos_layout.bin could not be found!\n");
+			printk(BIOS_ERR,
+				"cmos_layout.bin could not be found!\n");
 		}
 	}
 #endif

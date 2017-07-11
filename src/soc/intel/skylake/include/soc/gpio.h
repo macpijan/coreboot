@@ -97,7 +97,7 @@ void gpio_configure_pads(const struct pad_config *cfgs, size_t num);
 	 PAD_FIELD(GPIOTXDIS, txdis))
 
 #define _PAD_CFG_ATTRS(pad_, term_, dw0_, attrs_)			\
-	{ 								\
+	{								\
 		.pad = pad_,						\
 		.attrs = PAD_FIELD(PAD_TERM,  term_) | attrs_,		\
 		.dw0 = dw0_,						\
@@ -152,10 +152,21 @@ void gpio_configure_pads(const struct pad_config *cfgs, size_t num);
 	_DW0_VALS(rst_, RAW, NO, LEVEL, NO, YES, YES, NO, NO, NO, GPIO, NO, \
 		  YES))
 
+/* General purpose input passed through to IOxAPIC. This assumes edge
+ * triggered events. */
+#define PAD_CFG_GPI_APIC_EDGE(pad_, term_, rst_) \
+	_PAD_CFG(pad_, term_, \
+	_DW0_VALS(rst_, RAW, NO, EDGE, NO, NO, YES, NO, NO, NO, GPIO, NO, YES))
+
 /* General purpose input routed to SCI. This assumes edge triggered events. */
 #define PAD_CFG_GPI_ACPI_SCI(pad_, term_, rst_, inv_) \
 	_PAD_CFG_ATTRS(pad_, term_, \
 	_DW0_VALS(rst_, RAW, NO, EDGE, NO, inv_, \
+		NO, YES, NO, NO, GPIO, NO, YES), PAD_FIELD(HOSTSW, ACPI))
+
+#define PAD_CFG_GPI_ACPI_SCI_LEVEL(pad_, term_, rst_, inv_) \
+	_PAD_CFG_ATTRS(pad_, term_, \
+	_DW0_VALS(rst_, RAW, NO, LEVEL, NO, inv_, \
 		NO, YES, NO, NO, GPIO, NO, YES), PAD_FIELD(HOSTSW, ACPI))
 
 /* General purpose input routed to SMI. This assumes edge triggered events. */

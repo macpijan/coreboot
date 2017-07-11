@@ -38,6 +38,7 @@
 #include <device/i2c.h>
 #include <endian.h>
 #include <timer.h>
+#include <tpm.h>
 #include "tpm.h"
 
 /* max. number of iterations after I2C NAK */
@@ -174,7 +175,8 @@ static int iic_tpm_write_generic(uint8_t addr, uint8_t *buffer, size_t len,
 	int count;
 
 	if (len > TPM_BUFSIZE) {
-		printk(BIOS_DEBUG, "%s: Length %zd is too large\n", __func__, len);
+		printk(BIOS_DEBUG, "%s: Length %zd is too large\n",
+			__func__, len);
 		return -1;
 	}
 
@@ -313,7 +315,8 @@ static ssize_t get_burstcount(struct tpm_chip *chip)
 	int timeout = 2 * 1000; /* 2s timeout */
 	while (timeout) {
 		/* Note: STS is little endian */
-		if (iic_tpm_read(TPM_STS(chip->vendor.locality) + 1, buf, 3) < 0)
+		if (iic_tpm_read(TPM_STS(chip->vendor.locality) + 1, buf, 3)
+			< 0)
 			burstcnt = 0;
 		else
 			burstcnt = (buf[2] << 16) + (buf[1] << 8) + buf[0];
@@ -473,7 +476,7 @@ out_err:
 
 /* Initialization of I2C TPM */
 
-int tpm_vendor_probe(unsigned bus, uint32_t addr)
+int tpm_vendor_probe(unsigned int bus, uint32_t addr)
 {
 	struct tpm_inf_dev *tpm_dev = car_get_var_ptr(&g_tpm_dev);
 	struct stopwatch sw;
@@ -515,7 +518,7 @@ int tpm_vendor_probe(unsigned bus, uint32_t addr)
 	return 0;
 }
 
-int tpm_vendor_init(struct tpm_chip *chip, unsigned bus, uint32_t dev_addr)
+int tpm_vendor_init(struct tpm_chip *chip, unsigned int bus, uint32_t dev_addr)
 {
 	struct tpm_inf_dev *tpm_dev = car_get_var_ptr(&g_tpm_dev);
 	uint32_t vendor;
@@ -542,9 +545,6 @@ int tpm_vendor_init(struct tpm_chip *chip, unsigned bus, uint32_t dev_addr)
 	chip->vendor.send = &tpm_tis_i2c_send;
 	chip->vendor.cancel = &tpm_tis_i2c_ready;
 
-	/* Disable interrupts (not supported) */
-	chip->vendor.irq = 0;
-
 	if (request_locality(chip, 0) != 0)
 		return -1;
 
@@ -557,7 +557,8 @@ int tpm_vendor_init(struct tpm_chip *chip, unsigned bus, uint32_t dev_addr)
 	} else if (be32_to_cpu(vendor) == TPM_TIS_I2C_DID_VID_9635) {
 		tpm_dev->chip_type = SLB9635;
 	} else {
-		printk(BIOS_DEBUG, "Vendor ID 0x%08x not recognized.\n", vendor);
+		printk(BIOS_DEBUG, "Vendor ID 0x%08x not recognized.\n",
+			vendor);
 		goto out_err;
 	}
 

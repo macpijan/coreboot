@@ -1,5 +1,7 @@
 TAG-$(CONFIG_GRUB2_MASTER)=
+TAG-$(CONFIG_GRUB2_REVISION)=$(CONFIG_GRUB2_REVISION_ID)
 NAME-$(CONFIG_GRUB2_MASTER)=HEAD
+NAME-$(CONFIG_GRUB2_REVISION)=$(CONFIG_GRUB2_REVISION_ID)
 
 project_git_repo=git://git.sv.gnu.org/grub.git
 project_dir=grub2
@@ -40,7 +42,8 @@ config: checkout
 	cd grub2 && ./autogen.sh
 	cd grub2/build && ../configure BUILD_CC="$(HOSTCC)" CC="$(HOSTCC)" \
 	TARGET_CC="$(CC)" \
-	TARGET_OBJCOPY="$(OBJCOPY)" TARGET_STRIP="$(STRIP)" CFLAGS=-O2 TARGET_CFLAGS=-Os --with-platform=coreboot
+	TARGET_OBJCOPY="$(OBJCOPY)" TARGET_STRIP="$(STRIP)" CFLAGS=-O2 TARGET_CFLAGS=-Os --with-platform=coreboot \
+	--enable-boot-time
 
 grub2: config
 	echo "    MAKE       GRUB2 $(NAME-y)"

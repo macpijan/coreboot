@@ -71,8 +71,8 @@ __attribute__((weak)) uint32_t cpu_get_max_ratio(void)
 __attribute__((weak)) uint32_t cpu_get_bus_clock(void)
 {
 	/* CPU bus clock is set by default here to 100MHz.
-           This function returns the bus clock in KHz.
-	*/
+	 * This function returns the bus clock in KHz.
+	 */
 	return 100 * KHz;
 }
 
@@ -109,7 +109,7 @@ __attribute__((weak)) acpi_tstate_t *soc_get_tss_table(int *entries)
 __attribute__((weak)) uint16_t soc_get_acpi_base_address(void)
 {
 #define ACPI_BASE_ADDR 0x400
-	return (ACPI_BASE_ADDR);
+	return ACPI_BASE_ADDR;
 }
 
 static int calculate_power(int tdp, int p1_ratio, int ratio)
@@ -162,16 +162,16 @@ static void generate_p_state_entries(int core, int cores_per_package)
 	/* Calculate CPU TDP in mW */
 	power_max = cpu_get_power_max();
 
-        /* Write _PCT indicating use of FFixedHW */
+	/* Write _PCT indicating use of FFixedHW */
 	acpigen_write_empty_PCT();
 
-        /* Write _PPC with no limit on supported P-state */
+	/* Write _PPC with no limit on supported P-state */
 	acpigen_write_PPC_NVS();
-       /* Write PSD indicating configured coordination type */
+	/* Write PSD indicating configured coordination type */
 	acpigen_write_PSD_package(core, 1, coord_type);
 
-        /* Add P-state entries in _PSS table */
-        acpigen_write_name("_PSS");
+	/* Add P-state entries in _PSS table */
+	acpigen_write_name("_PSS");
 
 	/* Determine ratio points */
 	ratio_step = PSS_RATIO_STEP;
@@ -273,8 +273,8 @@ void generate_cpu_entries(device_t device)
 	printk(BIOS_DEBUG, "Found %d CPU(s) with %d core(s) each.\n",
 		numcpus, cores_per_package);
 
-	for (cpu_id=0; cpu_id < numcpus; cpu_id++) {
-		for (core_id=0; core_id < cores_per_package; core_id++) {
+	for (cpu_id = 0; cpu_id < numcpus; cpu_id++) {
+		for (core_id = 0; core_id < cores_per_package; core_id++) {
 			if (core_id > 0) {
 				pcontrol_blk = 0;
 				plen = 0;

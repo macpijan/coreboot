@@ -49,15 +49,15 @@ static void pch_log_wake_source(struct chipset_power_state *ps)
 		elog_add_event_wake(ELOG_WAKE_SOURCE_PCIE, 0);
 
 	/* PME */
-	if(ps->gpe0_sts[GPE0_A] & CSE_PME_STS)
+	if (ps->gpe0_sts[GPE0_A] & CSE_PME_STS)
 		elog_add_event_wake(ELOG_WAKE_SOURCE_PME, 0);
 
 	/* SMBUS Wake */
 	if (ps->gpe0_sts[GPE0_A] & SMB_WAK_STS)
 		elog_add_event_wake(ELOG_WAKE_SOURCE_SMBUS, 0);
 
-        /* ACPI Wake Event - Always Log prev_sleep_state*/
-        elog_add_event_byte(ELOG_TYPE_ACPI_WAKE, ps->prev_sleep_state);
+	/* ACPI Wake Event - Always Log prev_sleep_state*/
+	elog_add_event_byte(ELOG_TYPE_ACPI_WAKE, ps->prev_sleep_state);
 
 	/* Log GPIO events in set A-D */
 	pch_log_gpio_gpe(ps->gpe0_sts[GPE0_A], ps->gpe0_en[GPE0_A], 0);
@@ -73,7 +73,7 @@ static void pch_log_power_and_resets(struct chipset_power_state *ps)
 		elog_add_event(ELOG_TYPE_RTC_RESET);
 
 	/* System Reset */
-	if (ps->gen_pmcon1 & SRS)
+	if (ps->gen_pmcon1 & WARM_RESET_STS)
 		elog_add_event(ELOG_TYPE_SYSTEM_RESET);
 
 	/* TCO Timeout */

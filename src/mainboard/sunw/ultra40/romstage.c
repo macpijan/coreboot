@@ -14,18 +14,18 @@
 #include <northbridge/amd/amdk8/raminit.h>
 #include <delay.h>
 #include <cpu/x86/lapic.h>
-#include "northbridge/amd/amdk8/reset_test.c"
-#include "northbridge/amd/amdk8/debug.c"
+
 #include <superio/smsc/lpc47b397/lpc47b397.h>
 #include <cpu/x86/bist.h>
 #include "superio/smsc/lpc47b397/early_gpio.c"
 #include "northbridge/amd/amdk8/setup_resource_map.c"
+#include <northbridge/amd/amdk8/pre_f.h>
 
 #define SERIAL_DEV PNP_DEV(0x2e, LPC47B397_SP1)
 #define SUPERIO_GPIO_DEV PNP_DEV(0x2e, LPC47B397_RT)
 #define SUPERIO_GPIO_IO_BASE 0x400
 
-static void memreset(int controllers, const struct mem_controller *ctrl) { }
+void memreset(int controllers, const struct mem_controller *ctrl) { }
 
 #ifdef ENABLE_ONBOARD_SCSI
 static void sio_gpio_setup(void)
@@ -39,15 +39,14 @@ static void sio_gpio_setup(void)
 }
 #endif
 
-static inline void activate_spd_rom(const struct mem_controller *ctrl) { }
+void activate_spd_rom(const struct mem_controller *ctrl) { }
 
-static inline int spd_read_byte(unsigned device, unsigned address)
+int spd_read_byte(unsigned device, unsigned address)
 {
 	return smbus_read_byte(device, address);
 }
 
 #include "northbridge/amd/amdk8/raminit.c"
-#include "northbridge/amd/amdk8/coherent_ht.c"
 #include "lib/generic_sdram.c"
 #include "resourcemap.c"
 #include "cpu/amd/dualcore/dualcore.c"

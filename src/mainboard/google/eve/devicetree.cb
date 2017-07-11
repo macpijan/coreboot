@@ -1,8 +1,10 @@
 chip soc/intel/skylake
 
 	# Enable deep Sx states
-	register "deep_s3_enable" = "1"
-	register "deep_s5_enable" = "1"
+	register "deep_s3_enable_ac" = "0"
+	register "deep_s3_enable_dc" = "1"
+	register "deep_s5_enable_ac" = "1"
+	register "deep_s5_enable_dc" = "1"
 	register "deep_sx_config" = "DSX_EN_LAN_WAKE_PIN | DSX_EN_WAKE_PIN"
 
 	# GPE configuration
@@ -61,20 +63,22 @@ chip soc/intel/skylake
 	register "pirqg_routing" = "PCH_IRQ11"
 	register "pirqh_routing" = "PCH_IRQ11"
 
-	# VR Settings Configuration for 5 Domains
-	#+----------------+-------+-------+-------------+-------------+-------+
-	#| Domain/Setting |  SA   |  IA   | Ring Sliced | GT Unsliced |  GT   |
-	#+----------------+-------+-------+-------------+-------------+-------+
-	#| Psi1Threshold  | 20A   | 20A   | 20A         | 20A         | 20A   |
-	#| Psi2Threshold  | 4A    | 5A    | 5A          | 5A          | 5A    |
-	#| Psi3Threshold  | 1A    | 1A    | 1A          | 1A          | 1A    |
-	#| Psi3Enable     | 1     | 1     | 1           | 1           | 1     |
-	#| Psi4Enable     | 1     | 1     | 1           | 1           | 1     |
-	#| ImonSlope      | 0     | 0     | 0           | 0           | 0     |
-	#| ImonOffset     | 0     | 0     | 0           | 0           | 0     |
-	#| IccMax         | 4A    | 24A   | 24A         | 24A         | 24A   |
-	#| VrVoltageLimit | 1.52V | 1.52V | 1.52V       | 1.52V       | 1.52V |
-	#+----------------+-------+-------+-------------+-------------+-------+
+	# VR Settings Configuration for 4 Domains
+	#+----------------+-------+-------+-------+-------+
+	#| Domain/Setting |  SA   |  IA   | GTUS  |  GTS  |
+	#+----------------+-------+-------+-------+-------+
+	#| Psi1Threshold  | 20A   | 20A   | 20A   | 20A   |
+	#| Psi2Threshold  | 4A    | 5A    | 5A    | 5A    |
+	#| Psi3Threshold  | 1A    | 1A    | 1A    | 1A    |
+	#| Psi3Enable     | 1     | 1     | 1     | 1     |
+	#| Psi4Enable     | 1     | 1     | 1     | 1     |
+	#| ImonSlope      | 0     | 0     | 0     | 0     |
+	#| ImonOffset     | 0     | 0     | 0     | 0     |
+	#| IccMax         | 4A    | 24A   | 24A   | 24A   |
+	#| VrVoltageLimit | 1.52V | 1.52V | 1.52V | 1.52V |
+	#| AcLoadline     | 17.9  | 5.9   | 5.7   | 5.7   |
+	#| DcLoadline     | 14    | 4.7   | 4.2   | 4.2   |
+	#+----------------+-------+-------+-------+-------+
 	register "domain_vr_config[VR_SYSTEM_AGENT]" = "{
 		.vr_config_enable = 1,
 		.psi1threshold = VR_CFG_AMP(20),
@@ -86,6 +90,8 @@ chip soc/intel/skylake
 		.imon_offset = 0x0,
 		.icc_max = VR_CFG_AMP(4),
 		.voltage_limit = 1520,
+		.ac_loadline = 1790,
+		.dc_loadline = 1400,
 	}"
 
 	register "domain_vr_config[VR_IA_CORE]" = "{
@@ -99,19 +105,8 @@ chip soc/intel/skylake
 		.imon_offset = 0x0,
 		.icc_max = VR_CFG_AMP(24),
 		.voltage_limit = 1520,
-	}"
-
-	register "domain_vr_config[VR_RING]" = "{
-		.vr_config_enable = 1,
-		.psi1threshold = VR_CFG_AMP(20),
-		.psi2threshold = VR_CFG_AMP(5),
-		.psi3threshold = VR_CFG_AMP(1),
-		.psi3enable = 1,
-		.psi4enable = 1,
-		.imon_slope = 0x0,
-		.imon_offset = 0x0,
-		.icc_max = VR_CFG_AMP(24),
-		.voltage_limit = 1520,
+		.ac_loadline = 590,
+		.dc_loadline = 470,
 	}"
 
 	register "domain_vr_config[VR_GT_UNSLICED]" = "{
@@ -125,6 +120,8 @@ chip soc/intel/skylake
 		.imon_offset = 0x0,
 		.icc_max = VR_CFG_AMP(24),
 		.voltage_limit = 1520,
+		.ac_loadline = 570,
+		.dc_loadline = 420,
 	}"
 
 	register "domain_vr_config[VR_GT_SLICED]" = "{
@@ -138,6 +135,8 @@ chip soc/intel/skylake
 		.imon_offset = 0x0,
 		.icc_max = VR_CFG_AMP(24),
 		.voltage_limit = 1520,
+		.ac_loadline = 570,
+		.dc_loadline = 420,
 	}"
 
 	# Enable Root port 1 with SRCCLKREQ1#
@@ -162,14 +161,38 @@ chip soc/intel/skylake
 	register "usb3_ports[2]" = "USB3_PORT_EMPTY"		# Empty
 	register "usb3_ports[3]" = "USB3_PORT_EMPTY"		# Empty
 
-	register "i2c_voltage[0]" = "I2C_VOLTAGE_3V3"	# Touchscreen
-	register "i2c_voltage[1]" = "I2C_VOLTAGE_3V3"	# TPM
-	register "i2c_voltage[2]" = "I2C_VOLTAGE_1V8"	# Touchpad
-	register "i2c_voltage[4]" = "I2C_VOLTAGE_1V8"	# Audio
+	# Touchscreen
+	register "i2c_voltage[0]" = "I2C_VOLTAGE_3V3"
+	register "i2c[0]" = "{
+		.speed = I2C_SPEED_FAST_PLUS,
+		.rise_time_ns = 98,
+		.fall_time_ns = 38,
+	}"
 
 	# Enable I2C1 bus early for TPM access
-	register "i2c[1].early_init" = "1"
-	register "i2c[1].speed" = "I2C_SPEED_FAST"
+	register "i2c_voltage[1]" = "I2C_VOLTAGE_3V3"
+	register "i2c[1]" = "{
+		.early_init = 1,
+		.speed = I2C_SPEED_FAST,
+		.rise_time_ns = 112,
+		.fall_time_ns = 34,
+	}"
+
+	# Touchpad
+	register "i2c_voltage[2]" = "I2C_VOLTAGE_1V8"
+	register "i2c[2]" = "{
+		.speed = I2C_SPEED_FAST,
+		.rise_time_ns = 111,
+		.fall_time_ns = 41,
+	}"
+
+	# Audio
+	register "i2c_voltage[4]" = "I2C_VOLTAGE_1V8"
+	register "i2c[4]" = "{
+		.speed = I2C_SPEED_FAST,
+		.rise_time_ns = 240,
+		.fall_time_ns = 30,
+	}"
 
 	# Must leave UART0 enabled or SD/eMMC will not work as PCI
 	register "SerialIoDevMode" = "{
@@ -181,7 +204,7 @@ chip soc/intel/skylake
 		[PchSerialIoIndexI2C5]  = PchSerialIoDisabled,
 		[PchSerialIoIndexSpi0]  = PchSerialIoPci,
 		[PchSerialIoIndexSpi1]  = PchSerialIoPci,
-		[PchSerialIoIndexUart0] = PchSerialIoPci,
+		[PchSerialIoIndexUart0] = PchSerialIoSkipInit,
 		[PchSerialIoIndexUart1] = PchSerialIoDisabled,
 		[PchSerialIoIndexUart2] = PchSerialIoSkipInit,
 	}"
@@ -201,11 +224,11 @@ chip soc/intel/skylake
 		device pci 14.1 off end # USB xDCI (OTG)
 		device pci 14.2 on  end # Thermal Subsystem
 		device pci 15.0 on
-			chip drivers/i2c/wacom
-				register "generic.hid" = "WCOM50C1_HID"
-				register "generic.cid" = "PNP0C50_CID"
-				register "generic.desc" = "WCOM_DT_DESC"
-				register "generic.irq" = "IRQ_LEVEL_LOW(GPP_E7_IRQ)"
+			chip drivers/i2c/hid
+				register "generic.hid" = ""WCOM50C1""
+				register "generic.desc" = ""WCOM Digitizer""
+				register "generic.irq" = "ACPI_IRQ_LEVEL_LOW(GPP_E7_IRQ)"
+				register "generic.speed" = "I2C_SPEED_FAST_PLUS"
 				register "hid_desc_reg_offset" = "0x1"
 				device i2c 0a on end
 			end
@@ -213,16 +236,22 @@ chip soc/intel/skylake
 		device pci 15.1 on
 			chip drivers/i2c/tpm
 				register "hid" = ""GOOG0005""
-				register "irq" = "IRQ_EDGE_LOW(GPP_E0_IRQ)"
+				register "irq" = "ACPI_IRQ_EDGE_LOW(GPP_E0_IRQ)"
 				device i2c 50 on end
 			end
 		end # I2C #1
 		device pci 15.2 on
-			chip drivers/i2c/generic
-				register "hid" = ""GOOG5400""
-				register "desc" = ""Touchpad""
-				register "irq" = "IRQ_EDGE_LOW(GPP_B3_IRQ)"
+			chip drivers/i2c/hid
+				register "generic.hid" = ""ACPI0C50""
+				register "generic.desc" = ""Touchpad""
+				register "generic.irq" = "ACPI_IRQ_LEVEL_LOW(GPP_B3_IRQ)"
+				register "hid_desc_reg_offset" = "0x1"
 				device i2c 49 on end
+			end
+			chip drivers/i2c/generic
+				register "hid" = ""GOOG0008""
+				register "desc" = ""Touchpad EC Interface""
+				device i2c 1e on end
 			end
 		end # I2C #2
 		device pci 15.3 off end # I2C #3
@@ -234,7 +263,35 @@ chip soc/intel/skylake
 		device pci 17.0 off end # SATA
 		device pci 19.0 on  end # UART #2
 		device pci 19.1 off end # I2C #5
-		device pci 19.2 on  end # I2C #4
+		device pci 19.2 on
+			chip drivers/i2c/max98927
+				register "interleave_mode" = "1"
+				register "uid" = "0"
+				register "desc" = ""Right Speaker Amp""
+				register "name" = ""MAXR""
+				device i2c 39 on end
+			end
+			chip drivers/i2c/max98927
+				register "interleave_mode" = "1"
+				register "uid" = "1"
+				register "desc" = ""Left Speaker Amp""
+				register "name" = ""MAXL""
+				device i2c 3a on end
+			end
+			chip drivers/i2c/generic
+				register "hid" = ""10EC5663""
+				register "name" = ""RT53""
+				register "desc" = ""Realtek RT5663""
+				register "irq_gpio" = "ACPI_GPIO_IRQ_EDGE_BOTH(GPP_D9)"
+				device i2c 13 on end
+			end
+			chip drivers/i2c/generic
+				register "hid" = ""10EC5514""
+				register "name" = ""RT54""
+				register "desc" = ""Realtek RT5514""
+				device i2c 57 on end
+			end
+		end # I2C #4
 		device pci 1c.0 on
 			chip drivers/intel/wifi
 				register "wake" = "GPE0_PCI_EXP"
@@ -254,13 +311,21 @@ chip soc/intel/skylake
 		device pci 1d.3 off end # PCI Express Port 12
 		device pci 1e.0 on  end # UART #0
 		device pci 1e.1 off end # UART #1
-		device pci 1e.2 on  end # GSPI #0
+		device pci 1e.2 on
+			chip drivers/spi/acpi
+				register "hid" = "ACPI_DT_NAMESPACE_HID"
+				register "compat_string" = ""realtek,rt5514""
+				register "irq" = "ACPI_IRQ_LEVEL_HIGH(GPP_F10_IRQ)"
+				device spi 0 on end
+			end
+		end # GSPI #0
 		device pci 1e.3 on
 			chip drivers/spi/acpi
 				register "hid" = "ACPI_DT_NAMESPACE_HID"
 				register "uid" = "1"
 				register "compat_string" = ""fpc,fpc1020""
-				register "irq" = "IRQ_EDGE_LOW(GPP_C8_IRQ)"
+				register "irq_gpio" = "ACPI_GPIO_IRQ_EDGE_HIGH(GPP_C8)"
+				register "reset_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_LOW(GPP_C9)"
 				device spi 0 on end
 			end
 		end # GSPI #1

@@ -47,6 +47,8 @@
 
 #define BASE_FREQUENCY 100000
 
+#define DEFAULT_BLC_PWM 180
+
 static int gtt_setup(u8 *mmiobase)
 {
 	unsigned long PGETBL_save;
@@ -134,8 +136,6 @@ static int intel_gma_init_lvds(struct northbridge_intel_i945_config *conf,
 		write32(mmiobase + RENDER_RING_BASE + i, 0);
 	for (i = 0; i < 0x20; i += 4)
 		write32(mmiobase + FENCE_REG_965_0 + i, 0);
-	write32(mmiobase + PP_ON_DELAYS, 0);
-	write32(mmiobase + PP_OFF_DELAYS, 0);
 
 	/* Disable VGA.  */
 	write32(mmiobase + VGACNTRL, VGA_DISP_DISABLE);
@@ -193,7 +193,7 @@ static int intel_gma_init_lvds(struct northbridge_intel_i945_config *conf,
 	}
 
 	if (smallest_err == 0xffffffff) {
-		printk (BIOS_ERR, "Couldn't find GFX clock divisors\n");
+		printk(BIOS_ERR, "Couldn't find GFX clock divisors\n");
 		return -1;
 	}
 
@@ -292,9 +292,6 @@ static int intel_gma_init_lvds(struct northbridge_intel_i945_config *conf,
 	write32(mmiobase + DSPSIZE(0), (hactive - 1) | ((vactive - 1) << 16));
 	write32(mmiobase + DSPPOS(0), 0);
 
-	/* Backlight init. */
-	write32(mmiobase + BLC_PWM_CTL, conf->gpu_backlight);
-
 	edid.bytes_per_line = (edid.bytes_per_line + 63) & ~63;
 	write32(mmiobase + DSPADDR(0), 0);
 	write32(mmiobase + DSPSURF(0), 0);
@@ -317,14 +314,14 @@ static int intel_gma_init_lvds(struct northbridge_intel_i945_config *conf,
 	write32(mmiobase + PP_CONTROL, PANEL_UNLOCK_REGS
 		| PANEL_POWER_ON | PANEL_POWER_RESET);
 
-	printk (BIOS_DEBUG, "waiting for panel powerup\n");
+	printk(BIOS_DEBUG, "waiting for panel powerup\n");
 	while (1) {
 		u32 reg32;
 		reg32 = read32(mmiobase + PP_STATUS);
 		if ((reg32 & PP_SEQUENCE_MASK) == PP_SEQUENCE_NONE)
 			break;
 	}
-	printk (BIOS_DEBUG, "panel powered up\n");
+	printk(BIOS_DEBUG, "panel powered up\n");
 
 	write32(mmiobase + PP_CONTROL, PANEL_POWER_ON | PANEL_POWER_RESET);
 
@@ -349,8 +346,7 @@ static int intel_gma_init_lvds(struct northbridge_intel_i945_config *conf,
 		printk(BIOS_DEBUG, "%dM UMA\n", uma_size >> 10);
 	}
 
-	for (i = 0; i < (uma_size - 256) / 4; i++)
-	{
+	for (i = 0; i < (uma_size - 256) / 4; i++) {
 		outl((i << 2) | 1, piobase);
 		outl(pphysbase + (i << 12) + 1, piobase + 4);
 	}
@@ -489,7 +485,7 @@ static int intel_gma_init_vga(struct northbridge_intel_i945_config *conf,
 	write32(mmiobase + PF_WIN_POS(0), 0);
 
 	write32(mmiobase + PIPESRC(0), (639 << 16) | 399);
-	write32(mmiobase + PF_CTL(0),PF_ENABLE | PF_FILTER_MED_3x3);
+	write32(mmiobase + PF_CTL(0), PF_ENABLE | PF_FILTER_MED_3x3);
 	write32(mmiobase + PF_WIN_SZ(0), vactive | (hactive << 16));
 	write32(mmiobase + PFIT_CONTROL, 0x0);
 
@@ -529,8 +525,7 @@ static int intel_gma_init_vga(struct northbridge_intel_i945_config *conf,
 		printk(BIOS_DEBUG, "%dM UMA\n", uma_size >> 10);
 	}
 
-	for (i = 0; i < (uma_size - 256) / 4; i++)
-	{
+	for (i = 0; i < (uma_size - 256) / 4; i++) {
 		outl((i << 2) | 1, piobase);
 		outl(pphysbase + (i << 12) + 1, piobase + 4);
 	}
@@ -571,6 +566,62 @@ static int probe_edid(u8 *mmiobase, u8 slave)
 	return 1;
 }
 
+static u32 get_cdclk(struct device *const dev)
+{
+	u16 gcfgc = pci_read_config16(dev, GCFGC);
+
+	if (gcfgc & GC_LOW_FREQUENCY_ENABLE) {
+		return 133333333;
+	} else {
+		switch (gcfgc & GC_DISPLAY_CLOCK_MASK) {
+		case GC_DISPLAY_CLOCK_333_320_MHZ:
+			return 320000000;
+		default:
+		case GC_DISPLAY_CLOCK_190_200_MHZ:
+			return 200000000;
+		}
+	}
+}
+
+static u32 freq_to_blc_pwm_ctl(struct device *const dev, u16 pwm_freq)
+{
+	u32 blc_mod;
+
+	/* Set duty cycle to 100% due to use of legacy backlight control */
+	blc_mod = get_cdclk(dev) / (32 * pwm_freq);
+	return BLM_LEGACY_MODE | ((blc_mod / 2) << 17) | ((blc_mod / 2) << 1);
+}
+
+
+static void panel_setup(u8 *mmiobase, struct device *const dev)
+{
+	const struct northbridge_intel_i945_config *const conf = dev->chip_info;
+
+	u32 reg32;
+
+	/* Set up Panel Power On Delays */
+	reg32 = (conf->gpu_panel_power_up_delay & 0x1fff) << 16;
+	reg32 |= (conf->gpu_panel_power_backlight_on_delay & 0x1fff);
+	write32(mmiobase + PP_ON_DELAYS, reg32);
+
+	/* Set up Panel Power Off Delays */
+	reg32 = (conf->gpu_panel_power_down_delay & 0x1fff) << 16;
+	reg32 |= (conf->gpu_panel_power_backlight_off_delay & 0x1fff);
+	write32(mmiobase + PP_OFF_DELAYS, reg32);
+
+	/* Set up Panel Power Cycle Delay */
+	reg32 = (get_cdclk(dev) / 20000 - 1) << PP_REFERENCE_DIVIDER_SHIFT;
+	reg32 |= conf->gpu_panel_power_cycle_delay & 0x1f;
+	write32(mmiobase + PP_DIVISOR, reg32);
+
+	/* Backlight init. */
+	if (conf->pwm_freq)
+		write32(mmiobase + BLC_PWM_CTL, freq_to_blc_pwm_ctl(dev,
+							conf->pwm_freq));
+	else
+		write32(mmiobase + BLC_PWM_CTL, freq_to_blc_pwm_ctl(dev,
+							DEFAULT_BLC_PWM));
+}
 
 static void gma_func0_init(struct device *dev)
 {
@@ -581,7 +632,8 @@ static void gma_func0_init(struct device *dev)
 	udelay(50);
 	pci_write_config8(dev, GDRST, 0);
 	/* wait for device to finish */
-	while (pci_read_config8(dev, GDRST) & 1) { };
+	while (pci_read_config8(dev, GDRST) & 1)
+		;
 
 	/* IGD needs to be Bus Master */
 	reg32 = pci_read_config32(dev, PCI_COMMAND);
@@ -605,6 +657,10 @@ static void gma_func0_init(struct device *dev)
 			);
 
 		int err;
+
+		if (IS_ENABLED(CONFIG_NORTHBRIDGE_INTEL_SUBTYPE_I945GM))
+			panel_setup(mmiobase, dev);
+
 		/* probe if VGA is connected and always run */
 		/* VGA init if no LVDS is connected */
 		if (!probe_edid(mmiobase, 3) || probe_edid(mmiobase, 2))
@@ -664,7 +720,8 @@ static void gma_func1_init(struct device *dev)
 		pci_write_config8(dev, 0xf4, 0xff);
 }
 
-static void gma_set_subsystem(device_t dev, unsigned vendor, unsigned device)
+static void gma_set_subsystem(device_t dev, unsigned int vendor,
+			unsigned int device)
 {
 	if (!vendor || !device) {
 		pci_write_config32(dev, PCI_SUBSYSTEM_VENDOR_ID,
@@ -678,23 +735,20 @@ static void gma_set_subsystem(device_t dev, unsigned vendor, unsigned device)
 const struct i915_gpu_controller_info *
 intel_gma_get_controller_info(void)
 {
-	device_t dev = dev_find_slot(0, PCI_DEVFN(0x2,0));
-	if (!dev) {
+	device_t dev = dev_find_slot(0, PCI_DEVFN(0x2, 0));
+	if (!dev)
 		return NULL;
-	}
 	struct northbridge_intel_i945_config *chip = dev->chip_info;
-	if (!chip) {
+	if (!chip)
 		return NULL;
-	}
 	return &chip->gfx;
 }
 
 static void gma_ssdt(device_t device)
 {
 	const struct i915_gpu_controller_info *gfx = intel_gma_get_controller_info();
-	if (!gfx) {
+	if (!gfx)
 		return;
-	}
 
 	drivers_intel_gma_displays_ssdt_generate(gfx);
 }

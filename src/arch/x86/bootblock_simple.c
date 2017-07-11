@@ -28,14 +28,15 @@ static void main(unsigned long bist)
 #endif
 	}
 
-#if CONFIG_SEPARATE_VERSTAGE
-	const char* target1 = "fallback/verstage";
+#if CONFIG_VBOOT_SEPARATE_VERSTAGE
+	const char *target1 = "fallback/verstage";
 #else
-	const char* target1 = "fallback/romstage";
+	const char *target1 = "fallback/romstage";
 #endif
 
 	unsigned long entry;
 	entry = findstage(target1);
-	if (entry) call(entry, bist);
+	if (entry)
+		call(entry, bist);
 	halt();
 }

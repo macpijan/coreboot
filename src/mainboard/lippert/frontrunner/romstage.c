@@ -8,7 +8,6 @@
 #include <superio/winbond/w83627hf/w83627hf.h>
 #include <cpu/x86/bist.h>
 #include <cpu/x86/msr.h>
-#include <cpu/amd/car.h>
 #include <cpu/amd/gx2def.h>
 #include <southbridge/amd/cs5535/cs5535.h>
 #include "southbridge/amd/cs5535/early_smbus.c"
@@ -70,7 +69,7 @@ static inline int spd_read_byte(unsigned int device, unsigned int address)
 #include "cpu/amd/geode_gx2/syspreinit.c"
 #include "cpu/amd/geode_lx/msrinit.c"
 
-void main(unsigned long bist)
+void asmlinkage mainboard_romstage_entry(unsigned long bist)
 {
 	static const struct mem_controller memctrl [] = {
 		{.channel0 = {DIMM0, DIMM1}}

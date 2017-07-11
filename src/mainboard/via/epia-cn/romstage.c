@@ -26,16 +26,14 @@
 #include <cpu/x86/bist.h>
 #include <cpu/amd/car.h>
 #include <delay.h>
-#include "southbridge/via/vt8237r/early_smbus.c"
+#include <southbridge/via/vt8237r/vt8237r.h>
 #include "southbridge/via/vt8237r/early_serial.c"
 #include <spd.h>
 
-static inline int spd_read_byte(unsigned device, unsigned address)
+int spd_read_byte(unsigned device, unsigned address)
 {
 	return smbus_read_byte(device, address);
 }
-
-#include "northbridge/via/cn700/raminit.c"
 
 static void enable_mainboard_devices(void)
 {
@@ -82,7 +80,7 @@ void main(unsigned long bist)
 	enable_vt8237r_serial();
 	console_init();
 	enable_smbus();
-	smbus_fixup(&ctrl);
+	smbus_fixup(ctrl.channel0, ARRAY_SIZE(ctrl.channel0));
 	report_bist_failure(bist);
 	enable_mainboard_devices();
 	ddr_ram_setup(&ctrl);

@@ -16,8 +16,10 @@
 #include <pc80/mc146818rtc.h>
 #include <halt.h>
 
-static const char *get_fallback(const char *stagelist) {
-	while (*stagelist) stagelist++;
+static const char *get_fallback(const char *stagelist)
+{
+	while (*stagelist)
+		stagelist++;
 	return ++stagelist;
 }
 

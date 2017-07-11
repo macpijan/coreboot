@@ -47,55 +47,62 @@ const char *acpi_device_path_join(struct device *dev, const char *name);
  * ACPI Descriptor for extended Interrupt()
  */
 
-enum irq_mode {
-	IRQ_EDGE_TRIGGERED,
-	IRQ_LEVEL_TRIGGERED
+enum acpi_irq_mode {
+	ACPI_IRQ_EDGE_TRIGGERED,
+	ACPI_IRQ_LEVEL_TRIGGERED
 };
 
-enum irq_polarity {
-	IRQ_ACTIVE_LOW,
-	IRQ_ACTIVE_HIGH,
-	IRQ_ACTIVE_BOTH
+enum acpi_irq_polarity {
+	ACPI_IRQ_ACTIVE_LOW,
+	ACPI_IRQ_ACTIVE_HIGH,
+	ACPI_IRQ_ACTIVE_BOTH
 };
 
-enum irq_shared {
-	IRQ_EXCLUSIVE,
-	IRQ_SHARED
+enum acpi_irq_shared {
+	ACPI_IRQ_EXCLUSIVE,
+	ACPI_IRQ_SHARED
 };
 
-enum irq_wake {
-	IRQ_NO_WAKE,
-	IRQ_WAKE
+enum acpi_irq_wake {
+	ACPI_IRQ_NO_WAKE,
+	ACPI_IRQ_WAKE
 };
 
 struct acpi_irq {
 	unsigned int pin;
-	enum irq_mode mode;
-	enum irq_polarity polarity;
-	enum irq_shared shared;
-	enum irq_wake wake;
+	enum acpi_irq_mode mode;
+	enum acpi_irq_polarity polarity;
+	enum acpi_irq_shared shared;
+	enum acpi_irq_wake wake;
 };
 
-#define IRQ_EDGE_LOW(x) { \
+#define ACPI_IRQ_EDGE_LOW(x) { \
 	.pin = (x), \
-	.mode = IRQ_EDGE_TRIGGERED, \
-	.polarity = IRQ_ACTIVE_LOW, \
-	.shared = IRQ_EXCLUSIVE, \
-	.wake = IRQ_NO_WAKE }
+	.mode = ACPI_IRQ_EDGE_TRIGGERED, \
+	.polarity = ACPI_IRQ_ACTIVE_LOW, \
+	.shared = ACPI_IRQ_EXCLUSIVE, \
+	.wake = ACPI_IRQ_NO_WAKE }
 
-#define IRQ_EDGE_HIGH(x) { \
+#define ACPI_IRQ_EDGE_HIGH(x) { \
 	.pin = (x), \
-	.mode = IRQ_EDGE_TRIGGERED, \
-	.polarity = IRQ_ACTIVE_HIGH, \
-	.shared = IRQ_EXCLUSIVE, \
-	.wake = IRQ_NO_WAKE }
+	.mode = ACPI_IRQ_EDGE_TRIGGERED, \
+	.polarity = ACPI_IRQ_ACTIVE_HIGH, \
+	.shared = ACPI_IRQ_EXCLUSIVE, \
+	.wake = ACPI_IRQ_NO_WAKE }
 
-#define IRQ_LEVEL_LOW(x) { \
+#define ACPI_IRQ_LEVEL_LOW(x) { \
 	.pin = (x), \
-	.mode = IRQ_LEVEL_TRIGGERED, \
-	.polarity = IRQ_ACTIVE_LOW, \
-	.shared = IRQ_SHARED, \
-	.wake = IRQ_NO_WAKE }
+	.mode = ACPI_IRQ_LEVEL_TRIGGERED, \
+	.polarity = ACPI_IRQ_ACTIVE_LOW, \
+	.shared = ACPI_IRQ_SHARED, \
+	.wake = ACPI_IRQ_NO_WAKE }
+
+#define ACPI_IRQ_LEVEL_HIGH(x) { \
+	.pin = (x), \
+	.mode = ACPI_IRQ_LEVEL_TRIGGERED, \
+	.polarity = ACPI_IRQ_ACTIVE_HIGH, \
+	.shared = ACPI_IRQ_SHARED, \
+	.wake = ACPI_IRQ_NO_WAKE }
 
 /* Write extended Interrupt() descriptor to SSDT AML output */
 void acpi_device_write_interrupt(const struct acpi_irq *irq);
@@ -129,7 +136,7 @@ enum acpi_gpio_polarity {
 };
 
 #define ACPI_GPIO_REVISION_ID		1
-#define ACPI_GPIO_MAX_PINS 		8
+#define ACPI_GPIO_MAX_PINS		8
 
 struct acpi_gpio {
 	int pin_count;
@@ -175,12 +182,48 @@ struct acpi_gpio {
 	.pin_count = 1, \
 	.pins = { (gpio) } }
 
-/* Basic interrupt GPIO with default pull settings */
-#define ACPI_GPIO_INTERRUPT(gpio,mode,polarity) { \
+/* Edge Triggered Active High GPIO interrupt */
+#define ACPI_GPIO_IRQ_EDGE_HIGH(gpio) { \
 	.type = ACPI_GPIO_TYPE_INTERRUPT, \
 	.pull = ACPI_GPIO_PULL_DEFAULT, \
-	.irq.mode = (mode), \
-	.irq.polarity = (polarity), \
+	.irq.mode = ACPI_IRQ_EDGE_TRIGGERED, \
+	.irq.polarity = ACPI_IRQ_ACTIVE_HIGH, \
+	.pin_count = 1, \
+	.pins = { (gpio) } }
+
+/* Edge Triggered Active Low GPIO interrupt */
+#define ACPI_GPIO_IRQ_EDGE_LOW(gpio) { \
+	.type = ACPI_GPIO_TYPE_INTERRUPT, \
+	.pull = ACPI_GPIO_PULL_DEFAULT, \
+	.irq.mode = ACPI_IRQ_EDGE_TRIGGERED, \
+	.irq.polarity = ACPI_IRQ_ACTIVE_LOW, \
+	.pin_count = 1, \
+	.pins = { (gpio) } }
+
+/* Edge Triggered Active Both GPIO interrupt */
+#define ACPI_GPIO_IRQ_EDGE_BOTH(gpio) { \
+	.type = ACPI_GPIO_TYPE_INTERRUPT, \
+	.pull = ACPI_GPIO_PULL_DEFAULT, \
+	.irq.mode = ACPI_IRQ_EDGE_TRIGGERED, \
+	.irq.polarity = ACPI_IRQ_ACTIVE_BOTH, \
+	.pin_count = 1, \
+	.pins = { (gpio) } }
+
+/* Level Triggered Active High GPIO interrupt */
+#define ACPI_GPIO_IRQ_LEVEL_HIGH(gpio) { \
+	.type = ACPI_GPIO_TYPE_INTERRUPT, \
+	.pull = ACPI_GPIO_PULL_DEFAULT, \
+	.irq.mode = ACPI_IRQ_LEVEL_TRIGGERED, \
+	.irq.polarity = ACPI_IRQ_ACTIVE_HIGH, \
+	.pin_count = 1, \
+	.pins = { (gpio) } }
+
+/* Level Triggered Active Low GPIO interrupt */
+#define ACPI_GPIO_IRQ_LEVEL_LOW(gpio) { \
+	.type = ACPI_GPIO_TYPE_INTERRUPT, \
+	.pull = ACPI_GPIO_PULL_DEFAULT, \
+	.irq.mode = ACPI_IRQ_LEVEL_TRIGGERED, \
+	.irq.polarity = ACPI_IRQ_ACTIVE_LOW, \
 	.pin_count = 1, \
 	.pins = { (gpio) } }
 
@@ -238,6 +281,15 @@ struct acpi_spi {
 
 /* Write SPI Bus descriptor to SSDT AML output */
 void acpi_device_write_spi(const struct acpi_spi *spi);
+
+/*
+ * Add a basic PowerResource block for a device that includes
+ * GPIOs for enable and/or reset control of the device.  Each
+ * GPIO is optional, but at least one must be provided.
+ */
+void acpi_device_add_power_res(
+	struct acpi_gpio *reset, unsigned int reset_delay_ms,
+	struct acpi_gpio *enable, unsigned int enable_delay_ms);
 
 /*
  * Writing Device Properties objects via _DSD

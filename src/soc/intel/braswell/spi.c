@@ -90,7 +90,7 @@ typedef struct ich_spi_controller {
 	uint16_t *optype;
 	uint32_t *addr;
 	uint8_t *data;
-	unsigned databytes;
+	unsigned int databytes;
 	uint8_t *status;
 	uint16_t *control;
 } ich_spi_controller;
@@ -290,13 +290,13 @@ typedef struct spi_transaction {
 	uint32_t offset;
 } spi_transaction;
 
-static inline void spi_use_out(spi_transaction *trans, unsigned bytes)
+static inline void spi_use_out(spi_transaction *trans, unsigned int bytes)
 {
 	trans->out += bytes;
 	trans->bytesout -= bytes;
 }
 
-static inline void spi_use_in(spi_transaction *trans, unsigned bytes)
+static inline void spi_use_in(spi_transaction *trans, unsigned int bytes)
 {
 	trans->in += bytes;
 	trans->bytesin -= bytes;
@@ -350,43 +350,43 @@ static int spi_setup_opcode(spi_transaction *trans)
 		optypes = (optypes & 0xfffc) | (trans->type & 0x3);
 		writew_(optypes, cntlr.optype);
 		return 0;
-	} else {
-		/* The lock is on. See if what we need is on the menu. */
-		uint8_t optype;
-		uint16_t opcode_index;
-
-		/* Write Enable is handled as atomic prefix */
-		if (trans->opcode == SPI_OPCODE_WREN)
-			return 0;
-
-		read_reg(cntlr.opmenu, opmenu, sizeof(opmenu));
-		for (opcode_index = 0; opcode_index < cntlr.menubytes;
-				opcode_index++) {
-			if (opmenu[opcode_index] == trans->opcode)
-				break;
-		}
-
-		if (opcode_index == cntlr.menubytes) {
-			printk(BIOS_DEBUG, "ICH SPI: Opcode %x not found\n",
-				trans->opcode);
-			return -1;
-		}
-
-		optypes = readw_(cntlr.optype);
-		optype = (optypes >> (opcode_index * 2)) & 0x3;
-		if (trans->type == SPI_OPCODE_TYPE_WRITE_NO_ADDRESS &&
-			optype == SPI_OPCODE_TYPE_WRITE_WITH_ADDRESS &&
-			trans->bytesout >= 3) {
-			/* We guessed wrong earlier. Fix it up. */
-			trans->type = optype;
-		}
-		if (optype != trans->type) {
-			printk(BIOS_DEBUG, "ICH SPI: Transaction doesn't fit type %d\n",
-				optype);
-			return -1;
-		}
-		return opcode_index;
 	}
+
+	/* The lock is on. See if what we need is on the menu. */
+	uint8_t optype;
+	uint16_t opcode_index;
+
+	/* Write Enable is handled as atomic prefix */
+	if (trans->opcode == SPI_OPCODE_WREN)
+		return 0;
+
+	read_reg(cntlr.opmenu, opmenu, sizeof(opmenu));
+	for (opcode_index = 0; opcode_index < cntlr.menubytes;
+			opcode_index++) {
+		if (opmenu[opcode_index] == trans->opcode)
+			break;
+	}
+
+	if (opcode_index == cntlr.menubytes) {
+		printk(BIOS_DEBUG, "ICH SPI: Opcode %x not found\n",
+			trans->opcode);
+		return -1;
+	}
+
+	optypes = readw_(cntlr.optype);
+	optype = (optypes >> (opcode_index * 2)) & 0x3;
+	if (trans->type == SPI_OPCODE_TYPE_WRITE_NO_ADDRESS &&
+		optype == SPI_OPCODE_TYPE_WRITE_WITH_ADDRESS &&
+		trans->bytesout >= 3) {
+		/* We guessed wrong earlier. Fix it up. */
+		trans->type = optype;
+	}
+	if (optype != trans->type) {
+		printk(BIOS_DEBUG, "ICH SPI: Transaction doesn't fit type %d\n",
+			optype);
+		return -1;
+	}
+	return opcode_index;
 }
 
 static int spi_setup_offset(spi_transaction *trans)

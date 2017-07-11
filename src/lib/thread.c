@@ -121,9 +121,8 @@ static void idle_thread(void *unused)
 {
 	/* This thread never voluntarily yields. */
 	thread_prevent_coop();
-	while (1) {
+	while (1)
 		timers_run();
-	}
 }
 
 static void schedule(struct thread *t)
@@ -187,8 +186,8 @@ static void asmlinkage call_wrapper_block_state(void *arg)
 /* Prepare a thread so that it starts by executing thread_entry(thread_arg).
  * Within thread_entry() it will call func(arg). */
 static void prepare_thread(struct thread *t, void *func, void *arg,
-                           void asmlinkage (*thread_entry)(void *),
-                           void *thread_arg)
+			   asmlinkage void (*thread_entry)(void *),
+			   void *thread_arg)
 {
 	/* Stash the function and argument to run. */
 	t->entry = func;
@@ -214,9 +213,8 @@ static void idle_thread_init(void)
 
 	t = get_free_thread();
 
-	if (t == NULL) {
+	if (t == NULL)
 		die("No threads available for idle thread!\n");
-	}
 
 	/* Queue idle thread to run once all other threads have yielded. */
 	prepare_thread(t, idle_thread, NULL, call_wrapper, NULL);
@@ -228,7 +226,8 @@ static void idle_thread_init(void)
 /* Don't inline this function so the timeout_callback won't have its storage
  * space on the stack cleaned up before the call to schedule(). */
 static int __attribute__((noinline))
-thread_yield_timed_callback(struct timeout_callback *tocb, unsigned microsecs)
+thread_yield_timed_callback(struct timeout_callback *tocb,
+	unsigned int microsecs)
 {
 	tocb->priv = current_thread();
 	tocb->callback = thread_resume_from_timeout;
@@ -307,7 +306,7 @@ int thread_run(void (*func)(void *), void *arg)
 }
 
 int thread_run_until(void (*func)(void *), void *arg,
-                     boot_state_t state, boot_state_sequence_t seq)
+		     boot_state_t state, boot_state_sequence_t seq)
 {
 	struct thread *current;
 	struct thread *t;
@@ -337,7 +336,7 @@ int thread_run_until(void (*func)(void *), void *arg,
 	return 0;
 }
 
-int thread_yield_microseconds(unsigned microsecs)
+int thread_yield_microseconds(unsigned int microsecs)
 {
 	struct thread *current;
 	struct timeout_callback tocb;

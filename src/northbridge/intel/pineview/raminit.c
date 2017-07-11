@@ -15,7 +15,6 @@
  */
 
 #include <arch/io.h>
-#include <cbmem.h>
 #include <console/console.h>
 #include <cpu/x86/cache.h>
 #include <cpu/x86/mtrr.h>
@@ -109,7 +108,7 @@ static inline int spd_read_byte(unsigned device, unsigned address)
 	return smbus_read_byte(device, address);
 }
 
-static int decode_spd(struct dimminfo *d)
+static int decode_spd(struct dimminfo *d, int i)
 {
 	d->type = 0;
 	if (d->spd_data[20] == 0x2) {
@@ -136,7 +135,7 @@ static int decode_spd(struct dimminfo *d)
 	d->tWR = d->spd_data[36];
 	d->ranks = d->sides; // XXX
 #if CONFIG_DEBUG_RAM_SETUP
-	const char *ubso[] = { {"UB"}, {"SO"} };
+	const char *ubso[2] = { "UB", "SO" };
 #endif
 	PRINTK_DEBUG("%s-DIMM %d\n", &ubso[d->type][0], i);
 	PRINTK_DEBUG("  Sides     : %d\n", d->sides);
@@ -305,7 +304,7 @@ static void sdram_read_spds(struct sysinfo *s)
 
 	int err = 1;
 	FOR_EACH_POPULATED_DIMM(s->dimms, i) {
-		err = decode_spd(&s->dimms[i]);
+		err = decode_spd(&s->dimms[i], i);
 		s->dt0mode |= (s->dimms[i].spd_data[49] & 0x2) >> 1;
 	}
 	if (err) {
@@ -569,6 +568,8 @@ static void sdram_detect_ram_speed(struct sysinfo *s)
 	PRINTK_DEBUG("Drive Memory at %dMHz with CAS = %d clocks\n", ddr_reg_to_mhz(s->selected_timings.mem_clock), s->selected_timings.CAS);
 
 	// Set memory frequency
+	if (s->boot_path == BOOT_PATH_RESET)
+		return;
 	MCHBAR32(0xf14) = MCHBAR32(0xf14) | 0x1;
 	reg32 = (MCHBAR32(0xc00) & (~0x70)) | (1 << 10);
 	if (s->selected_timings.mem_clock == MEM_CLOCK_800MHz) {
@@ -676,7 +677,8 @@ static void sdram_clkmode(struct sysinfo *s)
 		reg8 = 1;
 		reg16 = (1 << 8) | (1 << 5);
 	}
-	MCHBAR16(0x1c0) = (MCHBAR16(0x1c0) & ~(0x033f)) | reg16;
+	if (s->boot_path != BOOT_PATH_RESET)
+		MCHBAR16(0x1c0) = (MCHBAR16(0x1c0) & ~(0x033f)) | reg16;
 
 	MCHBAR32(0x220) = 0x58001117;
 	MCHBAR32(0x248) = (MCHBAR32(0x248) | (1 << 23));
@@ -2540,12 +2542,14 @@ void sdram_initialize(int boot_path, const u8 *spd_addresses)
 {
 	struct sysinfo si;
 	u8 reg8;
+	const char *boot_str[] = { "Normal", "Reset", "Resume"};
 
 	PRINTK_DEBUG("Setting up RAM controller.\n");
 
 	memset(&si, 0, sizeof(si));
 
 	si.boot_path = boot_path;
+	printk(BIOS_DEBUG, "Boot path: %s\n", boot_str[boot_path]);
 	si.spd_map[0] = spd_addresses[0];
 	si.spd_map[1] = spd_addresses[1];
 	si.spd_map[2] = spd_addresses[2];
@@ -2578,18 +2582,25 @@ void sdram_initialize(int boot_path, const u8 *spd_addresses)
 	sdram_timings(&si);
 	PRINTK_DEBUG("Done timings (dqs dll enabled)\n");
 
-	sdram_dlltiming(&si);
-	PRINTK_DEBUG("Done dlltiming\n");
+	if (si.boot_path != BOOT_PATH_RESET) {
+		sdram_dlltiming(&si);
+		PRINTK_DEBUG("Done dlltiming\n");
+	}
 
 	hpet_udelay(200000);
 
-	sdram_rcomp(&si);
-	PRINTK_DEBUG("Done RCOMP\n");
+	if (si.boot_path != BOOT_PATH_RESET) {
+		sdram_rcomp(&si);
+		PRINTK_DEBUG("Done RCOMP\n");
+	}
 
 	sdram_odt(&si);
 	PRINTK_DEBUG("Done odt\n");
 
-	while ((MCHBAR8(0x130) & 0x1) != 0);
+	if (si.boot_path != BOOT_PATH_RESET) {
+		while ((MCHBAR8(0x130) & 0x1) != 0)
+			;
+	}
 
 	sdram_mmap(&si);
 	PRINTK_DEBUG("Done mmap\n");
@@ -2605,10 +2616,10 @@ void sdram_initialize(int boot_path, const u8 *spd_addresses)
 
 	if (si.boot_path != BOOT_PATH_RESUME) {
 		MCHBAR32(0x260) = MCHBAR32(0x260) | (1 << 27);
-	}
 
-	sdram_jedecinit(&si);
-	PRINTK_DEBUG("Done MRS\n");
+		sdram_jedecinit(&si);
+		PRINTK_DEBUG("Done MRS\n");
+	}
 
 	sdram_misc(&si);
 	PRINTK_DEBUG("Done misc\n");

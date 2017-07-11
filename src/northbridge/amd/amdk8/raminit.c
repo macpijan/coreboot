@@ -5,7 +5,9 @@
 */
 
 #include <cpu/x86/cache.h>
+#include <cpu/x86/lapic.h>
 #include <cpu/x86/mtrr.h>
+#include <cpu/x86/msr.h>
 #include <cpu/amd/mtrr.h>
 #include <lib.h>
 #include <stdlib.h>
@@ -16,6 +18,9 @@
 #if CONFIG_HAVE_OPTION_TABLE
 #include "option_table.h"
 #endif
+
+#include <arch/early_variables.h>
+struct sys_info sysinfo_car CAR_GLOBAL;
 
 void setup_resource_map(const unsigned int *register_values, int max)
 {
@@ -39,9 +44,9 @@ static int controller_present(const struct mem_controller *ctrl)
 }
 
 #if CONFIG_RAMINIT_SYSINFO
-static void sdram_set_registers(const struct mem_controller *ctrl, struct sys_info *sysinfo)
+void sdram_set_registers(const struct mem_controller *ctrl, struct sys_info *sysinfo)
 #else
-static void sdram_set_registers(const struct mem_controller *ctrl)
+void sdram_set_registers(const struct mem_controller *ctrl)
 #endif
 {
 	static const unsigned int register_values[] = {
@@ -2164,9 +2169,9 @@ static long spd_set_dram_timing(const struct mem_controller *ctrl, const struct 
 }
 
 #if CONFIG_RAMINIT_SYSINFO
-static void sdram_set_spd_registers(const struct mem_controller *ctrl, struct sys_info *sysinfo)
+void sdram_set_spd_registers(const struct mem_controller *ctrl, struct sys_info *sysinfo)
 #else
-static void sdram_set_spd_registers(const struct mem_controller *ctrl)
+void sdram_set_spd_registers(const struct mem_controller *ctrl)
 #endif
 {
 	struct spd_set_memclk_result result;
@@ -2263,7 +2268,7 @@ static uint32_t hoist_memory(int controllers, const struct mem_controller *ctrl,
 	return carry_over;
 }
 
-static void set_hw_mem_hole(int controllers, const struct mem_controller *ctrl)
+void set_hw_mem_hole(int controllers, const struct mem_controller *ctrl)
 {
 
 	uint32_t hole_startk;
@@ -2322,11 +2327,10 @@ static void set_hw_mem_hole(int controllers, const struct mem_controller *ctrl)
 
 #endif
 
-#define TIMEOUT_LOOPS 300000
 #if CONFIG_RAMINIT_SYSINFO
-static void sdram_enable(int controllers, const struct mem_controller *ctrl, struct sys_info *sysinfo)
+void sdram_enable(int controllers, const struct mem_controller *ctrl, struct sys_info *sysinfo)
 #else
-static void sdram_enable(int controllers, const struct mem_controller *ctrl)
+void sdram_enable(int controllers, const struct mem_controller *ctrl)
 #endif
 {
 	int i;
@@ -2464,7 +2468,7 @@ static void sdram_enable(int controllers, const struct mem_controller *ctrl)
 
 }
 
-static void set_sysinfo_in_ram(unsigned val)
+void set_sysinfo_in_ram(unsigned val)
 {
 }
 

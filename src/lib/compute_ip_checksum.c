@@ -15,25 +15,24 @@ unsigned long compute_ip_checksum(const void *addr, unsigned long length)
 	 */
 	sum = 0;
 	ptr = addr;
-	for(i = 0; i < length; i++) {
+	for (i = 0; i < length; i++) {
 		unsigned long v;
 		v = ptr[i];
-		if (i & 1) {
+		if (i & 1)
 			v <<= 8;
-		}
 		/* Add the new value */
 		sum += v;
 		/* Wrap around the carry */
-		if (sum > 0xFFFF) {
+		if (sum > 0xFFFF)
 			sum = (sum + (sum >> 16)) & 0xFFFF;
-		}
 	}
 	value.byte[0] = sum & 0xff;
 	value.byte[1] = (sum >> 8) & 0xff;
 	return (~value.word) & 0xFFFF;
 }
 
-unsigned long add_ip_checksums(unsigned long offset, unsigned long sum, unsigned long new)
+unsigned long add_ip_checksums(unsigned long offset, unsigned long sum,
+	unsigned long new)
 {
 	unsigned long checksum;
 	sum = ~sum & 0xFFFF;
@@ -46,8 +45,7 @@ unsigned long add_ip_checksums(unsigned long offset, unsigned long sum, unsigned
 		new = ((new >> 8) & 0xff) | ((new << 8) & 0xff00);
 	}
 	checksum = sum + new;
-	if (checksum > 0xFFFF) {
+	if (checksum > 0xFFFF)
 		checksum -= 0xFFFF;
-	}
 	return (~checksum) & 0xFFFF;
 }

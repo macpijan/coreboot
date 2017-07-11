@@ -6,7 +6,8 @@
  *
  * Copyright (C) 2004 SUSE LINUX AG
  * Copyright (C) 2005-2009 coresystems GmbH
- * Copyright (C) 2015 Timothy Pearson <tpearson@raptorengineeringinc.com>, Raptor Engineering
+ * Copyright (C) 2015 Timothy Pearson <tpearson@raptorengineeringinc.com>,
+ * Raptor Engineering
  * Copyright (C) 2016 Siemens AG
  *
  * ACPI FADT, FACS, and DSDT table support added by
@@ -272,7 +273,7 @@ static void *get_tcpa_log(u32 *size)
 	}
 
 	printk(BIOS_DEBUG, "TCPA log created at %p\n", lasa);
-	memset (lasa, 0, tcpa_default_log_len);
+	memset(lasa, 0, tcpa_default_log_len);
 
 	*size = tcpa_default_log_len;
 	return lasa;
@@ -287,9 +288,8 @@ static void acpi_create_tcpa(acpi_tcpa_t *tcpa)
 	memset((void *)tcpa, 0, sizeof(acpi_tcpa_t));
 
 	lasa = get_tcpa_log(&tcpa_log_len);
-	if (!lasa) {
+	if (!lasa)
 		return;
-	}
 
 	/* Fill out header fields. */
 	memcpy(header->signature, "TCPA", 4);
@@ -354,9 +354,8 @@ void acpi_create_ssdt_generator(acpi_header_t *ssdt, const char *oem_table_id)
 	{
 		struct device *dev;
 		for (dev = all_devices; dev; dev = dev->next)
-			if (dev->ops && dev->ops->acpi_fill_ssdt_generator) {
+			if (dev->ops && dev->ops->acpi_fill_ssdt_generator)
 				dev->ops->acpi_fill_ssdt_generator(dev);
-			}
 		current = (unsigned long) acpigen_get_current();
 	}
 
@@ -422,7 +421,7 @@ void acpi_create_srat(acpi_srat_t *srat,
 }
 
 void acpi_create_dmar(acpi_dmar_t *dmar, enum dmar_flags flags,
-		      unsigned long (*acpi_fill_dmar) (unsigned long))
+		      unsigned long (*acpi_fill_dmar)(unsigned long))
 {
 	acpi_header_t *header = &(dmar->header);
 	unsigned long current = (unsigned long)dmar + sizeof(acpi_dmar_t);
@@ -582,7 +581,7 @@ void acpi_create_hpet(acpi_hpet_t *hpet)
 	addr->addrl = CONFIG_HPET_ADDRESS & 0xffffffff;
 	addr->addrh = ((unsigned long long)CONFIG_HPET_ADDRESS) >> 32;
 
-	hpet->id = *(unsigned int*)CONFIG_HPET_ADDRESS;
+	hpet->id = *(unsigned int *)CONFIG_HPET_ADDRESS;
 	hpet->number = 0;
 	hpet->min_tick = CONFIG_HPET_MIN_TICKS;
 
@@ -591,7 +590,8 @@ void acpi_create_hpet(acpi_hpet_t *hpet)
 
 void acpi_create_vfct(struct device *device,
 		      struct acpi_vfct *vfct,
-		      unsigned long (*acpi_fill_vfct)(struct device *device, struct acpi_vfct *vfct_struct, unsigned long current))
+		      unsigned long (*acpi_fill_vfct)(struct device *device,
+		      struct acpi_vfct *vfct_struct, unsigned long current))
 {
 	acpi_header_t *header = &(vfct->header);
 	unsigned long current = (unsigned long)vfct + sizeof(struct acpi_vfct);
@@ -615,7 +615,8 @@ void acpi_create_vfct(struct device *device,
 }
 
 void acpi_create_ivrs(acpi_ivrs_t *ivrs,
-		      unsigned long (*acpi_fill_ivrs)(acpi_ivrs_t* ivrs_struct, unsigned long current))
+		      unsigned long (*acpi_fill_ivrs)(acpi_ivrs_t *ivrs_struct,
+		      unsigned long current))
 {
 	acpi_header_t *header = &(ivrs->header);
 	unsigned long current = (unsigned long)ivrs + sizeof(acpi_ivrs_t);
@@ -638,7 +639,8 @@ void acpi_create_ivrs(acpi_ivrs_t *ivrs,
 	header->checksum = acpi_checksum((void *)ivrs, header->length);
 }
 
-unsigned long acpi_write_hpet(device_t device, unsigned long current, acpi_rsdp_t *rsdp)
+unsigned long acpi_write_hpet(device_t device, unsigned long current,
+	acpi_rsdp_t *rsdp)
 {
 	acpi_hpet_t *hpet;
 
@@ -739,7 +741,8 @@ static void acpi_write_rsdp(acpi_rsdp_t *rsdp, acpi_rsdt_t *rsdt,
 	rsdp->ext_checksum = acpi_checksum((void *)rsdp, sizeof(acpi_rsdp_t));
 }
 
-unsigned long acpi_create_hest_error_source(acpi_hest_t *hest, acpi_hest_esd_t *esd, u16 type, void *data, u16 data_len)
+unsigned long acpi_create_hest_error_source(acpi_hest_t *hest,
+	acpi_hest_esd_t *esd, u16 type, void *data, u16 data_len)
 {
 	acpi_header_t *header = &(hest->header);
 	acpi_hest_hen_t *hen;
@@ -767,7 +770,7 @@ unsigned long acpi_create_hest_error_source(acpi_hest_t *hest, acpi_hest_esd_t *
 		memset(pos, 0, sizeof(acpi_hest_hen_t));
 		hen->type = 3;		/* SCI? */
 		hen->length = sizeof(acpi_hest_hen_t);
-		hen->conf_we = 0;		/* Configuration Write Enable. */
+		hen->conf_we = 0;	/* Configuration Write Enable. */
 		hen->poll_interval = 0;
 		hen->vector = 0;
 		hen->sw2poll_threshold_val = 0;
@@ -788,7 +791,7 @@ unsigned long acpi_create_hest_error_source(acpi_hest_t *hest, acpi_hest_esd_t *
 		printk(BIOS_DEBUG, "Invalid type of Error Source.");
 		break;
 	}
-	hest->error_source_count ++;
+	hest->error_source_count++;
 
 	memcpy(pos, data, data_len);
 	len += data_len;
@@ -819,7 +822,7 @@ void acpi_write_hest(acpi_hest_t *hest,
 }
 
 #if IS_ENABLED(CONFIG_COMMON_FADT)
-void acpi_create_fadt(acpi_fadt_t *fadt,acpi_facs_t *facs, void *dsdt)
+void acpi_create_fadt(acpi_fadt_t *fadt, acpi_facs_t *facs, void *dsdt)
 {
 	acpi_header_t *header = &(fadt->header);
 
@@ -840,11 +843,10 @@ void acpi_create_fadt(acpi_fadt_t *fadt,acpi_facs_t *facs, void *dsdt)
 	fadt->x_dsdt_l = (unsigned long)dsdt;
 	fadt->x_dsdt_h = 0;
 
-	if (IS_ENABLED(CONFIG_SYSTEM_TYPE_LAPTOP)) {
+	if (IS_ENABLED(CONFIG_SYSTEM_TYPE_LAPTOP))
 		fadt->preferred_pm_profile = PM_MOBILE;
-	} else {
+	else
 		fadt->preferred_pm_profile = PM_DESKTOP;
-	}
 
 	acpi_fill_fadt(fadt);
 
@@ -953,9 +955,8 @@ unsigned long write_acpi_tables(unsigned long start)
 
 		acpigen_set_current((char *) current);
 		for (dev = all_devices; dev; dev = dev->next)
-			if (dev->ops && dev->ops->acpi_inject_dsdt_generator) {
+			if (dev->ops && dev->ops->acpi_inject_dsdt_generator)
 				dev->ops->acpi_inject_dsdt_generator(dev);
-			}
 		current = (unsigned long) acpigen_get_current();
 		memcpy((char *)current,
 		       (char *)dsdt_file + sizeof(acpi_header_t),
@@ -1019,8 +1020,8 @@ unsigned long write_acpi_tables(unsigned long start)
 	madt = (acpi_madt_t *) current;
 	acpi_create_madt(madt);
 	if (madt->header.length > sizeof(acpi_madt_t)) {
-		current+=madt->header.length;
-		acpi_add_table(rsdp,madt);
+		current += madt->header.length;
+		acpi_add_table(rsdp, madt);
 	}
 	current = acpi_align_current(current);
 
@@ -1028,7 +1029,8 @@ unsigned long write_acpi_tables(unsigned long start)
 
 	for (dev = all_devices; dev; dev = dev->next) {
 		if (dev->ops && dev->ops->write_acpi_tables) {
-			current = dev->ops->write_acpi_tables(dev, current, rsdp);
+			current = dev->ops->write_acpi_tables(dev, current,
+				rsdp);
 			current = acpi_align_current(current);
 		}
 	}
@@ -1073,7 +1075,8 @@ void *acpi_find_wakeup_vector(void)
 
 	/* Find RSDP. */
 	for (p = (char *)0xe0000; p < (char *)0xfffff; p += 16) {
-		if ((rsdp = valid_rsdp((acpi_rsdp_t *)p)))
+		rsdp = valid_rsdp((acpi_rsdp_t *)p);
+		if (rsdp)
 			break;
 	}
 

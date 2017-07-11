@@ -27,19 +27,19 @@
 #include <assert.h>
 #include <cbmem.h>
 #include <device/pci.h>
-#include <soc/northbridge.h>
+#include <soc/systemagent.h>
 #include <soc/pci_devs.h>
 #include <soc/smm.h>
 
 static uintptr_t smm_region_start(void)
 {
-	return ALIGN_DOWN(pci_read_config32(NB_DEV_ROOT, TSEG), 1*MiB);
+	return ALIGN_DOWN(pci_read_config32(SA_DEV_ROOT, TSEG), 1*MiB);
 }
 
 static size_t smm_region_size(void)
 {
 	uintptr_t smm_end =
-		ALIGN_DOWN(pci_read_config32(NB_DEV_ROOT, BGSM), 1*MiB);
+		ALIGN_DOWN(pci_read_config32(SA_DEV_ROOT, BGSM), 1*MiB);
 	return smm_end - smm_region_start();
 }
 

@@ -65,16 +65,16 @@ endif # CONFIG_ARCH_BOOTBLOCK_ARM64
 
 ifeq ($(CONFIG_ARCH_VERSTAGE_ARM64),y)
 
-$(objcbfs)/verstage.debug: $(objgenerated)/libverstage.a $$(verstage-objs)
+$(objcbfs)/verstage.debug: $$(verstage-objs)
 	@printf "    LINK       $(subst $(obj)/,,$(@))\n"
-	$(LD_verstage) $(LDFLAGS_verstage) -o $@ -L$(obj) --whole-archive --start-group $(filter-out %.ld,$(verstage-objs)) $(objgenerated)/libverstage.a --end-group -T $(call src-to-obj,verstage,src/mainboard/$(MAINBOARDDIR)/memlayout.ld)
+	$(LD_verstage) $(LDFLAGS_verstage) -o $@ -L$(obj) --whole-archive --start-group $(filter-out %.ld,$(verstage-objs)) --end-group -T $(call src-to-obj,verstage,src/mainboard/$(MAINBOARDDIR)/memlayout.ld)
 
 verstage-y += boot.c
 verstage-y += div0.c
 verstage-y += eabi_compat.c
-verstage-y += ../../lib/memset.c
-verstage-y += ../../lib/memcpy.c
-verstage-y += ../../lib/memmove.c
+verstage-y += memset.S
+verstage-y += memcpy.S
+verstage-y += memmove.S
 
 verstage-y += transition.c transition_asm.S
 
@@ -166,7 +166,7 @@ BL31_MAKEARGS += IS_ANYTHING_TO_BUILD=1
 # multi line string.
 BL31_MAKEARGS += BUILD_MESSAGE_TIMESTAMP='"$(shell grep "\#define COREBOOT_BUILD\>" $(obj)/build.h |cut -d\" -f2 \# \")"'
 
-BL31_CFLAGS := -fno-pic -fno-stack-protector
+BL31_CFLAGS := -fno-pic -fno-stack-protector -Wno-deprecated-declarations
 BL31_LDFLAGS := --emit-relocs
 
 BL31 := $(obj)/bl31.elf
@@ -176,7 +176,7 @@ $(BL31): $(obj)/build.h
 	+CROSS_COMPILE="$(CROSS_COMPILE_arm64)" \
 	CFLAGS="$(BL31_CFLAGS)" \
 	LDFLAGS="$(BL31_LDFLAGS)" \
-	$(MAKE) -C $(BL31_SOURCE) $(BL31_MAKEARGS) $(BL31_TARGET)
+	$(MAKE) -C $(BL31_SOURCE) $(BL31_MAKEARGS) $(BL31_TARGET) DISABLE_PEDANTIC=1
 	mv $(BL31_TARGET) $@
 
 .PHONY: $(BL31)

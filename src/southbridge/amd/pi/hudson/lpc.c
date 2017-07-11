@@ -29,6 +29,7 @@
 #include <pc80/i8254.h>
 #include <pc80/i8259.h>
 #include "hudson.h"
+#include <vboot/vbnv.h>
 
 static void lpc_init(device_t dev)
 {
@@ -76,13 +77,23 @@ static void lpc_init(device_t dev)
 	 * update CMOS unless it is invalid.
 	 * 1 tells cmos_init to always initialize the CMOS.
 	 */
-	cmos_init(0);
+	if (IS_ENABLED(CONFIG_VBOOT_VBNV_CMOS))
+		init_vbnv_cmos(0);
+	else
+		cmos_init(0);
 
 	/* Initialize i8259 pic */
 	setup_i8259 ();
 
 	/* Initialize i8254 timers */
 	setup_i8254 ();
+
+	/* Set up SERIRQ, enable continuous mode */
+	byte = (BIT(4) | BIT(7));
+	if (!IS_ENABLED(CONFIG_SERIRQ_CONTINUOUS_MODE))
+		byte |= BIT(6);
+
+	pm_write8(PM_SERIRQ_CONF, byte);
 }
 
 static void hudson_lpc_read_resources(device_t dev)
@@ -119,10 +130,13 @@ static void hudson_lpc_read_resources(device_t dev)
 static void hudson_lpc_set_resources(struct device *dev)
 {
 	struct resource *res;
+	u32 spi_enable_bits;
 
-	/* Special case. SPI Base Address. The SpiRomEnable should STAY set. */
+	/* Special case. The SpiRomEnable and other enables should STAY set. */
 	res = find_resource(dev, 2);
-	pci_write_config32(dev, SPIROM_BASE_ADDRESS_REGISTER, res->base | SPI_ROM_ENABLE);
+	spi_enable_bits = pci_read_config32(dev, SPIROM_BASE_ADDRESS_REGISTER);
+	spi_enable_bits &= 0xF;
+	pci_write_config32(dev, SPIROM_BASE_ADDRESS_REGISTER, res->base | spi_enable_bits);
 
 	pci_dev_set_resources(dev);
 }

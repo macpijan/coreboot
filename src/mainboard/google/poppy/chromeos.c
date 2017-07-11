@@ -13,12 +13,14 @@
  * GNU General Public License for more details.
  */
 
+#include <arch/acpi.h>
+#include <baseboard/variants.h>
 #include <gpio.h>
 #include <rules.h>
 #include <soc/gpio.h>
 #include <vendorcode/google/chromeos/chromeos.h>
 
-#include "gpio.h"
+#include <variant/gpio.h>
 
 #if ENV_RAMSTAGE
 #include <boot/coreboot_tables.h>
@@ -28,7 +30,6 @@ void fill_lb_gpios(struct lb_gpios *gpios)
 	struct lb_gpio chromeos_gpios[] = {
 		{-1, ACTIVE_HIGH, get_write_protect_state(), "write protect"},
 		{-1, ACTIVE_HIGH, get_recovery_mode_switch(), "recovery"},
-		{-1, ACTIVE_HIGH, get_developer_mode_switch(), "developer"},
 		{-1, ACTIVE_HIGH, get_lid_switch(), "lid"},
 		{-1, ACTIVE_HIGH, 0, "power"},
 		{-1, ACTIVE_HIGH, gfx_get_init_done(), "oprom"},
@@ -45,12 +46,11 @@ int get_write_protect_state(void)
 	return gpio_get(GPIO_PCH_WP);
 }
 
-static const struct cros_gpio cros_gpios[] = {
-	CROS_GPIO_REC_AL(CROS_GPIO_VIRTUAL, CROS_GPIO_DEVICE_NAME),
-	CROS_GPIO_WP_AH(GPIO_PCH_WP, CROS_GPIO_DEVICE_NAME),
-};
-
 void mainboard_chromeos_acpi_generate(void)
 {
-	chromeos_acpi_gpio_generate(cros_gpios, ARRAY_SIZE(cros_gpios));
+	const struct cros_gpio *gpios;
+	size_t num;
+
+	gpios = variant_cros_gpios(&num);
+	chromeos_acpi_gpio_generate(gpios, num);
 }

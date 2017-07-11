@@ -40,6 +40,11 @@ void soc_init_pre_device(void *chip_info)
 	fsp_silicon_init(romstage_handoff_is_resume());
 }
 
+void soc_fsp_load(void)
+{
+	fsps_load(romstage_handoff_is_resume());
+}
+
 static void pci_domain_set_resources(device_t dev)
 {
 	assign_resources(dev->link_list);
@@ -169,6 +174,7 @@ void platform_fsp_silicon_init_params_cb(FSPS_UPD *supd)
 	       sizeof(params->SerialIoDevMode));
 
 	params->PchCio2Enable = config->Cio2Enable;
+	params->SaImguEnable = config->SaImguEnable;
 	params->Heci3Enabled = config->Heci3Enabled;
 
 	params->LogoPtr = config->LogoPtr;
@@ -181,7 +187,6 @@ void platform_fsp_silicon_init_params_cb(FSPS_UPD *supd)
 	params->PchPmLanWakeFromDeepSx = config->WakeConfigPcieWakeFromDeepSx;
 
 	params->PchLanEnable = config->EnableLan;
-	params->PchCio2Enable = config->Cio2Enable;
 	params->SataSalpSupport = config->SataSalpSupport;
 	params->SsicPortEnable = config->SsicPortEnable;
 	params->ScsEmmcEnabled = config->ScsEmmcEnabled;
@@ -205,6 +210,7 @@ void platform_fsp_silicon_init_params_cb(FSPS_UPD *supd)
 	params->PchPmWolEnableOverride = config->WakeConfigWolEnableOverride;
 	params->PchPmPcieWakeFromDeepSx = config->WakeConfigPcieWakeFromDeepSx;
 	params->PchPmDeepSxPol = config->PmConfigDeepSxPol;
+	params->PchPmSlpS0Enable = config->s0ix_enable;
 	params->PchPmSlpS3MinAssert = config->PmConfigSlpS3MinAssert;
 	params->PchPmSlpS4MinAssert = config->PmConfigSlpS4MinAssert;
 	params->PchPmSlpSusMinAssert = config->PmConfigSlpSusMinAssert;
@@ -214,6 +220,10 @@ void platform_fsp_silicon_init_params_cb(FSPS_UPD *supd)
 	params->PchPmPwrBtnOverridePeriod =
 				config->PmConfigPwrBtnOverridePeriod;
 	params->PchPmPwrCycDur = config->PmConfigPwrCycDur;
+
+	/* Indicate whether platform supports Voltage Margining */
+	params->PchPmSlpS0VmEnable = config->PchPmSlpS0VmEnable;
+
 	params->PchSirqEnable = config->SerialIrqConfigSirqEnable;
 	params->PchSirqMode = config->SerialIrqConfigSirqMode;
 
@@ -233,11 +243,23 @@ void platform_fsp_silicon_init_params_cb(FSPS_UPD *supd)
 	 * Send VR specific mailbox commands:
 	 * 000b - no VR specific command sent
 	 * 001b - VR mailbox command specifically for the MPS IMPV8 VR
-	 * 	  will be sent
+	 *	  will be sent
 	 * 010b - VR specific command sent for PS4 exit issue
 	 * 100b - VR specific command sent for MPS VR decay issue
 	 */
 	params->SendVrMbxCmd1 = config->SendVrMbxCmd;
+
+	/* Acoustic Noise Mitigation */
+	params->AcousticNoiseMitigation = config->AcousticNoiseMitigation;
+	params->SlowSlewRateForIa = config->SlowSlewRateForIa;
+	params->SlowSlewRateForGt = config->SlowSlewRateForGt;
+	params->SlowSlewRateForSa = config->SlowSlewRateForSa;
+	params->FastPkgCRampDisableIa = config->FastPkgCRampDisableIa;
+	params->FastPkgCRampDisableGt = config->FastPkgCRampDisableGt;
+	params->FastPkgCRampDisableSa = config->FastPkgCRampDisableSa;
+
+	/* Enable PMC XRAM read */
+	tconfig->PchPmPmcReadDisable = config->PchPmPmcReadDisable;
 
 	soc_irq_settings(params);
 }

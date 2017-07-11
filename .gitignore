@@ -59,7 +59,8 @@ site-local
 *.o
 *.out
 *.pyc
-*.swp
+*.sw[po]
+/*.rom
 
 # Development friendly files
 tags
@@ -116,6 +117,7 @@ util/runfw/googlesnow
 util/superiotool/superiotool
 util/vgabios/testbios
 util/viatool/viatool
+util/autoport/autoport
 
 documentation/*.aux
 documentation/*.idx

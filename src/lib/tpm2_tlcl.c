@@ -23,29 +23,34 @@
 
 static void *tpm_process_command(TPM_CC command, void *command_body)
 {
-	ssize_t out_size;
+	struct obuf ob;
+	struct ibuf ib;
+	size_t out_size;
 	size_t in_size;
+	const uint8_t *sendb;
 	/* Command/response buffer. */
 	static uint8_t cr_buffer[TPM_BUFFER_SIZE] CAR_GLOBAL;
 
 	uint8_t *cr_buffer_ptr = car_get_var_ptr(cr_buffer);
 
-	out_size = tpm_marshal_command(command, command_body,
-				       cr_buffer_ptr, sizeof(cr_buffer));
-	if (out_size < 0) {
-		printk(BIOS_ERR, "command %#x, cr size %zd\n",
-		       command, out_size);
+	obuf_init(&ob, cr_buffer_ptr, sizeof(cr_buffer));
+
+	if (tpm_marshal_command(command, command_body, &ob) < 0) {
+		printk(BIOS_ERR, "command %#x\n", command);
 		return NULL;
 	}
 
+	sendb = obuf_contents(&ob, &out_size);
+
 	in_size = sizeof(cr_buffer);
-	if (tis_sendrecv(cr_buffer_ptr, out_size,
-			 cr_buffer_ptr, &in_size)) {
+	if (tis_sendrecv(sendb, out_size, cr_buffer_ptr, &in_size)) {
 		printk(BIOS_ERR, "tpm transaction failed\n");
 		return NULL;
 	}
 
-	return tpm_unmarshal_response(command, cr_buffer_ptr, in_size);
+	ibuf_init(&ib, cr_buffer_ptr, in_size);
+
+	return tpm_unmarshal_response(command, &ib);
 }
 
 
@@ -347,7 +352,8 @@ uint32_t tlcl_define_space(uint32_t space_index, size_t space_size)
 		 * value has been extended from default.
 		 */
 		nvds_cmd.publicInfo.authPolicy.t.buffer = pcr0_unchanged_policy;
-		nvds_cmd.publicInfo.authPolicy.t.size = sizeof(pcr0_unchanged_policy);
+		nvds_cmd.publicInfo.authPolicy.t.size =
+			sizeof(pcr0_unchanged_policy);
 	} else {
 		nvds_cmd.publicInfo.attributes = default_space_attributes;
 	}
@@ -360,7 +366,7 @@ uint32_t tlcl_define_space(uint32_t space_index, size_t space_size)
 		return TPM_E_NO_DEVICE;
 
 	/* Map TPM2 retrun codes into common vboot represenation. */
-	switch(response->hdr.tpm_code) {
+	switch (response->hdr.tpm_code) {
 	case TPM2_RC_SUCCESS:
 		return TPM_SUCCESS;
 	case TPM2_RC_NV_DEFINED:
@@ -383,5 +389,44 @@ uint32_t tlcl_disable_platform_hierarchy(void)
 	if (!response || response->hdr.tpm_code)
 		return TPM_E_INTERNAL_INCONSISTENCY;
 
+	return TPM_SUCCESS;
+}
+
+uint32_t tlcl_cr50_enable_nvcommits(void)
+{
+	uint16_t sub_command = TPM2_CR50_SUB_CMD_NVMEM_ENABLE_COMMITS;
+	struct tpm2_response *response;
+
+	printk(BIOS_INFO, "Enabling cr50 nvmem commmits\n");
+
+	response = tpm_process_command(TPM2_CR50_VENDOR_COMMAND, &sub_command);
+
+	if (response == NULL || (response && response->hdr.tpm_code)) {
+		if (response)
+			printk(BIOS_INFO, "%s: failed %x\n", __func__,
+				response->hdr.tpm_code);
+		else
+			printk(BIOS_INFO, "%s: failed\n", __func__);
+		return TPM_E_IOERROR;
+	}
+	return TPM_SUCCESS;
+}
+
+uint32_t tlcl_cr50_enable_update(uint16_t timeout_ms,
+				 uint8_t *num_restored_headers)
+{
+	struct tpm2_response *response;
+	uint16_t command_body[] = {
+		TPM2_CR50_SUB_CMD_TURN_UPDATE_ON, timeout_ms
+	};
+
+	printk(BIOS_INFO, "Checking cr50 for pending updates\n");
+
+	response = tpm_process_command(TPM2_CR50_VENDOR_COMMAND, command_body);
+
+	if (!response || response->hdr.tpm_code)
+		return TPM_E_INTERNAL_INCONSISTENCY;
+
+	*num_restored_headers = response->vcr.num_restored_headers;
 	return TPM_SUCCESS;
 }

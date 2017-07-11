@@ -443,6 +443,5 @@ struct acpi_rsdp;
 unsigned long northbridge_write_acpi_tables(device_t device, unsigned long start, struct acpi_rsdp *rsdp);
 #endif
 
-
 #endif /* !__ACPI__ */
 #endif /* __NORTHBRIDGE_INTEL_GM45_GM45_H__ */

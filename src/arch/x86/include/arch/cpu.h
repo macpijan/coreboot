@@ -69,7 +69,7 @@ static inline struct cpuid_result cpuid(int op)
 /*
  * Generic Extended CPUID function
  */
-static inline struct cpuid_result cpuid_ext(int op, unsigned ecx)
+static inline struct cpuid_result cpuid_ext(int op, unsigned int ecx)
 {
 	struct cpuid_result result;
 	asm volatile(
@@ -171,8 +171,8 @@ void smm_setup_structures(void *gnvs, void *tcg, void *smi1);
 struct device;
 
 struct cpu_device_id {
-	unsigned vendor;
-	unsigned device;
+	unsigned int vendor;
+	unsigned int device;
 };
 
 struct cpu_driver {
@@ -204,7 +204,7 @@ static inline struct cpu_info *cpu_info(void)
 		"andl %%esp,%0; "
 		"orl  %2, %0 "
 #endif
-		:"=r" (ci)
+		: "=r" (ci)
 		: "0" (~(CONFIG_STACK_SIZE - 1)),
 		"r" (CONFIG_STACK_SIZE - sizeof(struct cpu_info))
 	);
@@ -249,7 +249,7 @@ static inline void get_fms(struct cpuinfo_x86 *c, uint32_t tfms)
  * is the symbol jumped to for each stage after bootblock using
  * cache-as-ram.
  */
-void asmlinkage car_stage_entry(void);
+asmlinkage void car_stage_entry(void);
 
 /*
  * Support setting up a stack frame consisting of MTRR information

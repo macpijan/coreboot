@@ -16,14 +16,20 @@
  * GNU General Public License for more details.
 */
 
+#include <arch/io.h>
+#include <console/console.h>
 #include <cpu/x86/cache.h>
+#include <cpu/x86/msr.h>
 #include <cpu/x86/mtrr.h>
 #include <cpu/x86/tsc.h>
 #include <cpu/amd/mtrr.h>
+#include <pc80/mc146818rtc.h>
 
 #include <lib.h>
 #include <stdlib.h>
+#include <string.h>
 #include <arch/acpi.h>
+#include "amdk8.h"
 #include "raminit.h"
 #include "f.h"
 #include <spd_ddr2.h>
@@ -37,9 +43,10 @@
 #define printk_raminit(args...)
 #endif
 
+#include <arch/early_variables.h>
+struct sys_info sysinfo_car CAR_GLOBAL;
 
 #include "f_pci.c"
-
 
 	/* for PCI_ADDR(0, 0x18, 2, 0x98) index,
 	 and PCI_ADDR(0x, 0x18, 2, 0x9c) data */
@@ -89,7 +96,7 @@ static int controller_present(const struct mem_controller *ctrl)
 	return pci_read_config32(ctrl->f0, 0) == 0x11001022;
 }
 
-static void sdram_set_registers(const struct mem_controller *ctrl, struct sys_info *sysinfo)
+void sdram_set_registers(const struct mem_controller *ctrl, struct sys_info *sysinfo)
 {
 	static const unsigned int register_values[] = {
 
@@ -2790,7 +2797,7 @@ static long spd_set_dram_timing(const struct mem_controller *ctrl,
 	return meminfo->dimm_mask;
 }
 
-static void sdram_set_spd_registers(const struct mem_controller *ctrl,
+void sdram_set_spd_registers(const struct mem_controller *ctrl,
 				     struct sys_info *sysinfo)
 {
 	struct spd_set_memclk_result result;
@@ -2859,8 +2866,6 @@ static void sdram_set_spd_registers(const struct mem_controller *ctrl,
 	return;
 }
 
-#define TIMEOUT_LOOPS 300000
-
 #include "raminit_f_dqs.c"
 
 #if CONFIG_HW_MEM_HOLE_SIZEK != 0
@@ -2918,7 +2923,7 @@ static uint32_t hoist_memory(int controllers, const struct mem_controller *ctrl,
 	return carry_over;
 }
 
-static void set_hw_mem_hole(int controllers, const struct mem_controller *ctrl)
+void set_hw_mem_hole(int controllers, const struct mem_controller *ctrl)
 {
 
 	uint32_t hole_startk;
@@ -2971,11 +2976,8 @@ static void set_hw_mem_hole(int controllers, const struct mem_controller *ctrl)
 
 }
 #endif
-#if CONFIG_HAVE_ACPI_RESUME
-#include "exit_from_self.c"
-#endif
 
-static void sdram_enable(int controllers, const struct mem_controller *ctrl,
+void sdram_enable(int controllers, const struct mem_controller *ctrl,
 			  struct sys_info *sysinfo)
 {
 	int i;

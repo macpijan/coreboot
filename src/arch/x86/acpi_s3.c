@@ -36,10 +36,9 @@ int acpi_get_sleep_type(void)
 	if (romstage_handoff_is_resume()) {
 		printk(BIOS_DEBUG, "S3 Resume.\n");
 		return ACPI_S3;
-	} else {
-		printk(BIOS_DEBUG, "Normal boot.\n");
-		return ACPI_S0;
 	}
+	printk(BIOS_DEBUG, "Normal boot.\n");
+	return ACPI_S0;
 }
 #endif
 
@@ -105,7 +104,8 @@ static int backup_create_or_update(struct resume_backup *backup_mem,
 
 	/* Allocate backup with room for header. */
 	if (!backup_mem) {
-		size_t header_sz = ALIGN_UP(sizeof(*backup_mem), BACKUP_PAGE_SZ);
+		size_t header_sz = ALIGN_UP(sizeof(*backup_mem),
+			BACKUP_PAGE_SZ);
 		backup_mem = cbmem_add(CBMEM_ID_RESUME, header_sz + size);
 		if (!backup_mem)
 			return -1;
@@ -126,14 +126,15 @@ void *acpi_backup_container(uintptr_t base, size_t size)
 	if (!backup_mem)
 		return NULL;
 
-	if (!IS_ALIGNED(base, BACKUP_PAGE_SZ) || !IS_ALIGNED(size, BACKUP_PAGE_SZ))
+	if (!IS_ALIGNED(base, BACKUP_PAGE_SZ) || !IS_ALIGNED(size,
+		BACKUP_PAGE_SZ))
 		return NULL;
 
 	if (backup_create_or_update(backup_mem, base, size) < 0)
 		return NULL;
 
 	backup_mem->valid = 1;
-	return (void*)(uintptr_t)backup_mem->cbmem;
+	return (void *)(uintptr_t)backup_mem->cbmem;
 }
 
 void backup_ramstage_section(uintptr_t base, size_t size)
@@ -157,8 +158,9 @@ void backup_ramstage_section(uintptr_t base, size_t size)
 		return;
 
 	/* Back up the OS-controlled memory where ramstage will be loaded. */
-	memcpy((void*)(uintptr_t)backup_mem->cbmem,
-		(void*)(uintptr_t)backup_mem->lowmem, (size_t)backup_mem->size);
+	memcpy((void *)(uintptr_t)backup_mem->cbmem,
+		(void *)(uintptr_t)backup_mem->lowmem,
+		(size_t)backup_mem->size);
 	backup_mem->valid = 1;
 }
 
@@ -174,8 +176,9 @@ void acpi_prepare_for_resume(void)
 		return;
 
 	/* Back up the OS-controlled memory where ramstage will be loaded. */
-	memcpy((void*)(uintptr_t)backup_mem->cbmem,
-		(void*)(uintptr_t)backup_mem->lowmem, (size_t)backup_mem->size);
+	memcpy((void *)(uintptr_t)backup_mem->cbmem,
+		(void *)(uintptr_t)backup_mem->lowmem,
+		(size_t)backup_mem->size);
 	backup_mem->valid = 1;
 }
 
@@ -198,8 +201,8 @@ void acpi_prepare_resume_backup(void)
 
 #define WAKEUP_BASE 0x600
 
-void (*acpi_do_wakeup)(uintptr_t vector, u32 backup_source, u32 backup_target,
-       u32 backup_size) asmlinkage = (void *)WAKEUP_BASE;
+asmlinkage void (*acpi_do_wakeup)(uintptr_t vector, u32 backup_source,
+	u32 backup_target, u32 backup_size) = (void *)WAKEUP_BASE;
 
 extern unsigned char __wakeup;
 extern unsigned int __wakeup_size;

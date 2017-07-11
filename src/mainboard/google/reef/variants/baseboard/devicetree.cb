@@ -17,6 +17,9 @@ chip soc/intel/apollolake
 	# If the Board does not have PERST_0, assign GPIO_PRT0_UDEF
 	register "prt0_gpio" = "GPIO_122"
 
+	# GPIO for SD card detect
+	register "sdcard_cd_gpio" = "GPIO_177"
+
 	# EMMC TX DATA Delay 1
 	# Refer to EDS-Vol2-22.3.
 	# [14:8] steps of delay for HS400, each 125ps.
@@ -100,6 +103,7 @@ chip soc/intel/apollolake
 		.speed = I2C_SPEED_FAST,
 		.rise_time_ns = 114,
 		.fall_time_ns = 164,
+		.data_hold_time_ns = 350,
 	}"
 
 	# digitizer at 400kHz
@@ -146,7 +150,7 @@ chip soc/intel/apollolake
 		device pci 15.1 off end # - XDCI
 		device pci 16.0 on	# - I2C 0
 			chip drivers/i2c/da7219
-				register "irq" = "IRQ_LEVEL_LOW(GPIO_116_IRQ)"
+				register "irq" = "ACPI_IRQ_LEVEL_LOW(GPIO_116_IRQ)"
 				register "btn_cfg" = "50"
 				register "mic_det_thr" = "500"
 				register "jack_ins_deb" = "20"
@@ -167,7 +171,7 @@ chip soc/intel/apollolake
 		device pci 16.2 on
 			chip drivers/i2c/tpm
 				register "hid" = ""GOOG0005""
-				register "irq" = "IRQ_EDGE_LOW(GPIO_28_IRQ)"
+				register "irq" = "ACPI_IRQ_EDGE_LOW(GPIO_28_IRQ)"
 				device i2c 50 on end
 			end
 		end	# - I2C 2
@@ -175,7 +179,7 @@ chip soc/intel/apollolake
 			chip drivers/i2c/generic
 				register "hid" = ""ELAN0001""
 				register "desc" = ""ELAN Touchscreen""
-				register "irq" = "IRQ_EDGE_LOW(GPIO_21_IRQ)"
+				register "irq" = "ACPI_IRQ_EDGE_LOW(GPIO_21_IRQ)"
 				register "probed" = "1"
 				register "reset_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_HIGH(GPIO_36)"
 				register "reset_delay_ms" = "20"
@@ -189,20 +193,17 @@ chip soc/intel/apollolake
 			chip drivers/i2c/generic
 				register "hid" = ""ELAN0000""
 				register "desc" = ""ELAN Touchpad""
-				register "irq" = "IRQ_EDGE_LOW(GPIO_18_IRQ)"
+				register "irq" = "ACPI_IRQ_EDGE_LOW(GPIO_18_IRQ)"
 				register "wake" = "GPE0_DW1_15"
 				register "probed" = "1"
 				device i2c 15 on end
 			end
 		end # - I2C 4
 		device pci 17.1 on
-			chip drivers/i2c/wacom
-				register "generic" = "{
-					 .hid = WCOM50C1_HID,
-					 .cid = PNP0C50_CID,
-					 .desc = WCOM_DT_DESC,
-					 .irq = IRQ_LEVEL_LOW(GPIO_13_IRQ),
-				}"
+			chip drivers/i2c/hid
+				register "generic.hid" = ""WCOM50C1""
+				register "generic.desc" = ""WCOM Digitizer""
+				register "generic.irq" = "ACPI_IRQ_LEVEL_LOW(GPIO_13_IRQ)"
 				register "hid_desc_reg_offset" = "0x1"
 				device i2c 0x9 on end
 			end

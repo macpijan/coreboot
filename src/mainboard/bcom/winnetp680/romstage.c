@@ -27,18 +27,16 @@
 #include <delay.h>
 #include <lib.h>
 #include <spd.h>
-#include "southbridge/via/vt8237r/early_smbus.c"
+#include <southbridge/via/vt8237r/vt8237r.h>
 #include <superio/winbond/common/winbond.h>
 #include <superio/winbond/w83697hf/w83697hf.h>
 
 #define SERIAL_DEV PNP_DEV(0x2e, W83697HF_SP1)
 
-static inline int spd_read_byte(unsigned device, unsigned address)
+int spd_read_byte(unsigned device, unsigned address)
 {
 	return smbus_read_byte(device, address);
 }
-
-#include "northbridge/via/cn700/raminit.c"
 
 static void enable_mainboard_devices(void)
 {
@@ -86,7 +84,7 @@ void main(unsigned long bist)
 	console_init();
 
 	enable_smbus();
-	smbus_fixup(&ctrl);
+	smbus_fixup(ctrl.channel0, ARRAY_SIZE(ctrl.channel0));
 
 	/* Halt if there was a built-in self test failure. */
 	report_bist_failure(bist);

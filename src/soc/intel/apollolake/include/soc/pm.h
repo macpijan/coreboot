@@ -34,8 +34,8 @@
 #define PM1_EN			0x02
 #define   PCIEXPWAK_DIS		(1 << 14)
 #define   RTC_EN		(1 << 10)
-#define   PWRBTN_EN     	(1 << 8)
-#define   GBL_EN        	(1 << 5)
+#define   PWRBTN_EN		(1 << 8)
+#define   GBL_EN		(1 << 5)
 
 #define PM1_CNT			0x04
 #define   SCI_EN		(1 << 0)
@@ -68,17 +68,19 @@
 #define SMI_EOS			1
 #define SMI_GBL			0
 
-#define   USB_EN		(1 << SMI_XHCI) /* Legacy USB2 SMI logic */
-#define   PERIODIC_EN		(1 << SMI_PERIODIC) /* SMI on PERIODIC_STS in SMI_STS */
-#define   TCO_EN		(1 << SMI_TCO) /* Enable TCO Logic (BIOSWE et al) */
-#define   GPIO_EN		(1 << SMI_GPIO) /* Enable GPIO SMI */
-#define   BIOS_RLS		(1 << SMI_BIOS_RLS) /* asserts SCI on bit set */
-#define   SWSMI_TMR_EN		(1 << SMI_SWSMI_TMR) /* start software smi timer on bit set */
-#define   APMC_EN		(1 << SMI_APMC) /* Writes to APM_CNT cause SMI# */
-#define   SLP_SMI_EN		(1 << SMI_SLP) /* Write to SLP_EN in PM1_CNT asserts SMI# */
-#define   BIOS_EN		(1 << SMI_BIOS) /* Assert SMI# on GBL_RLS bit */
-#define   EOS			(1 << SMI_EOS) /* End of SMI (deassert SMI#) */
-#define   GBL_SMI_EN		(1 << SMI_GBL) /* Global SMI Enable */
+#define   USB_EN	(1 << SMI_XHCI) /* Legacy USB2 SMI logic */
+#define   PERIODIC_EN	(1 << SMI_PERIODIC) /* SMI on PERIODIC_STS in SMI_STS */
+#define   TCO_EN	(1 << SMI_TCO) /* Enable TCO Logic (BIOSWE et al) */
+#define   GPIO_EN	(1 << SMI_GPIO) /* Enable GPIO SMI */
+#define   BIOS_RLS	(1 << SMI_BIOS_RLS) /* asserts SCI on bit set */
+/* start software smi timer on bit set */
+#define   SWSMI_TMR_EN	(1 << SMI_SWSMI_TMR)
+#define   APMC_EN	(1 << SMI_APMC) /* Writes to APM_CNT cause SMI# */
+/* Write to SLP_EN in PM1_CNT asserts SMI# */
+#define   SLP_SMI_EN	(1 << SMI_SLP)
+#define   BIOS_EN	(1 << SMI_BIOS) /* Assert SMI# on GBL_RLS bit */
+#define   EOS		(1 << SMI_EOS) /* End of SMI (deassert SMI#) */
+#define   GBL_SMI_EN	(1 << SMI_GBL) /* Global SMI Enable */
 
 #define SMI_STS			0x44
 /* Bits for SMI status */
@@ -141,6 +143,9 @@
 /* Memory mapped IO registers behind PMC_BASE_ADDRESS */
 #define PRSTS			0x1000
 #define GEN_PMCON1		0x1020
+#define  COLD_BOOT_STS		(1 << 27)
+#define  COLD_RESET_STS		(1 << 26)
+#define  WARM_RESET_STS		(1 << 25)
 #define  SRS			(1 << 20)
 #define  RPS			(1 << 2)
 #define GEN_PMCON2		0x1024

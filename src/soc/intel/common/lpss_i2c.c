@@ -346,7 +346,7 @@ static int lpss_i2c_transfer_byte(struct lpss_i2c_regs *regs,
 }
 
 /* Global I2C bus handler, defined in include/i2c.h */
-int platform_i2c_transfer(unsigned bus, struct i2c_seg *segments, int count)
+int platform_i2c_transfer(unsigned int bus, struct i2c_seg *segments, int count)
 {
 	struct stopwatch sw;
 	struct lpss_i2c_regs *regs;
@@ -476,7 +476,7 @@ static void lpss_i2c_acpi_write_speed_config(
 	acpigen_pop_len();
 }
 
-static int lpss_i2c_set_speed_config(unsigned bus,
+static int lpss_i2c_set_speed_config(unsigned int bus,
 				const struct lpss_i2c_speed_config *config)
 {
 	struct lpss_i2c_regs *regs;
@@ -527,6 +527,7 @@ static int lpss_i2c_gen_config_rise_fall_time(struct lpss_i2c_regs *regs,
 	const struct soc_clock *soc;
 	int fall_cnt, rise_cnt, min_tlow_cnt, min_thigh_cnt, spk_cnt;
 	int hcnt, lcnt, period_cnt, diff, tot;
+	int data_hold_time_ns;
 
 	bus = get_bus_descriptor(speed);
 	soc = get_soc_descriptor(ic_clk);
@@ -591,7 +592,13 @@ static int lpss_i2c_gen_config_rise_fall_time(struct lpss_i2c_regs *regs,
 	config->speed = speed;
 	config->scl_lcnt = lcnt;
 	config->scl_hcnt = hcnt;
-	config->sda_hold = counts_from_time(&soc->freq, DEFAULT_SDA_HOLD_TIME);
+
+	/* Use internal default unless other value is specified. */
+	data_hold_time_ns = DEFAULT_SDA_HOLD_TIME;
+	if (bcfg->data_hold_time_ns)
+		data_hold_time_ns = bcfg->data_hold_time_ns;
+
+	config->sda_hold = counts_from_time(&soc->freq, data_hold_time_ns);
 
 	printk(LPSS_DEBUG, "lpss_i2c: hcnt = %d lcnt = %d sda hold = %d\n",
 		hcnt, lcnt, config->sda_hold);
@@ -604,7 +611,7 @@ static int lpss_i2c_gen_speed_config(struct lpss_i2c_regs *regs,
 					const struct lpss_i2c_bus_config *bcfg,
 					struct lpss_i2c_speed_config *config)
 {
-	const int ic_clk = CONFIG_SOC_INTEL_COMMON_LPSS_I2C_CLOCK_MHZ;
+	const int ic_clk = CONFIG_SOC_INTEL_COMMON_LPSS_CLOCK_MHZ;
 	uint16_t hcnt_min, lcnt_min;
 	int i;
 
@@ -651,7 +658,7 @@ static int lpss_i2c_gen_speed_config(struct lpss_i2c_regs *regs,
 	return 0;
 }
 
-static int lpss_i2c_set_speed(unsigned bus, enum i2c_speed speed,
+static int lpss_i2c_set_speed(unsigned int bus, enum i2c_speed speed,
 				const struct lpss_i2c_bus_config *bcfg)
 {
 	struct lpss_i2c_regs *regs;
@@ -690,7 +697,7 @@ static int lpss_i2c_set_speed(unsigned bus, enum i2c_speed speed,
 	return 0;
 }
 
-void lpss_i2c_acpi_fill_ssdt(unsigned bus,
+void lpss_i2c_acpi_fill_ssdt(unsigned int bus,
 				const struct lpss_i2c_bus_config *bcfg)
 {
 	struct lpss_i2c_regs *regs;
@@ -721,7 +728,7 @@ void lpss_i2c_acpi_fill_ssdt(unsigned bus,
 	}
 }
 
-int lpss_i2c_init(unsigned bus, const struct lpss_i2c_bus_config *bcfg)
+int lpss_i2c_init(unsigned int bus, const struct lpss_i2c_bus_config *bcfg)
 {
 	struct lpss_i2c_regs *regs;
 	enum i2c_speed speed;

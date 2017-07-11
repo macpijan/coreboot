@@ -26,50 +26,6 @@
 
 #if IS_ENABLED(CONFIG_HAVE_ACPI_TABLES)
 
-static void i2c_generic_add_power_res(struct drivers_i2c_generic_config *config)
-{
-	const char *power_res_dev_states[] = { "_PR0", "_PR3" };
-	unsigned reset_gpio = config->reset_gpio.pins[0];
-	unsigned enable_gpio = config->enable_gpio.pins[0];
-
-	if (!config->has_power_resource)
-		return;
-
-	if (!reset_gpio && !enable_gpio)
-		return;
-
-	/* PowerResource (PRIC, 0, 0) */
-	acpigen_write_power_res("PRIC", 0, 0, power_res_dev_states,
-				ARRAY_SIZE(power_res_dev_states));
-
-	/* Method (_STA, 0, NotSerialized) { Return (0x1) } */
-	acpigen_write_STA(0x1);
-
-	/* Method (_ON, 0, Serialized) */
-	acpigen_write_method_serialized("_ON", 0);
-	if (reset_gpio)
-		acpigen_soc_set_tx_gpio(reset_gpio);
-	if (enable_gpio) {
-		acpigen_soc_set_tx_gpio(enable_gpio);
-		acpigen_write_sleep(config->enable_delay_ms);
-	}
-	if (reset_gpio) {
-		acpigen_soc_clear_tx_gpio(reset_gpio);
-		acpigen_write_sleep(config->reset_delay_ms);
-	}
-	acpigen_pop_len();		/* _ON method */
-
-	/* Method (_OFF, 0, Serialized) */
-	acpigen_write_method_serialized("_OFF", 0);
-	if (reset_gpio)
-		acpigen_soc_set_tx_gpio(reset_gpio);
-	if (enable_gpio)
-		acpigen_soc_clear_tx_gpio(enable_gpio);
-	acpigen_pop_len();		/* _OFF method */
-
-	acpigen_pop_len();		/* PowerResource PRIC */
-}
-
 static bool i2c_generic_add_gpios_to_crs(struct drivers_i2c_generic_config *cfg)
 {
 	/*
@@ -112,7 +68,7 @@ void i2c_generic_fill_ssdt(struct device *dev,
 	};
 	struct acpi_dp *dsd = NULL;
 	int curr_index = 0;
-	int reset_gpio_index = -1, enable_gpio_index = -1;
+	int reset_gpio_index = -1, enable_gpio_index = -1, irq_gpio_index = -1;
 	const char *path = acpi_device_path(dev);
 
 	if (!dev->enabled || !scope)
@@ -137,7 +93,14 @@ void i2c_generic_fill_ssdt(struct device *dev,
 	acpigen_write_name("_CRS");
 	acpigen_write_resourcetemplate_header();
 	acpi_device_write_i2c(&i2c);
-	acpi_device_write_interrupt(&config->irq);
+
+	/* Use either Interrupt() or GpioInt() */
+	if (config->irq_gpio.pin_count)
+		irq_gpio_index = i2c_generic_write_gpio(&config->irq_gpio,
+							&curr_index);
+	else
+		acpi_device_write_interrupt(&config->irq);
+
 	if (i2c_generic_add_gpios_to_crs(config) == true) {
 		reset_gpio_index = i2c_generic_write_gpio(&config->reset_gpio,
 							&curr_index);
@@ -154,10 +117,15 @@ void i2c_generic_fill_ssdt(struct device *dev,
 
 	/* DSD */
 	if (config->probed || (reset_gpio_index != -1) ||
-		(enable_gpio_index != -1)) {
+	    (enable_gpio_index != -1) || (irq_gpio_index != -1)) {
 		dsd = acpi_dp_new_table("_DSD");
 		if (config->probed)
 			acpi_dp_add_integer(dsd, "linux,probed", 1);
+		if (irq_gpio_index != -1)
+			acpi_dp_add_gpio(dsd, "irq-gpios", path,
+					 irq_gpio_index, 0,
+					 config->irq_gpio.polarity ==
+					 ACPI_GPIO_ACTIVE_LOW);
 		if (reset_gpio_index != -1)
 			acpi_dp_add_gpio(dsd, "reset-gpios", path,
 					reset_gpio_index, 0,
@@ -170,7 +138,10 @@ void i2c_generic_fill_ssdt(struct device *dev,
 	}
 
 	/* Power Resource */
-	i2c_generic_add_power_res(config);
+	if (config->has_power_resource)
+		acpi_device_add_power_res(
+			&config->reset_gpio, config->reset_delay_ms,
+			&config->enable_gpio, config->enable_delay_ms);
 
 	/* Callback if any. */
 	if (callback)

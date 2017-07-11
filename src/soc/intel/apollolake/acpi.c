@@ -30,6 +30,7 @@
 #include <soc/pci_devs.h>
 #include <string.h>
 #include <soc/gpio.h>
+#include <gpio.h>
 #include "chip.h"
 
 #define CSTATE_RES(address_space, width, offset, address)		\
@@ -58,13 +59,14 @@ static int acpi_sci_irq(void)
 static unsigned long acpi_madt_irq_overrides(unsigned long current)
 {
 	int sci = acpi_sci_irq();
-	uint16_t flags = MP_IRQ_TRIGGER_LEVEL | MP_IRQ_POLARITY_LOW;;
+	uint16_t flags = MP_IRQ_TRIGGER_LEVEL | MP_IRQ_POLARITY_LOW;
 
 	/* INT_SRC_OVR */
 	current += acpi_create_madt_irqoverride((void *)current, 0, 0, 2, 0);
 
 	/* SCI */
-	current += acpi_create_madt_irqoverride((void *)current, 0, sci, sci, flags);
+	current += acpi_create_madt_irqoverride((void *)current, 0, sci, sci,
+		flags);
 
 	return current;
 }
@@ -81,12 +83,12 @@ unsigned long acpi_fill_madt(unsigned long current)
 	return acpi_madt_irq_overrides(current);
 }
 
-void acpi_fill_fadt(acpi_fadt_t * fadt)
+void acpi_fill_fadt(acpi_fadt_t *fadt)
 {
 	const uint16_t pmbase = ACPI_PMIO_BASE;
 
-	/* Use ACPI 5.0 revision. */
-	fadt->header.revision = ACPI_FADT_REV_ACPI_5_0;
+	/* Use ACPI 3.0 revision. */
+	fadt->header.revision = ACPI_FADT_REV_ACPI_3_0;
 
 	fadt->sci_int = acpi_sci_irq();
 	fadt->smi_cmd = APM_CNT;
@@ -151,7 +153,7 @@ unsigned long southbridge_write_acpi_tables(device_t device,
 static void acpi_create_gnvs(struct global_nvs_t *gnvs)
 {
 	struct soc_intel_apollolake_config *cfg;
-	struct device *dev = NB_DEV_ROOT;
+	struct device *dev = SA_DEV_ROOT;
 
 	/* Clear out GNVS. */
 	memset(gnvs, 0, sizeof(*gnvs));
@@ -183,6 +185,14 @@ static void acpi_create_gnvs(struct global_nvs_t *gnvs)
 	/* Assign address of PERST_0 if GPIO is defined in devicetree */
 	if (cfg->prt0_gpio != GPIO_PRT0_UDEF)
 		gnvs->prt0 = (uintptr_t)gpio_dwx_address(cfg->prt0_gpio);
+
+	/* Get sdcard cd GPIO portid if GPIO is defined in devicetree.
+	 * Get offset of sdcard cd pin.
+	 */
+	if (cfg->sdcard_cd_gpio) {
+		gnvs->scdp = gpio_get_pad_portid(cfg->sdcard_cd_gpio);
+		gnvs->scdo = gpio_acpi_pin(cfg->sdcard_cd_gpio);
+	}
 }
 
 /* Save wake source information for calculating ACPI _SWS values */
@@ -283,7 +293,7 @@ static void acpigen_soc_get_dw0_in_local5(uintptr_t addr)
 
 static int acpigen_soc_get_gpio_val(unsigned int gpio_num, uint32_t mask)
 {
-	assert (gpio_num < TOTAL_PADS);
+	assert(gpio_num < TOTAL_PADS);
 	uintptr_t addr = (uintptr_t)gpio_dwx_address(gpio_num);
 
 	acpigen_soc_get_dw0_in_local5(addr);
@@ -309,7 +319,7 @@ static int acpigen_soc_get_gpio_val(unsigned int gpio_num, uint32_t mask)
 
 static int acpigen_soc_set_gpio_val(unsigned int gpio_num, uint32_t val)
 {
-	assert (gpio_num < TOTAL_PADS);
+	assert(gpio_num < TOTAL_PADS);
 	uintptr_t addr = (uintptr_t)gpio_dwx_address(gpio_num);
 
 	acpigen_soc_get_dw0_in_local5(addr);

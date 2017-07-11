@@ -18,6 +18,16 @@ config BOARD_GOOGLE_VEYRON # dummy option to be selected by variant boards
 
 if BOARD_GOOGLE_VEYRON
 
+# Some Veyron boards incorrectly had their RAM code strapped with 100Kohm
+# resistors. These get overpowered by the SoC's internal pull-downs, so we
+# cannot read those pins as tri-state. They're restricted to binary RAM codes.
+config VEYRON_FORCE_BINARY_RAM_CODE
+	bool
+	default y if BOARD_GOOGLE_VEYRON_JAQ
+	default y if BOARD_GOOGLE_VEYRON_JERRY
+	default y if BOARD_GOOGLE_VEYRON_MIGHTY
+	default n
+
 config BOARD_SPECIFIC_OPTIONS # dummy
 	def_bool y
 	select BOARD_ID_AUTO
@@ -35,10 +45,8 @@ config BOARD_SPECIFIC_OPTIONS # dummy
 	select SPI_FLASH_GIGADEVICE
 	select SPI_FLASH_WINBOND
 
-config CHROMEOS
-	select EC_SOFTWARE_SYNC
+config VBOOT
 	select VBOOT_VBNV_EC
-	select VIRTUAL_DEV_SWITCH
 
 config MAINBOARD_DIR
 	string
@@ -46,6 +54,11 @@ config MAINBOARD_DIR
 
 config MAINBOARD_PART_NUMBER
 	string
+	default "Veyron_Jaq" if BOARD_GOOGLE_VEYRON_JAQ
+	default "Veyron_Jerry" if BOARD_GOOGLE_VEYRON_JERRY
+	default "Veyron_Mighty" if BOARD_GOOGLE_VEYRON_MIGHTY
+	default "Veyron_Minnie" if BOARD_GOOGLE_VEYRON_MINNIE
+	default "Veyron_Speedy" if BOARD_GOOGLE_VEYRON_SPEEDY
 	default "Veyron"
 
 config MAINBOARD_VENDOR
@@ -89,42 +102,19 @@ config CBFS_SIZE
 config EC_GOOGLE_CHROMEEC_BOARDNAME
 	string
 	depends on CHROMEOS
-	#default "gus" if BOARD_GOOGLE_VEYRON_GUS
 	#default "jaq" if BOARD_GOOGLE_VEYRON_JAQ
 	default "jerry" if BOARD_GOOGLE_VEYRON_JERRY
 	#default "mighty" if BOARD_GOOGLE_VEYRON_MIGHTY
 	#default "minnie" if BOARD_GOOGLE_VEYRON_MINNIE
-	#default "nicky" if BOARD_GOOGLE_VEYRON_NICKY
-	#default "pinky" if BOARD_GOOGLE_VEYRON_PINKY
-	#default "minnie" if BOARD_GOOGLE_VEYRON_SHARK
 	#default "speedy" if BOARD_GOOGLE_VEYRON_SPEEDY
-	#default "thea" if BOARD_GOOGLE_VEYRON_THEA
 
 config GBB_HWID
 	string
 	depends on CHROMEOS
-	default "GUS TEST A-A 2606" if BOARD_GOOGLE_VEYRON_GUS
 	default "JAQ TEST A-A 8292" if BOARD_GOOGLE_VEYRON_JAQ
 	default "JERRY TEST A-A 1250" if BOARD_GOOGLE_VEYRON_JERRY
 	default "MIGHTY TEST A-A 4557" if BOARD_GOOGLE_VEYRON_MIGHTY
 	default "MINNIE TEST A-A 5151" if BOARD_GOOGLE_VEYRON_MINNIE
-	default "NICKY TEST A-A 9039" if BOARD_GOOGLE_VEYRON_NICKY
-	default "PINKY TEST A-A 3693" if BOARD_GOOGLE_VEYRON_PINKY
-	default "SHARK TEST A-A 8553" if BOARD_GOOGLE_VEYRON_SHARK
 	default "SPEEDY TEST A-A 8421" if BOARD_GOOGLE_VEYRON_SPEEDY
-	default "THEA TEST A-A 7163" if BOARD_GOOGLE_VEYRON_THEA
-
-config CHROMEOS_FWID_MODEL
-	string
-	default "Google_Veyron_Gus" if BOARD_GOOGLE_VEYRON_GUS
-	default "Google_Veyron_Jaq" if BOARD_GOOGLE_VEYRON_JAQ
-	default "Google_Veyron_Jerry" if BOARD_GOOGLE_VEYRON_JERRY
-	default "Google_Veyron_Mighty" if BOARD_GOOGLE_VEYRON_MIGHTY
-	default "Google_Veyron_Minnie" if BOARD_GOOGLE_VEYRON_MINNIE
-	default "Google_Veyron_Nicky" if BOARD_GOOGLE_VEYRON_NICKY
-	default "Google_Veyron_Pinky" if BOARD_GOOGLE_VEYRON_PINKY
-	default "Google_Veyron_Shinky" if BOARD_GOOGLE_VEYRON_SHARK
-	default "Google_Veyron_Speedy" if BOARD_GOOGLE_VEYRON_SPEEDY
-	default "Google_Veyron_Thea" if BOARD_GOOGLE_VEYRON_THEA
 
 endif #  BOARD_GOOGLE_VEYRON

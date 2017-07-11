@@ -2,7 +2,8 @@
  * This file is part of the coreboot project.
  *
  * Copyright (C) 2009 Rudolf Marek <r.marek@assembler.cz>
- * Copyright (C) 2015 Timothy Pearson <tpearson@raptorengineeringinc.com>, Raptor Engineering
+ * Copyright (C) 2015 Timothy Pearson <tpearson@raptorengineeringinc.com>,
+ * Raptor Engineering
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,6 +22,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <arch/acpi.h>
+#include <arch/acpi_device.h>
 
 /* Values that can be returned for ACPI Device _STA method */
 #define ACPI_STATUS_DEVICE_PRESENT	(1 << 0)
@@ -202,14 +204,15 @@ void acpigen_write_empty_PTC(void);
 void acpigen_write_PRW(u32 wake, u32 level);
 void acpigen_write_STA(uint8_t status);
 void acpigen_write_TPC(const char *gnvs_tpc_limit);
-void acpigen_write_PSS_package(u32 coreFreq, u32 power, u32 transLat, u32 busmLat,
-			u32 control, u32 status);
-typedef enum { SW_ALL=0xfc, SW_ANY=0xfd, HW_ALL=0xfe } PSD_coord;
+void acpigen_write_PSS_package(u32 coreFreq, u32 power, u32 transLat,
+			u32 busmLat, u32 control, u32 status);
+typedef enum { SW_ALL = 0xfc, SW_ANY = 0xfd, HW_ALL = 0xfe } PSD_coord;
 void acpigen_write_PSD_package(u32 domain, u32 numprocs, PSD_coord coordtype);
 void acpigen_write_CST_package_entry(acpi_cstate_t *cstate);
 void acpigen_write_CST_package(acpi_cstate_t *entry, int nentries);
-typedef enum { CSD_HW_ALL=0xfe } CSD_coord;
-void acpigen_write_CSD_package(u32 domain, u32 numprocs, CSD_coord coordtype, u32 index);
+typedef enum { CSD_HW_ALL = 0xfe } CSD_coord;
+void acpigen_write_CSD_package(u32 domain, u32 numprocs, CSD_coord coordtype,
+				u32 index);
 void acpigen_write_processor(u8 cpuindex, u32 pblock_addr, u8 pblock_len);
 void acpigen_write_TSS_package(int entries, acpi_tstate_t *tstate_list);
 void acpigen_write_TSD_package(u32 domain, u32 numprocs, PSD_coord coordtype);
@@ -239,8 +242,8 @@ void acpigen_write_if_lequal_op_int(uint8_t op, uint64_t val);
 void acpigen_write_else(void);
 void acpigen_write_to_buffer(uint8_t src, uint8_t dst);
 void acpigen_write_to_integer(uint8_t src, uint8_t dst);
-void acpigen_write_byte_buffer(uint8_t *arr, uint8_t size);
-void acpigen_write_return_byte_buffer(uint8_t *arr, uint8_t size);
+void acpigen_write_byte_buffer(uint8_t *arr, size_t size);
+void acpigen_write_return_byte_buffer(uint8_t *arr, size_t size);
 void acpigen_write_return_singleton_buffer(uint8_t arg);
 void acpigen_write_return_byte(uint8_t arg);
 /*
@@ -288,5 +291,15 @@ int acpigen_soc_set_tx_gpio(unsigned int gpio_num);
 
 /* Generate ACPI AML code to set Tx value of GPIO to 0. */
 int acpigen_soc_clear_tx_gpio(unsigned int gpio_num);
+
+/*
+ * Helper functions for enabling/disabling Tx GPIOs based on the GPIO
+ * polarity. These functions end up calling acpigen_soc_{set,clear}_tx_gpio to
+ * make callbacks into SoC acpigen code.
+ *
+ * Returns 0 on success and -1 on error.
+ */
+int acpigen_enable_tx_gpio(struct acpi_gpio *gpio);
+int acpigen_disable_tx_gpio(struct acpi_gpio *gpio);
 
 #endif

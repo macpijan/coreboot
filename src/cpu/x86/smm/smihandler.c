@@ -28,7 +28,8 @@ static int do_driver_init = 1;
 typedef enum { SMI_LOCKED, SMI_UNLOCKED } smi_semaphore;
 
 /* SMI multiprocessing semaphore */
-static volatile smi_semaphore smi_handler_status __attribute__ ((aligned (4))) = SMI_UNLOCKED;
+static __attribute__ ((aligned(4))) volatile smi_semaphore smi_handler_status
+	= SMI_UNLOCKED;
 
 static int smi_obtain_lock(void)
 {
@@ -130,7 +131,10 @@ void smi_handler(u32 smm_revision)
 		 */
 		while (smi_handler_status == SMI_LOCKED) {
 			asm volatile (
-				".byte 0xf3, 0x90\n"  /* hint a CPU we are in spinlock (PAUSE instruction, REP NOP) */
+				".byte 0xf3, 0x90\n"  /* hint a CPU we are in
+						       * spinlock (PAUSE
+						       * instruction, REP NOP)
+						       */
 			);
 		}
 		return;
@@ -138,7 +142,7 @@ void smi_handler(u32 smm_revision)
 
 	smi_backup_pci_address();
 
-	node=nodeid();
+	node = nodeid();
 
 	console_init();
 
@@ -160,7 +164,7 @@ void smi_handler(u32 smm_revision)
 		state_save.type = EM64T101;
 		state_save.em64t101_state_save =
 			smm_save_state(smm_base,
-			               SMM_EM64T101_ARCH_OFFSET, node);
+				       SMM_EM64T101_ARCH_OFFSET, node);
 		break;
 	case 0x00030064:
 		state_save.type = AMD64;
@@ -202,9 +206,12 @@ void smi_handler(u32 smm_revision)
  * weak relocations w/o a symbol have a 0 address which is where the modules
  * are linked at. */
 int __attribute__((weak)) mainboard_io_trap_handler(int smif) { return 0; }
-void __attribute__((weak)) cpu_smi_handler(unsigned int node, smm_state_save_area_t *state_save) {}
-void __attribute__((weak)) northbridge_smi_handler(unsigned int node, smm_state_save_area_t *state_save) {}
-void __attribute__((weak)) southbridge_smi_handler(unsigned int node, smm_state_save_area_t *state_save) {}
+void __attribute__((weak)) cpu_smi_handler(unsigned int node,
+	smm_state_save_area_t *state_save) {}
+void __attribute__((weak)) northbridge_smi_handler(unsigned int node,
+	smm_state_save_area_t *state_save) {}
+void __attribute__((weak)) southbridge_smi_handler(unsigned int node,
+	smm_state_save_area_t *state_save) {}
 void __attribute__((weak)) mainboard_smi_gpi(u32 gpi_sts) {}
 int __attribute__((weak)) mainboard_smi_apmc(u8 data) { return 0; }
 void __attribute__((weak)) mainboard_smi_sleep(u8 slp_typ) {}

@@ -27,24 +27,23 @@
 #include <delay.h>
 #include <spd.h>
 #include <cpu/x86/lapic.h>
-#include "northbridge/amd/amdk8/reset_test.c"
 #include <superio/winbond/common/winbond.h>
 #include <superio/winbond/w83627dhg/w83627dhg.h>
 #include <cpu/x86/bist.h>
 #include "northbridge/amd/amdk8/setup_resource_map.c"
 #include <southbridge/amd/sb700/sb700.h>
 #include <southbridge/amd/sb700/smbus.h>
-#include "northbridge/amd/amdk8/debug.c" /* After sb700/early_setup.c! */
+#include <northbridge/amd/amdk8/pre_f.h>
 
 #define SERIAL_DEV PNP_DEV(0x2e, W83627DHG_SP1)
 #define GPIO2345_DEV PNP_DEV(0x2e, W83627DHG_GPIO2345_V)
 
 unsigned get_sbdn(unsigned bus);
 
-static void memreset(int controllers, const struct mem_controller *ctrl) { }
-static void activate_spd_rom(const struct mem_controller *ctrl) { }
+void memreset(int controllers, const struct mem_controller *ctrl) { }
+void activate_spd_rom(const struct mem_controller *ctrl) { }
 
-static inline int spd_read_byte(u32 device, u32 address)
+int spd_read_byte(u32 device, u32 address)
 {
 	return do_smbus_read_byte(SMBUS_IO_BASE, device, address);
 }
@@ -53,7 +52,6 @@ static inline int spd_read_byte(u32 device, u32 address)
 #include <northbridge/amd/amdk8/amdk8.h>
 #include "northbridge/amd/amdk8/incoherent_ht.c"
 #include "northbridge/amd/amdk8/raminit.c"
-#include "northbridge/amd/amdk8/coherent_ht.c"
 #include "lib/generic_sdram.c"
 #include "resourcemap.c"
 #include "cpu/amd/dualcore/dualcore.c"

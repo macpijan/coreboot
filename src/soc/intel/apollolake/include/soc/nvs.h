@@ -39,7 +39,9 @@ typedef struct global_nvs_t {
 	uint64_t	nhla; /* 0x19 - 0x20 - NHLT Address */
 	uint32_t	nhll; /* 0x21 - 0x24 - NHLT Length */
 	uint32_t	prt0; /* 0x25 - 0x28 - PERST_0 Address */
-	uint8_t		unused[215];
+	uint8_t		scdp; /* 0x29 - SD_CD GPIO portid */
+	uint8_t		scdo; /* 0x2A - GPIO pad offset relative to the community */
+	uint8_t		unused[213];
 
 	/* ChromeOS specific (0x100 - 0xfff) */
 	chromeos_acpi_t chromeos;

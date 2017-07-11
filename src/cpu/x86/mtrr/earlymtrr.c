@@ -1,3 +1,16 @@
+/*
+ * This file is part of the coreboot project.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; version 2 of the License.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ */
+
 #include <cpu/x86/cache.h>
 #include <cpu/x86/mtrr.h>
 #include <cpu/x86/msr.h>
@@ -30,7 +43,8 @@ int get_free_var_mtrr(void)
 static
 #endif
 void set_var_mtrr(
-	unsigned reg, unsigned base, unsigned size, unsigned type)
+	unsigned int reg, unsigned int base, unsigned int size,
+	unsigned int type)
 {
 	/* Bit Bit 32-35 of MTRRphysMask should be set to 1 */
 	/* FIXME: It only support 4G less range */

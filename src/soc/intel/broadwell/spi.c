@@ -102,7 +102,7 @@ typedef struct ich_spi_controller {
 	uint16_t *optype;
 	uint32_t *addr;
 	uint8_t *data;
-	unsigned databytes;
+	unsigned int databytes;
 	uint8_t *status;
 	uint16_t *control;
 	uint32_t *bbar;
@@ -166,7 +166,7 @@ static u8 readb_(const void *addr)
 {
 	u8 v = read8(addr);
 	printk(BIOS_DEBUG, "read %2.2x from %4.4x\n",
-	       v, ((unsigned) addr & 0xffff) - 0xf020);
+	       v, ((unsigned int) addr & 0xffff) - 0xf020);
 	return v;
 }
 
@@ -174,7 +174,7 @@ static u16 readw_(const void *addr)
 {
 	u16 v = read16(addr);
 	printk(BIOS_DEBUG, "read %4.4x from %4.4x\n",
-	       v, ((unsigned) addr & 0xffff) - 0xf020);
+	       v, ((unsigned int) addr & 0xffff) - 0xf020);
 	return v;
 }
 
@@ -182,7 +182,7 @@ static u32 readl_(const void *addr)
 {
 	u32 v = read32(addr);
 	printk(BIOS_DEBUG, "read %8.8x from %4.4x\n",
-	       v, ((unsigned) addr & 0xffff) - 0xf020);
+	       v, ((unsigned int) addr & 0xffff) - 0xf020);
 	return v;
 }
 
@@ -190,21 +190,21 @@ static void writeb_(u8 b, const void *addr)
 {
 	write8(addr, b);
 	printk(BIOS_DEBUG, "wrote %2.2x to %4.4x\n",
-	       b, ((unsigned) addr & 0xffff) - 0xf020);
+	       b, ((unsigned int) addr & 0xffff) - 0xf020);
 }
 
 static void writew_(u16 b, const void *addr)
 {
 	write16(addr, b);
 	printk(BIOS_DEBUG, "wrote %4.4x to %4.4x\n",
-	       b, ((unsigned) addr & 0xffff) - 0xf020);
+	       b, ((unsigned int) addr & 0xffff) - 0xf020);
 }
 
 static void writel_(u32 b, const void *addr)
 {
 	write32(addr, b);
 	printk(BIOS_DEBUG, "wrote %8.8x to %4.4x\n",
-	       b, ((unsigned) addr & 0xffff) - 0xf020);
+	       b, ((unsigned int) addr & 0xffff) - 0xf020);
 }
 
 #else /* CONFIG_DEBUG_SPI_FLASH ^^^ enabled  vvv NOT enabled */
@@ -307,13 +307,13 @@ typedef struct spi_transaction {
 	uint32_t offset;
 } spi_transaction;
 
-static inline void spi_use_out(spi_transaction *trans, unsigned bytes)
+static inline void spi_use_out(spi_transaction *trans, unsigned int bytes)
 {
 	trans->out += bytes;
 	trans->bytesout -= bytes;
 }
 
-static inline void spi_use_in(spi_transaction *trans, unsigned bytes)
+static inline void spi_use_in(spi_transaction *trans, unsigned int bytes)
 {
 	trans->in += bytes;
 	trans->bytesin -= bytes;
@@ -367,43 +367,43 @@ static int spi_setup_opcode(spi_transaction *trans)
 		optypes = (optypes & 0xfffc) | (trans->type & 0x3);
 		writew_(optypes, cntlr.optype);
 		return 0;
-	} else {
-		/* The lock is on. See if what we need is on the menu. */
-		uint8_t optype;
-		uint16_t opcode_index;
-
-		/* Write Enable is handled as atomic prefix */
-		if (trans->opcode == SPI_OPCODE_WREN)
-			return 0;
-
-		read_reg(cntlr.opmenu, opmenu, sizeof(opmenu));
-		for (opcode_index = 0; opcode_index < cntlr.menubytes;
-				opcode_index++) {
-			if (opmenu[opcode_index] == trans->opcode)
-				break;
-		}
-
-		if (opcode_index == cntlr.menubytes) {
-			printk(BIOS_DEBUG, "ICH SPI: Opcode %x not found\n",
-				trans->opcode);
-			return -1;
-		}
-
-		optypes = readw_(cntlr.optype);
-		optype = (optypes >> (opcode_index * 2)) & 0x3;
-		if (trans->type == SPI_OPCODE_TYPE_WRITE_NO_ADDRESS &&
-			optype == SPI_OPCODE_TYPE_WRITE_WITH_ADDRESS &&
-			trans->bytesout >= 3) {
-			/* We guessed wrong earlier. Fix it up. */
-			trans->type = optype;
-		}
-		if (optype != trans->type) {
-			printk(BIOS_DEBUG, "ICH SPI: Transaction doesn't fit type %d\n",
-				optype);
-			return -1;
-		}
-		return opcode_index;
 	}
+
+	/* The lock is on. See if what we need is on the menu. */
+	uint8_t optype;
+	uint16_t opcode_index;
+
+	/* Write Enable is handled as atomic prefix */
+	if (trans->opcode == SPI_OPCODE_WREN)
+		return 0;
+
+	read_reg(cntlr.opmenu, opmenu, sizeof(opmenu));
+	for (opcode_index = 0; opcode_index < cntlr.menubytes;
+			opcode_index++) {
+		if (opmenu[opcode_index] == trans->opcode)
+			break;
+	}
+
+	if (opcode_index == cntlr.menubytes) {
+		printk(BIOS_DEBUG, "ICH SPI: Opcode %x not found\n",
+			trans->opcode);
+		return -1;
+	}
+
+	optypes = readw_(cntlr.optype);
+	optype = (optypes >> (opcode_index * 2)) & 0x3;
+	if (trans->type == SPI_OPCODE_TYPE_WRITE_NO_ADDRESS &&
+		optype == SPI_OPCODE_TYPE_WRITE_WITH_ADDRESS &&
+		trans->bytesout >= 3) {
+		/* We guessed wrong earlier. Fix it up. */
+		trans->type = optype;
+	}
+	if (optype != trans->type) {
+		printk(BIOS_DEBUG, "ICH SPI: Transaction doesn't fit type %d\n",
+			optype);
+		return -1;
+	}
+	return opcode_index;
 }
 
 static int spi_setup_offset(spi_transaction *trans)
@@ -421,7 +421,8 @@ static int spi_setup_offset(spi_transaction *trans)
 		spi_use_out(trans, 3);
 		return 1;
 	default:
-		printk(BIOS_DEBUG, "Unrecognized SPI transaction type %#x\n", trans->type);
+		printk(BIOS_DEBUG, "Unrecognized SPI transaction type %#x\n",
+			trans->type);
 		return -1;
 	}
 }
@@ -489,9 +490,11 @@ static int spi_ctrlr_xfer(const struct spi_slave *slave, const void *dout,
 	writew_(SPIS_CDS | SPIS_FCERR, cntlr.status);
 
 	spi_setup_type(&trans);
-	if ((opcode_index = spi_setup_opcode(&trans)) < 0)
+	opcode_index = spi_setup_opcode(&trans);
+	if (opcode_index < 0)
 		return -1;
-	if ((with_address = spi_setup_offset(&trans)) < 0)
+	with_address = spi_setup_offset(&trans);
+	if (with_address < 0)
 		return -1;
 
 	if (trans.opcode == SPI_OPCODE_WREN) {
@@ -531,7 +534,8 @@ static int spi_ctrlr_xfer(const struct spi_slave *slave, const void *dout,
 			return -1;
 
 		if (status & SPIS_FCERR) {
-			printk(BIOS_DEBUG, "ICH SPI: Command transaction error\n");
+			printk(BIOS_DEBUG,
+				"ICH SPI: Command transaction error\n");
 			return -1;
 		}
 
@@ -546,8 +550,8 @@ static int spi_ctrlr_xfer(const struct spi_slave *slave, const void *dout,
 	 * by the SPI chip driver.
 	 */
 	if (trans.bytesout > cntlr.databytes) {
-		printk(BIOS_DEBUG, "ICH SPI: Too much to write. Does your SPI chip driver use"
-		     " CONTROLLER_PAGE_LIMIT?\n");
+		printk(BIOS_DEBUG, "ICH SPI: Too much to write. Does your SPI"
+		     " chip driver use CONTROLLER_PAGE_LIMIT?\n");
 		return -1;
 	}
 
@@ -559,7 +563,10 @@ static int spi_ctrlr_xfer(const struct spi_slave *slave, const void *dout,
 		uint32_t data_length;
 
 		/* SPI addresses are 24 bit only */
-		/* http://www.intel.com/content/dam/www/public/us/en/documents/datasheets/pentium-n3520-j2850-celeron-n2920-n2820-n2815-n2806-j1850-j1750-datasheet.pdf */
+		/* http://www.intel.com/content/dam/www/public/us/en/documents/
+		 * datasheets/pentium-n3520-j2850-celeron-n2920-n2820-n2815-
+		 * n2806-j1850-j1750-datasheet.pdf
+		 */
 		writel_(trans.offset & 0x00FFFFFF, cntlr.addr);
 
 		if (trans.bytesout)

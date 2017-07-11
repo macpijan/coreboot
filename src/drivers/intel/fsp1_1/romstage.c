@@ -60,8 +60,9 @@ asmlinkage void *romstage_main(FSP_INFO_HEADER *fih)
 	memset(&pei_data, 0, sizeof(pei_data));
 
 	/* Display parameters */
-	printk(BIOS_SPEW, "CONFIG_MMCONF_BASE_ADDRESS: 0x%08x\n",
-		CONFIG_MMCONF_BASE_ADDRESS);
+	if (!IS_ENABLED(CONFIG_NO_MMCONF_SUPPORT))
+		printk(BIOS_SPEW, "CONFIG_MMCONF_BASE_ADDRESS: 0x%08x\n",
+			CONFIG_MMCONF_BASE_ADDRESS);
 	printk(BIOS_INFO, "Using FSP 1.1\n");
 
 	/* Display FSP banner */
@@ -160,10 +161,10 @@ void romstage_common(struct romstage_params *params)
 		if ((params->pei_data->boot_mode != ACPI_S3)
 			&& (params->pei_data->data_to_save_size != 0)
 			&& (params->pei_data->data_to_save != NULL))
-				mrc_cache_stash_data(MRC_TRAINING_DATA,
-					params->fsp_version,
-					params->pei_data->data_to_save,
-					params->pei_data->data_to_save_size);
+			mrc_cache_stash_data(MRC_TRAINING_DATA,
+				params->fsp_version,
+				params->pei_data->data_to_save,
+				params->pei_data->data_to_save_size);
 	}
 
 	/* Save DIMM information */

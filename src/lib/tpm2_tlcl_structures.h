@@ -69,6 +69,16 @@ struct tpm_header {
 #define TPM2_NV_Read           ((TPM_CC)0x0000014E)
 #define TPM2_GetCapability     ((TPM_CC)0x0000017A)
 #define TPM2_PCR_Extend        ((TPM_CC)0x00000182)
+/* TPM2 specifies vendor commands need to have this bit set. Vendor command
+   space is defined by the lower 16 bits. */
+#define TPM_CC_VENDOR_BIT_MASK 0x20000000
+/* FIXME: below is not enough to differentiate between vendors commands
+   of numerous devices. However, the current tpm2 APIs aren't very amenable
+   to extending generically because the marshaling code is assuming all
+   knowledge of all commands. */
+#define TPM2_CR50_VENDOR_COMMAND ((TPM_CC)(TPM_CC_VENDOR_BIT_MASK | 0))
+#define  TPM2_CR50_SUB_CMD_NVMEM_ENABLE_COMMITS (21)
+#define  TPM2_CR50_SUB_CMD_TURN_UPDATE_ON (24)
 
 /* Startup values. */
 #define TPM_SU_CLEAR 0
@@ -270,6 +280,13 @@ struct nv_read_response {
 	TPM2B_MAX_NV_BUFFER buffer;
 };
 
+struct vendor_command_response {
+	uint16_t vc_subcommand;
+	union {
+		uint8_t num_restored_headers;
+	};
+};
+
 struct tpm2_session_attrs {
 	uint8_t continueSession : 1;
 	uint8_t auditExclusive  : 1;
@@ -302,6 +319,7 @@ struct tpm2_response {
 		struct get_cap_response gc;
 		struct nv_read_response nvr;
 		struct tpm2_session_header def_space;
+		struct vendor_command_response vcr;
 	};
 };
 

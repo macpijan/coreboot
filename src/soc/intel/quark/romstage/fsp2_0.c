@@ -1,7 +1,7 @@
 /*
  * This file is part of the coreboot project.
  *
- * Copyright (C) 2016 Intel Corp.
+ * Copyright (C) 2016-2017 Intel Corp.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,7 +15,6 @@
 
 #include <arch/early_variables.h>
 #include <console/console.h>
-#include <cbfs.h>
 #include <cbmem.h>
 #include "../chip.h"
 #include <cpu/x86/cache.h>
@@ -92,24 +91,22 @@ void platform_fsp_memory_init_params_cb(FSPM_UPD *fspm_upd, uint32_t version)
 	FSPM_ARCH_UPD *aupd;
 	const struct device *dev;
 	const struct soc_intel_quark_config *config;
-	char *rmu_file;
-	size_t rmu_file_len;
+	void *rmu_data;
+	size_t rmu_data_len;
 	FSP_M_CONFIG *upd;
 
 	/* Clear SMI and wake events */
 	clear_smi_and_wake_events();
 
 	/* Locate the RMU data file in flash */
-	rmu_file = cbfs_boot_map_with_leak("rmu.bin", CBFS_TYPE_RAW,
-		&rmu_file_len);
-	if (!rmu_file)
+	rmu_data = locate_rmu_file(&rmu_data_len);
+	if (!rmu_data)
 		die("Microcode file (rmu.bin) not found.");
 
 	/* Locate the configuration data from devicetree.cb */
 	dev = dev_find_slot(0, LPC_DEV_FUNC);
-	if (!dev) {
+	if (!dev)
 		die("ERROR - LPC device not found!");
-	}
 	config = dev->chip_info;
 
 	/* Update the architectural UPD values. */
@@ -158,8 +155,8 @@ void platform_fsp_memory_init_params_cb(FSPM_UPD *fspm_upd, uint32_t version)
 	upd->Flags = config->Flags;
 	upd->FspReservedMemoryLength = config->FspReservedMemoryLength;
 	upd->RankMask = config->RankMask;
-	upd->RmuBaseAddress = (uintptr_t)rmu_file;
-	upd->RmuLength = rmu_file_len;
+	upd->RmuBaseAddress = (uintptr_t)rmu_data;
+	upd->RmuLength = rmu_data_len;
 	upd->SerialPortWriteChar = console_log_level(BIOS_SPEW)
 		? (uintptr_t)fsp_write_line : 0;
 	upd->SmmTsegSize = IS_ENABLED(CONFIG_HAVE_SMI_HANDLER) ?

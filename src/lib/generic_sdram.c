@@ -2,14 +2,15 @@
 
 /* Setup SDRAM */
 #if CONFIG_RAMINIT_SYSINFO
-void sdram_initialize(int controllers, const struct mem_controller *ctrl, void *sysinfo)
+void sdram_initialize(int controllers, const struct mem_controller *ctrl,
+	void *sysinfo)
 #else
 void sdram_initialize(int controllers, const struct mem_controller *ctrl)
 #endif
 {
 	int i;
 	/* Set the registers we can set once to reasonable values */
-	for(i = 0; i < controllers; i++) {
+	for (i = 0; i < controllers; i++) {
 		printk(BIOS_DEBUG, "Ram1.%02x\n", i);
 
 	#if CONFIG_RAMINIT_SYSINFO
@@ -20,13 +21,13 @@ void sdram_initialize(int controllers, const struct mem_controller *ctrl)
 	}
 
 	/* Now setup those things we can auto detect */
-	for(i = 0; i < controllers; i++) {
+	for (i = 0; i < controllers; i++) {
 		printk(BIOS_DEBUG, "Ram2.%02x\n", i);
 
 	#if CONFIG_RAMINIT_SYSINFO
 		sdram_set_spd_registers(ctrl + i, sysinfo);
 	#else
-                sdram_set_spd_registers(ctrl + i);
+		sdram_set_spd_registers(ctrl + i);
 	#endif
 
 	}

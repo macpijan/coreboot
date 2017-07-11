@@ -24,9 +24,9 @@
 asm(".section .car.global_data,\"w\",@nobits");
 asm(".previous");
 #ifdef __clang__
-#define CAR_GLOBAL __attribute__((used,section(".car.global_data")))
+#define CAR_GLOBAL __attribute__((used, section(".car.global_data")))
 #else
-#define CAR_GLOBAL __attribute__((used,section(".car.global_data#")))
+#define CAR_GLOBAL __attribute__((used, section(".car.global_data#")))
 #endif /* __clang__ */
 
 /*
@@ -34,7 +34,7 @@ asm(".previous");
  * accessed unconditionally because cbmem is never initialized until romstage
  * when dram comes up.
  */
-#if ENV_VERSTAGE || ENV_BOOTBLOCK
+#if ENV_VERSTAGE || ENV_BOOTBLOCK || IS_ENABLED(CONFIG_NO_CAR_GLOBAL_MIGRATION)
 static inline void *car_get_var_ptr(void *var)
 {
 	return var;
@@ -54,11 +54,10 @@ void *car_sync_var_ptr(void *var);
 
 /* Get and set a primitive type global variable. */
 #define car_get_var(var) \
-	*(typeof(var) *)car_get_var_ptr(&(var))
+	(*(typeof(var) *)car_get_var_ptr(&(var)))
 #define car_sync_var(var) \
-	*(typeof (var) *)car_sync_var_ptr(&(var))
-#define car_set_var(var, val) \
-	do { car_get_var(var) = (val); } while(0)
+	(*(typeof(var) *)car_sync_var_ptr(&(var)))
+#define car_set_var(var, val)	car_get_var(var) = (val)
 
 static inline size_t car_data_size(void)
 {
@@ -76,7 +75,7 @@ static inline size_t car_object_offset(void *ptr)
 static inline void *car_get_var_ptr(void *var) { return var; }
 #define car_get_var(var) (var)
 #define car_sync_var(var) (var)
-#define car_set_var(var, val) do { (var) = (val); } while (0)
+#define car_set_var(var, val)	(var) = (val)
 #endif
 
 #endif

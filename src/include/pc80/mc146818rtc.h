@@ -40,8 +40,10 @@
    /* 2 values for divider stage reset, others for "testing purposes only" */
 #  define RTC_DIV_RESET1	0x60
 #  define RTC_DIV_RESET2	0x70
-  /* Periodic intr. / Square wave rate select. 0 = none, 1 = 32.8kHz,... 15 = 2Hz */
-# define RTC_RATE_SELECT 	0x0F
+  /* Periodic intr. / Square wave rate select. 0 = none,
+   * 1 = 32.8kHz,... 15 = 2Hz
+   */
+# define RTC_RATE_SELECT	0x0F
 #  define RTC_RATE_NONE		0x00
 #  define RTC_RATE_32786HZ	0x01
 #  define RTC_RATE_16384HZ	0x02
@@ -140,14 +142,12 @@ static inline void cmos_write(unsigned char val, unsigned char addr)
 	 * eg. the Century / AltCentury byte. So to be safe, disable
 	 * RTC before changing any value.
 	 */
-	if ((addr != RTC_CONTROL) && !(control_state & RTC_SET)) {
+	if ((addr != RTC_CONTROL) && !(control_state & RTC_SET))
 		cmos_write_inner(control_state | RTC_SET, RTC_CONTROL);
-	}
 	cmos_write_inner(val, addr);
 	/* reset to prior configuration */
-	if ((addr != RTC_CONTROL) && !(control_state & RTC_SET)) {
+	if ((addr != RTC_CONTROL) && !(control_state & RTC_SET))
 		cmos_write_inner(control_state, RTC_CONTROL);
-	}
 }
 
 static inline void cmos_disable_rtc(void)
@@ -184,12 +184,14 @@ void cmos_check_update_date(void);
 
 enum cb_err set_option(const char *name, void *val);
 enum cb_err get_option(void *dest, const char *name);
-unsigned read_option_lowlevel(unsigned start, unsigned size, unsigned def);
+unsigned int read_option_lowlevel(unsigned int start, unsigned int size,
+	unsigned int def);
 
 #else /* defined(__ROMCC__) */
 #include <drivers/pc80/rtc/mc146818rtc_early.c>
 #endif /* !defined(__ROMCC__) */
-#define read_option(name, default) read_option_lowlevel(CMOS_VSTART_ ##name, CMOS_VLEN_ ##name, (default))
+#define read_option(name, default) read_option_lowlevel(CMOS_VSTART_ ##name, \
+	CMOS_VLEN_ ##name, (default))
 
 #if CONFIG_CMOS_POST
 #if CONFIG_USE_OPTION_TABLE

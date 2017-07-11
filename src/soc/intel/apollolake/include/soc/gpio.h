@@ -161,7 +161,11 @@ void gpio_configure_pad(const struct pad_config *cfg);
 void gpio_configure_pads(const struct pad_config *cfg, size_t num_pads);
 
 /* Calculate GPIO DW0 address */
-void * gpio_dwx_address(const uint16_t pad);
+void *gpio_dwx_address(const uint16_t pad);
+
+/* Get the port id of given pad */
+uint8_t gpio_get_pad_portid(const uint16_t pad);
+
 /*
  * Set the GPIO groups for the GPE blocks. The values from PMC register GPE_CFG
  * are passed which is then mapped to proper groups for MISCCFG. This basically

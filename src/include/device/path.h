@@ -38,66 +38,55 @@ enum device_path_type {
 		"DEVICE_PATH_SPI",		\
 }
 
-struct domain_path
-{
-	unsigned domain;
+struct domain_path {
+	unsigned int domain;
 };
 
-struct pci_path
-{
-	unsigned devfn;
+struct pci_path {
+	unsigned int devfn;
 };
 
-struct pnp_path
-{
-	unsigned port;
-	unsigned device;
+struct pnp_path {
+	unsigned int port;
+	unsigned int device;
 };
 
-struct i2c_path
-{
-	unsigned device;
-	unsigned mode_10bit;
+struct i2c_path {
+	unsigned int device;
+	unsigned int mode_10bit;
 };
 
-struct spi_path
-{
-	unsigned cs;
+struct spi_path {
+	unsigned int cs;
 };
 
-struct apic_path
-{
-	unsigned apic_id;
-	unsigned package_id;
-	unsigned node_id;
-	unsigned core_id;
-	unsigned thread_id;
+struct apic_path {
+	unsigned int apic_id;
+	unsigned int package_id;
+	unsigned int node_id;
+	unsigned int core_id;
+	unsigned int thread_id;
 };
 
-struct ioapic_path
-{
-	unsigned ioapic_id;
+struct ioapic_path {
+	unsigned int ioapic_id;
 };
 
-struct cpu_cluster_path
-{
-	unsigned cluster;
+struct cpu_cluster_path {
+	unsigned int cluster;
 };
 
-struct cpu_path
-{
-	unsigned id;
+struct cpu_path {
+	unsigned int id;
 };
 
-struct cpu_bus_path
-{
-	unsigned id;
+struct cpu_bus_path {
+	unsigned int id;
 };
 
-struct generic_path
-{
-	unsigned id;
-	unsigned subid;
+struct generic_path {
+	unsigned int id;
+	unsigned int subid;
 };
 
 

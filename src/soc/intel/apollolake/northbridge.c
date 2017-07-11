@@ -20,7 +20,7 @@
 #include <soc/iomap.h>
 #include <device/pci.h>
 #include <device/pci_ids.h>
-#include <soc/northbridge.h>
+#include <soc/systemagent.h>
 #include <soc/pci_ids.h>
 
 static uint32_t get_bar(device_t dev, unsigned int index)
@@ -39,7 +39,7 @@ static int mc_add_fixed_mmio_resources(device_t dev, int index)
 
 	/* PCI extended config region */
 	addr = ALIGN_DOWN(get_bar(dev, PCIEXBAR), 256*MiB) / KiB;
-	mmio_resource(dev, index++, addr, PCIEX_SIZE / KiB);
+	mmio_resource(dev, index++, addr, CONFIG_SA_PCIEX_LENGTH / KiB);
 
 	/* Memory Controller Hub */
 	addr = ALIGN_DOWN(get_bar(dev, MCHBAR), 32*KiB) / KiB;
@@ -76,14 +76,13 @@ static int mc_add_imr_resources(device_t dev, int index)
 
 	mchbar = (void *)(ALIGN_DOWN(get_bar(dev, MCHBAR), 32*KiB));
 
-	for (i = 0; i < MCH_NUM_IMRS; i ++) {
+	for (i = 0; i < MCH_NUM_IMRS; i++) {
 		imr_offset = i * MCH_IMR_PITCH;
 		base = read32(mchbar + imr_offset + MCHBAR_IMR0BASE);
 		mask = read32(mchbar + imr_offset + MCHBAR_IMR0MASK);
 
-		if (is_imr_enabled(base)) {
+		if (is_imr_enabled(base))
 			imr_resource(dev, index++, base, mask);
-		}
 	}
 
 	return index;
@@ -106,14 +105,15 @@ static int mc_add_dram_resources(device_t dev, int index)
 	touud <<= 32;
 	touud |= ALIGN_DOWN(pci_read_config32(dev, TOUUD), MiB);
 
-	/* 0 - > 0xa0000: 640kb of DOS memory. Not enough for anybody nowadays */
+	/* 0 -> 0xa0000: 640kb of DOS memory. Not enough for anybody nowadays */
 	ram_resource(dev, index++, 0, 640);
 
 	/* 0xa0000 - 0xbffff: legacy VGA */
 	mmio_resource(dev, index++, 640, 128);
 
-	/* 0xc0000 -> 0xfffff: leave without e820 entry, as it has special uses */
-	/* 0x100000 -> top_of_ram  */
+	/* 0xc0000 -> 0xfffff: leave without e820 entry, as it has special uses
+	 * 0x100000 -> top_of_ram
+	 */
 	base_k = 1024;
 	size_k = (tseg / KiB) - base_k;
 	ram_resource(dev, index++, base_k, size_k);

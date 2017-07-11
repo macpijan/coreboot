@@ -86,7 +86,7 @@ subdirs-y += src/superio
 subdirs-y += $(wildcard src/drivers/*) $(wildcard src/drivers/*/*)
 subdirs-y += src/cpu src/vendorcode
 subdirs-y += util/cbfstool util/sconfig util/nvramtool util/broadcom
-subdirs-y += util/futility util/marvell
+subdirs-y += util/futility util/marvell util/blobtool
 subdirs-y += $(wildcard src/arch/*)
 subdirs-y += src/mainboard/$(MAINBOARDDIR)
 subdirs-y += src/vboot
@@ -97,7 +97,7 @@ subdirs-y += util/checklist
 
 #######################################################################
 # Add source classes and their build options
-classes-y := ramstage romstage bootblock postcar smm smmstub cpu_microcode libverstage verstage
+classes-y := ramstage romstage bootblock postcar smm smmstub cpu_microcode verstage
 
 # Add dynamic classes for rmodules
 $(foreach supported_arch,$(ARCH_SUPPORTED), \
@@ -200,7 +200,6 @@ endif
 
 ramstage-c-deps:=$$(OPTION_TABLE_H)
 romstage-c-deps:=$$(OPTION_TABLE_H)
-libverstage-c-deps:=$$(OPTION_TABLE_H)
 verstage-c-deps:=$$(OPTION_TABLE_H)
 bootblock-c-deps:=$$(OPTION_TABLE_H)
 $(foreach type,ads adb, \
@@ -289,7 +288,7 @@ cbfs-files-processor-defconfig= \
 cbfs-files-processor-struct= \
 	$(eval $(2): $(1) $(obj)/build.h $(KCONFIG_AUTOHEADER); \
 		printf "    CC+STRIP   $(@)\n"; \
-		$(CC_ramstage) -MMD $(CPPFLAGS_ramstage) $(CFLAGS_ramstage) $(ramstage-c-ccopts) -include $(KCONFIG_AUTOHEADER) -MT $(2) -o $(2).tmp -c $(1) && \
+		$(CC_ramstage) -MMD $(CPPFLAGS_ramstage) $(CFLAGS_ramstage) $$(ramstage-c-ccopts) -include $(KCONFIG_AUTOHEADER) -MT $(2) -o $(2).tmp -c $(1) && \
 		$(OBJCOPY_ramstage) -O binary $(2).tmp $(2); \
 		rm -f $(2).tmp) \
 	$(eval DEPENDENCIES += $(2).d)
@@ -527,10 +526,7 @@ ramstage-y+=$(DEVICETREE_STATIC_C)
 romstage-y+=$(DEVICETREE_STATIC_C)
 verstage-y+=$(DEVICETREE_STATIC_C)
 bootblock-y+=$(DEVICETREE_STATIC_C)
-
-$(objgenerated)/libverstage.a: $$(libverstage-objs)
-	rm -f $@
-	$(AR_libverstage) rcsT $@ $^
+postcar-y+=$(DEVICETREE_STATIC_C)
 
 #######################################################################
 # Clean up rules
@@ -595,7 +591,7 @@ gitconfig:
 include util/crossgcc/Makefile.inc
 
 .PHONY: tools
-tools: $(objutil)/kconfig/conf $(CBFSTOOL) $(objutil)/cbfstool/cbfs-compression-tool $(FMAPTOOL) $(RMODTOOL) $(IFWITOOL) $(objutil)/nvramtool/nvramtool $(ROMCC_BIN) $(objutil)/sconfig/sconfig $(IFDTOOL) $(IFDFAKE) $(CBOOTIMAGE) $(AMDFWTOOL) $(FUTILITY)
+tools: $(objutil)/kconfig/conf $(CBFSTOOL) $(objutil)/cbfstool/cbfs-compression-tool $(FMAPTOOL) $(RMODTOOL) $(IFWITOOL) $(objutil)/nvramtool/nvramtool $(ROMCC_BIN) $(objutil)/sconfig/sconfig $(IFDTOOL) $(IFDFAKE) $(CBOOTIMAGE) $(AMDFWTOOL) $(FUTILITY) $(objutil)/blobtool/blobtool
 
 ###########################################################################
 # Common recipes for all stages
@@ -1064,6 +1060,6 @@ what-jenkins-does:
 	util/abuild/abuild -B -J $(if $(JENKINS_NOCCACHE),,-y) -c $(CPUS) -z -p $(JENKINS_PAYLOAD)
 	(cd payloads/libpayload; unset COREBOOT_BUILD_DIR; $(MAKE) $(if $(JENKINS_NOCCACHE),,CONFIG_LP_CCACHE=y) V=$(V) Q=$(Q) junit.xml)
 	$(foreach tool, $(TOOLLIST), $(MAKE) CPUS=$(CPUS) V=$(V) Q=$(Q) BLD_DIR=util/ BLD="$(tool)" MFLAGS= MAKEFLAGS= MAKETARGET= junit.xml; )
-	$(MAKE) CPUS=$(CPUS) V=$(V) Q=$(Q) BLD_DIR=payloads/ BLD=nvramcui MFLAGS= MAKEFLAGS= MAKETARGET=all junit.xml
-	$(MAKE) CPUS=$(CPUS) V=$(V) Q=$(Q) BLD_DIR=payloads/ BLD=coreinfo MFLAGS= MAKEFLAGS= MAKETARGET=defaultbuild junit.xml
+	unset COREBOOT_BUILD_DIR;$(MAKE) CPUS=$(CPUS) V=$(V) Q=$(Q) BLD_DIR=payloads/ BLD=nvramcui MFLAGS= MAKEFLAGS= MAKETARGET=all junit.xml
+	unset COREBOOT_BUILD_DIR;$(MAKE) CPUS=$(CPUS) V=$(V) Q=$(Q) BLD_DIR=payloads/ BLD=coreinfo MFLAGS= MAKEFLAGS= MAKETARGET=defaultbuild junit.xml
 	$(MAKE) CPUS=$(CPUS) V=$(V) Q=$(Q) BLD_DIR=util/ BLD=romcc MFLAGS= MAKEFLAGS= MAKETARGET=test junit.xml

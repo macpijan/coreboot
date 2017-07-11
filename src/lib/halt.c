@@ -17,8 +17,8 @@
 #include <arch/hlt.h>
 #include <halt.h>
 
-void halt(void) {
-	while (1) {
+void halt(void)
+{
+	while (1)
 		hlt();
-	}
 }

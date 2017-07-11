@@ -24,7 +24,6 @@
 #include <lib.h>
 #include <cpu/x86/bist.h>
 #include <cpu/x86/msr.h>
-#include <cpu/amd/car.h>
 #include <cpu/amd/lxdef.h>
 #include <southbridge/amd/cs5536/cs5536.h>
 #include <spd.h>
@@ -47,7 +46,7 @@ int spd_read_byte(unsigned int device, unsigned int address)
 #include "cpu/amd/geode_lx/syspreinit.c"
 #include "cpu/amd/geode_lx/msrinit.c"
 
-void main(unsigned long bist)
+void asmlinkage mainboard_romstage_entry(unsigned long bist)
 {
 
 	static const struct mem_controller memctrl[] = {

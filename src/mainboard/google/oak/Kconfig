@@ -18,6 +18,12 @@ config BOARD_GOOGLE_OAK_COMMON
 
 if BOARD_GOOGLE_OAK_COMMON
 
+config OAK_HAS_TPM2
+	bool
+	default y if BOARD_GOOGLE_ROWAN
+	default n
+	select MAINBOARD_HAS_I2C_TPM_CR50
+
 config BOARD_SPECIFIC_OPTIONS
 	def_bool y
 	select SOC_MEDIATEK_MT8173
@@ -33,13 +39,10 @@ config BOARD_SPECIFIC_OPTIONS
 	select RAM_CODE_SUPPORT
 	select SPI_FLASH
 
-config CHROMEOS
+config VBOOT
 	select EC_GOOGLE_CHROMEEC_SWITCHES
-	select EC_SOFTWARE_SYNC
 	select VBOOT_EC_SLOW_UPDATE
-	select VBOOT_OPROM_MATTERS
 	select VBOOT_VBNV_FLASH
-	select VIRTUAL_DEV_SWITCH
 
 config MAINBOARD_DIR
 	string
@@ -59,7 +62,8 @@ config DRIVER_TPM_I2C_BUS
 
 config DRIVER_TPM_I2C_ADDR
 	hex
-	default 0x20
+	default 0x20 if !OAK_HAS_TPM2
+	default 0x50 if OAK_HAS_TPM2
 
 config BOOT_DEVICE_SPI_FLASH_BUS
 	int
@@ -81,6 +85,7 @@ config MAINBOARD_PART_NUMBER
 	default "Oak" if BOARD_GOOGLE_OAK
 	default "Elm" if BOARD_GOOGLE_ELM
 	default "Hana" if BOARD_GOOGLE_HANA
+	default "Rowan" if BOARD_GOOGLE_ROWAN
 
 config GBB_HWID
 	string
@@ -88,6 +93,7 @@ config GBB_HWID
 	default "OAK TEST 6858" if BOARD_GOOGLE_OAK
 	default "ELM TEST 3839" if BOARD_GOOGLE_ELM
 	default "HANA TEST 5855" if BOARD_GOOGLE_HANA
+	default "ROWAN TEST 9387" if BOARD_GOOGLE_ROWAN
 
 # All Oak-derivatives count their board IDs as 0 being equivalent to Oak rev6.
 config BOARD_ID_ADJUSTMENT
@@ -95,5 +101,6 @@ config BOARD_ID_ADJUSTMENT
 	default 0 if BOARD_GOOGLE_OAK
 	default 7 if BOARD_GOOGLE_ELM
 	default 11 if BOARD_GOOGLE_HANA
+	default 15 if BOARD_GOOGLE_ROWAN
 
 endif # BOARD_GOOGLE_OAK

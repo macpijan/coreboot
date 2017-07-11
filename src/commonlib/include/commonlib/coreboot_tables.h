@@ -77,8 +77,7 @@ static inline struct lb_uint64 pack_lb64(uint64_t value)
 	return result;
 }
 
-struct lb_header
-{
+struct lb_header {
 	uint8_t  signature[4]; /* LBIO */
 	uint32_t header_bytes;
 	uint32_t header_checksum;
@@ -112,7 +111,7 @@ struct lb_memory_range {
 #define LB_MEM_NVS		 4	/* ACPI NVS Memory */
 #define LB_MEM_UNUSABLE		 5	/* Unusable address space */
 #define LB_MEM_VENDOR_RSVD	 6	/* Vendor Reserved */
-#define LB_MEM_TABLE		16	/* Ram configuration tables are kept in */
+#define LB_MEM_TABLE		16    /* Ram configuration tables are kept in */
 };
 
 struct lb_memory {
@@ -241,7 +240,7 @@ struct lb_gpio {
 #define ACTIVE_HIGH	1
 	uint32_t value;
 #define GPIO_MAX_NAME_LENGTH 16
-        uint8_t name[GPIO_MAX_NAME_LENGTH];
+	uint8_t name[GPIO_MAX_NAME_LENGTH];
 };
 
 struct lb_gpios {
@@ -371,12 +370,12 @@ struct cmos_option_table {
 };
 
 /* cmos entry record
-        This record is variable length.  The name field may be
-        shorter than CMOS_MAX_NAME_LENGTH. The entry may start
-        anywhere in the byte, but can not span bytes unless it
-        starts at the beginning of the byte and the length is
-        fills complete bytes.
-*/
+ * This record is variable length.  The name field may be
+ * shorter than CMOS_MAX_NAME_LENGTH. The entry may start
+ * anywhere in the byte, but can not span bytes unless it
+ * starts at the beginning of the byte and the length is
+ * fills complete bytes.
+ */
 #define LB_TAG_OPTION 201
 struct cmos_entries {
 	uint32_t tag;                /* entry type */
@@ -384,7 +383,7 @@ struct cmos_entries {
 	uint32_t bit;                /* starting bit from start of image */
 	uint32_t length;             /* length of field in bits */
 	uint32_t config;             /* e=enumeration, h=hex, r=reserved */
-	uint32_t config_id;          /* a number linking to an enumeration record */
+	uint32_t config_id;      /* a number linking to an enumeration record */
 #define CMOS_MAX_NAME_LENGTH 32
 	uint8_t name[CMOS_MAX_NAME_LENGTH]; /* name of entry in ascii,
 					       variable length int aligned */
@@ -392,13 +391,13 @@ struct cmos_entries {
 
 
 /* cmos enumerations record
-        This record is variable length.  The text field may be
-        shorter than CMOS_MAX_TEXT_LENGTH.
-*/
+ * This record is variable length.  The text field may be
+ * shorter than CMOS_MAX_TEXT_LENGTH.
+ */
 #define LB_TAG_OPTION_ENUM 202
 struct cmos_enums {
 	uint32_t tag;		     /* enumeration type */
-	uint32_t size; 		     /* length of this record */
+	uint32_t size;		     /* length of this record */
 	uint32_t config_id;          /* a number identifying the config id */
 	uint32_t value;              /* the value associated with the text */
 #define CMOS_MAX_TEXT_LENGTH 32
@@ -407,8 +406,8 @@ struct cmos_enums {
 };
 
 /* cmos defaults record
-        This record contains default settings for the cmos ram.
-*/
+ * This record contains default settings for the cmos ram.
+ */
 #define LB_TAG_OPTION_DEFAULTS 203
 struct cmos_defaults {
 	uint32_t tag;                /* default type */
@@ -426,8 +425,8 @@ struct	cmos_checksum {
 	/* In practice everything is byte aligned, but things are measured
 	 * in bits to be consistent.
 	 */
-	uint32_t range_start;	/* First bit that is checksummed (byte aligned) */
-	uint32_t range_end;	/* Last bit that is checksummed (byte aligned) */
+	uint32_t range_start; /* First bit that is checksummed (byte aligned) */
+	uint32_t range_end;   /* Last bit that is checksummed (byte aligned) */
 	uint32_t location;	/* First bit of the checksum (byte aligned) */
 	uint32_t type;		/* Checksum algorithm that is used */
 #define CHECKSUM_NONE	0

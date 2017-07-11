@@ -29,9 +29,9 @@ struct romstage_params {
 
 void mainboard_romstage_entry(struct romstage_params *params);
 void romstage_common(struct romstage_params *params);
-void *asmlinkage romstage_main(unsigned long bist, uint32_t tsc_lo,
+asmlinkage void *romstage_main(unsigned long bist, uint32_t tsc_lo,
 			       uint32_t tsc_high);
-void asmlinkage romstage_after_car(void);
+asmlinkage void romstage_after_car(void);
 void raminit(struct pei_data *pei_data);
 void *setup_stack_and_mttrs(void);
 
@@ -48,7 +48,7 @@ void pch_uart_init(void);
 void intel_early_me_status(void);
 
 void enable_smbus(void);
-int smbus_read_byte(unsigned device, unsigned address);
+int smbus_read_byte(unsigned int device, unsigned int address);
 
 int early_spi_read(u32 offset, u32 size, u8 *buffer);
 int early_spi_read_wpsr(u8 *sr);

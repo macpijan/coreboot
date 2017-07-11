@@ -113,7 +113,9 @@ static size_t acpi_device_path_fill(struct device *dev, char *buf,
 
 	/* Fill in the path from the root device */
 	next += snprintf(buf + next, buf_len - next, "%s%s",
-			 dev->path.type == DEVICE_PATH_ROOT ? "" : ".", name);
+			 (dev->path.type == DEVICE_PATH_ROOT
+				|| (strlen(name) == 0)) ?
+					"" : ".", name);
 
 	return next;
 }
@@ -181,7 +183,7 @@ void acpi_device_write_interrupt(const struct acpi_irq *irq)
 		return;
 
 	/* This is supported by GpioInt() but not Interrupt() */
-	if (irq->polarity == IRQ_ACTIVE_BOTH)
+	if (irq->polarity == ACPI_IRQ_ACTIVE_BOTH)
 		return;
 
 	/* Byte 0: Descriptor Type */
@@ -200,13 +202,13 @@ void acpi_device_write_interrupt(const struct acpi_irq *irq)
 	 *    [0]: Resource (0=PRODUCER  1=CONSUMER)
 	 */
 	flags = 1 << 0; /* ResourceConsumer */
-	if (irq->mode == IRQ_EDGE_TRIGGERED)
+	if (irq->mode == ACPI_IRQ_EDGE_TRIGGERED)
 		flags |= 1 << 1;
-	if (irq->polarity == IRQ_ACTIVE_LOW)
+	if (irq->polarity == ACPI_IRQ_ACTIVE_LOW)
 		flags |= 1 << 2;
-	if (irq->shared == IRQ_SHARED)
+	if (irq->shared == ACPI_IRQ_SHARED)
 		flags |= 1 << 3;
-	if (irq->wake == IRQ_WAKE)
+	if (irq->wake == ACPI_IRQ_WAKE)
 		flags |= 1 << 4;
 	acpigen_emit_byte(flags);
 
@@ -262,21 +264,21 @@ void acpi_device_write_gpio(const struct acpi_gpio *gpio)
 		 *    [2:1]: Polarity (0=HIGH      1=LOW     2=BOTH)
 		 *      [0]: Mode     (0=LEVEL     1=EDGE)
 		 */
-		if (gpio->irq.mode == IRQ_EDGE_TRIGGERED)
+		if (gpio->irq.mode == ACPI_IRQ_EDGE_TRIGGERED)
 			flags |= 1 << 0;
-		if (gpio->irq.shared == IRQ_SHARED)
+		if (gpio->irq.shared == ACPI_IRQ_SHARED)
 			flags |= 1 << 3;
-		if (gpio->irq.wake == IRQ_WAKE)
+		if (gpio->irq.wake == ACPI_IRQ_WAKE)
 			flags |= 1 << 4;
 
 		switch (gpio->irq.polarity) {
-		case IRQ_ACTIVE_HIGH:
+		case ACPI_IRQ_ACTIVE_HIGH:
 			flags |= 0 << 1;
 			break;
-		case IRQ_ACTIVE_LOW:
+		case ACPI_IRQ_ACTIVE_LOW:
 			flags |= 1 << 1;
 			break;
-		case IRQ_ACTIVE_BOTH:
+		case ACPI_IRQ_ACTIVE_BOTH:
 			flags |= 2 << 1;
 			break;
 		}
@@ -488,6 +490,52 @@ void acpi_device_write_spi(const struct acpi_spi *spi)
 
 	/* Fill in SPI Descriptor Length */
 	acpi_device_fill_len(desc_length);
+}
+
+/* PowerResource() with Enable and/or Reset control */
+void acpi_device_add_power_res(
+	struct acpi_gpio *reset, unsigned int reset_delay_ms,
+	struct acpi_gpio *enable, unsigned int enable_delay_ms)
+{
+	static const char *power_res_dev_states[] = { "_PR0", "_PR3" };
+	unsigned int reset_gpio = reset->pins[0];
+	unsigned int enable_gpio = enable->pins[0];
+
+	if (!reset_gpio && !enable_gpio)
+		return;
+
+	/* PowerResource (PRIC, 0, 0) */
+	acpigen_write_power_res("PRIC", 0, 0, power_res_dev_states,
+				ARRAY_SIZE(power_res_dev_states));
+
+	/* Method (_STA, 0, NotSerialized) { Return (0x1) } */
+	acpigen_write_STA(0x1);
+
+	/* Method (_ON, 0, Serialized) */
+	acpigen_write_method_serialized("_ON", 0);
+	if (reset_gpio)
+		acpigen_enable_tx_gpio(reset);
+	if (enable_gpio) {
+		acpigen_enable_tx_gpio(enable);
+		if (enable_delay_ms)
+			acpigen_write_sleep(enable_delay_ms);
+	}
+	if (reset_gpio) {
+		acpigen_disable_tx_gpio(reset);
+		if (reset_delay_ms)
+			acpigen_write_sleep(reset_delay_ms);
+	}
+	acpigen_pop_len();		/* _ON method */
+
+	/* Method (_OFF, 0, Serialized) */
+	acpigen_write_method_serialized("_OFF", 0);
+	if (reset_gpio)
+		acpigen_enable_tx_gpio(reset);
+	if (enable_gpio)
+		acpigen_disable_tx_gpio(enable);
+	acpigen_pop_len();		/* _OFF method */
+
+	acpigen_pop_len();		/* PowerResource PRIC */
 }
 
 static void acpi_dp_write_array(const struct acpi_dp *array);

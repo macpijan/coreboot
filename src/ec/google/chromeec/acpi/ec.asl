@@ -168,8 +168,6 @@ Device (EC0)
 		Store (LIDS, \LIDS)
 #ifdef EC_ENABLE_LID_SWITCH
 		Notify (LID0, 0x80)
-#else
-		Notify (\_SB.LID0, 0x80)
 #endif
 	}
 
@@ -180,8 +178,6 @@ Device (EC0)
 		Store (LIDS, \LIDS)
 #ifdef EC_ENABLE_LID_SWITCH
 		Notify (LID0, 0x80)
-#else
-		Notify (\_SB.LID0, 0x80)
 #endif
 	}
 

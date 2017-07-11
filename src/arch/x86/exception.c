@@ -187,8 +187,7 @@ static uint32_t gdb_stub_registers[NUM_REGS];
 
 
 
-static unsigned char exception_to_signal[] =
-{
+static unsigned char exception_to_signal[] = {
 	[0]  = GDB_SIGFPE,  /* divide by zero */
 	[1]  = GDB_SIGTRAP, /* debug exception */
 	[2]  = GDB_SIGSEGV, /* NMI Interrupt */
@@ -267,7 +266,7 @@ static int parse_ulong(char **ptr, unsigned long *value)
 	start = *ptr;
 	*value = 0;
 
-	while((digit = hex(**ptr)) >= 0) {
+	while ((digit = hex(**ptr)) >= 0) {
 		*value = ((*value) << 4) | digit;
 		(*ptr)++;
 	}
@@ -281,13 +280,12 @@ static void copy_to_hex(char *buf, void *addr, unsigned long count)
 	unsigned char ch;
 	char *mem = addr;
 
-	while(count--) {
+	while (count--) {
 		ch = *mem++;
 		*buf++ = hexchars[ch >> 4];
 		*buf++ = hexchars[ch & 0x0f];
 	}
 	*buf = 0;
-	return;
 }
 
 
@@ -298,9 +296,9 @@ static void copy_from_hex(void *addr, char *buf, unsigned long count)
 	unsigned char ch;
 	char *mem = addr;
 
-	while(count--) {
-		ch = hex (*buf++) << 4;
-		ch = ch + hex (*buf++);
+	while (count--) {
+		ch = hex(*buf++) << 4;
+		ch = ch + hex(*buf++);
 		*mem++ = ch;
 	}
 }
@@ -317,8 +315,11 @@ static int get_packet(char *buffer)
 
 	/* Wishlit implement a timeout in get_packet */
 	do {
-		/* wait around for the start character, ignore all other characters */
-		while ((ch = (stub_getc() & 0x7f)) != '$');
+		/* wait around for the start character, ignore all other
+		 * characters
+		 */
+		while ((ch = (stub_getc() & 0x7f)) != '$')
+			;
 		checksum = 0;
 		xmitcsum = -1;
 
@@ -342,13 +343,12 @@ static int get_packet(char *buffer)
 			if (checksum != xmitcsum) {
 				stub_putc('-');	/* failed checksum */
 				stub_flush();
-			}
-			else {
+			} else {
 				stub_putc('+');	/* successful transfer */
 				stub_flush();
 			}
 		}
-	} while(checksum != xmitcsum);
+	} while (checksum != xmitcsum);
 	return 1;
 }
 
@@ -394,9 +394,8 @@ void x86_exception(struct eregs *info)
 	gdb_stub_registers[CS] = info->cs;
 	gdb_stub_registers[PS] = info->eflags;
 	signo = GDB_UNKNOWN;
-	if (info->vector < ARRAY_SIZE(exception_to_signal)) {
+	if (info->vector < ARRAY_SIZE(exception_to_signal))
 		signo = exception_to_signal[info->vector];
-	}
 
 	/* reply to the host that an exception has occurred */
 	out_buffer[0] = 'S';
@@ -405,15 +404,14 @@ void x86_exception(struct eregs *info)
 	out_buffer[3] = '\0';
 	put_packet(out_buffer);
 
-	while(1) {
+	while (1) {
 		unsigned long addr, length;
 		char *ptr;
 		out_buffer[0] = '\0';
 		out_buffer[1] = '\0';
-		if (!get_packet(in_buffer)) {
+		if (!get_packet(in_buffer))
 			break;
-		}
-		switch(in_buffer[0]) {
+		switch (in_buffer[0]) {
 		case '?': /* last signal */
 			out_buffer[0] = 'S';
 			out_buffer[1] = hexchars[(signo >> 4) & 0xf];
@@ -421,58 +419,57 @@ void x86_exception(struct eregs *info)
 			out_buffer[3] = '\0';
 			break;
 		case 'g': /* return the value of the CPU registers */
-			copy_to_hex(out_buffer, &gdb_stub_registers, sizeof(gdb_stub_registers));
+			copy_to_hex(out_buffer, &gdb_stub_registers,
+				sizeof(gdb_stub_registers));
 			break;
 		case 'G': /* set the value of the CPU registers - return OK */
-			copy_from_hex(&gdb_stub_registers, in_buffer + 1, sizeof(gdb_stub_registers));
+			copy_from_hex(&gdb_stub_registers, in_buffer + 1,
+				sizeof(gdb_stub_registers));
 			memcpy(info, gdb_stub_registers, 8*sizeof(uint32_t));
 			info->eip    = gdb_stub_registers[PC];
 			info->cs     = gdb_stub_registers[CS];
 			info->eflags = gdb_stub_registers[PS];
-			memcpy(out_buffer, "OK",3);
+			memcpy(out_buffer, "OK", 3);
 			break;
 		case 'm':
 			/* mAA..AA,LLLL  Read LLLL bytes at address AA..AA */
 			ptr = &in_buffer[1];
-			if (	parse_ulong(&ptr, &addr) &&
+			if (parse_ulong(&ptr, &addr) &&
 				(*ptr++ == ',') &&
 				parse_ulong(&ptr, &length)) {
 				copy_to_hex(out_buffer, (void *)addr, length);
-			} else {
+			} else
 				memcpy(out_buffer, "E01", 4);
-			}
 			break;
 		case 'M':
-			/* MAA..AA,LLLL: Write LLLL bytes at address AA.AA return OK */
+			/* MAA..AA,LLLL: Write LLLL bytes at address AA.AA
+			 * return OK
+			 */
 			ptr = &in_buffer[1];
-			if (	parse_ulong(&ptr, &addr) &&
+			if (parse_ulong(&ptr, &addr) &&
 				(*(ptr++) == ',') &&
 				parse_ulong(&ptr, &length) &&
 				(*(ptr++) == ':')) {
 				copy_from_hex((void *)addr, ptr, length);
 				memcpy(out_buffer, "OK", 3);
-			}
-			else {
+			} else
 				memcpy(out_buffer, "E02", 4);
-			}
 			break;
 		case 's':
 		case 'c':
-			/* cAA..AA    Continue at address AA..AA(optional) */
-			/* sAA..AA    Step one instruction from AA..AA(optional) */
+			/* cAA..AA    Continue at address AA..AA(optional)
+			 * sAA..AA    Step one instruction from AA..AA(optional)
+			 */
 			ptr = &in_buffer[1];
-			if (parse_ulong(&ptr, &addr)) {
+			if (parse_ulong(&ptr, &addr))
 				info->eip = addr;
-			}
 
 			/* Clear the trace bit */
 			info->eflags &= ~(1 << 8);
 			/* Set the trace bit if we are single stepping */
-			if (in_buffer[0] == 's') {
+			if (in_buffer[0] == 's')
 				info->eflags |= (1 << 8);
-			}
 			return;
-			break;
 		case 'D':
 			memcpy(out_buffer, "OK", 3);
 			break;
@@ -507,15 +504,14 @@ void x86_exception(struct eregs *info)
 		info->error_code, info->eflags,
 		info->eax, info->ebx, info->ecx, info->edx,
 		info->edi, info->esi, info->ebp, info->esp);
-	u8 *code = (u8*)((uintptr_t)info->eip - (MDUMP_SIZE >>1));
+	u8 *code = (u8 *)((uintptr_t)info->eip - (MDUMP_SIZE >> 1));
 	/* Align to 8-byte boundary please, and print eight bytes per row.
 	 * This is done to make DRAM burst timing/reordering errors more
 	 * evident from the looking at the dump */
-	code = (u8*)((uintptr_t)code & ~0x7);
+	code = (u8 *)((uintptr_t)code & ~0x7);
 	int i;
-	for (i = 0; i < MDUMP_SIZE; i++)
-	{
-		if ( (i & 0x07) == 0 )
+	for (i = 0; i < MDUMP_SIZE; i++) {
+		if ((i & 0x07) == 0)
 			printk(BIOS_EMERG, "\n%p:\t", code + i);
 		printk(BIOS_EMERG, "%.2x ", code[i]);
 	}

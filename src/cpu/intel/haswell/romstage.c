@@ -140,15 +140,15 @@ static void *setup_romstage_stack_after_car(void)
 	return slot;
 }
 
-void * asmlinkage romstage_main(unsigned long bist)
+asmlinkage void *romstage_main(unsigned long bist)
 {
 	int i;
 	void *romstage_stack_after_car;
 	const int num_guards = 4;
 	const u32 stack_guard = 0xdeadbeef;
 	u32 *stack_base = (void *)(CONFIG_DCACHE_RAM_BASE +
-	                           CONFIG_DCACHE_RAM_SIZE -
-	                           CONFIG_DCACHE_RAM_ROMSTAGE_STACK_SIZE);
+				   CONFIG_DCACHE_RAM_SIZE -
+				   CONFIG_DCACHE_RAM_ROMSTAGE_STACK_SIZE);
 
 	printk(BIOS_DEBUG, "Setting up stack guards.\n");
 	for (i = 0; i < num_guards; i++)
@@ -248,12 +248,11 @@ void romstage_common(const struct romstage_params *params)
 	romstage_handoff_init(wake_from_s3);
 
 	post_code(0x3f);
-	if (IS_ENABLED(CONFIG_LPC_TPM)) {
+	if (IS_ENABLED(CONFIG_LPC_TPM))
 		init_tpm(wake_from_s3);
-	}
 }
 
-void asmlinkage romstage_after_car(void)
+asmlinkage void romstage_after_car(void)
 {
 	/* Load the ramstage. */
 	run_ramstage();

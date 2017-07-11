@@ -3,13 +3,17 @@ config BOARD_GOOGLE_BASEBOARD_REEF
 	def_bool n
 	select SOC_INTEL_APOLLOLAKE
 	select BOARD_ROMSIZE_KB_16384
+	select DRIVERS_GENERIC_MAX98357A
+	select DRIVERS_I2C_DA7219
+	select DRIVERS_I2C_GENERIC
+	select DRIVERS_I2C_HID
+	select DRIVERS_PS2_KEYBOARD
 	select EC_GOOGLE_CHROMEEC
 	select EC_GOOGLE_CHROMEEC_LPC
 	select HAVE_ACPI_RESUME
 	select HAVE_ACPI_TABLES
 	select I2C_TPM
 	select MAINBOARD_HAS_CHROMEOS
-	select MAINBOARD_HAS_TPM2
 	select MAINBOARD_HAS_I2C_TPM_CR50
 	select TPM2
 	select GOOGLE_SMBIOS_MAINBOARD_VERSION
@@ -28,33 +32,15 @@ config DRIVER_TPM_I2C_ADDR
 	hex
 	default 0x50
 
-config DRIVER_TPM_I2C_IRQ
+config TPM_TIS_ACPI_INTERRUPT
 	int
 	default 60 # GPE0_DW1_28
 
-config CHROMEOS
+config VBOOT
 	select EC_GOOGLE_CHROMEEC_SWITCHES
 	select HAS_RECOVERY_MRC_CACHE
 	select MRC_CLEAR_NORMAL_CACHE_ON_RECOVERY_RETRAIN
-	select LID_SWITCH if BASEBOARD_REEF_LAPTOP
-
-config DRIVERS_I2C_DA7219
-	default y
-
-config DRIVERS_I2C_GENERIC
-	default y
-
-config DRIVERS_I2C_HID
-	default y
-
-config DRIVERS_I2C_WACOM
-	default y
-
-config DRIVERS_PS2_KEYBOARD
-	default y
-
-config DRIVERS_GENERIC_GPIO_REGULATOR
-	default y
+	select VBOOT_LID_SWITCH if BASEBOARD_REEF_LAPTOP
 
 config MAINBOARD_DIR
 	string
@@ -66,10 +52,12 @@ config VARIANT_DIR
 	default "pyro" if BOARD_GOOGLE_PYRO
 	default "sand" if BOARD_GOOGLE_SAND
 	default "snappy" if BOARD_GOOGLE_SNAPPY
+	default "nasher" if BOARD_GOOGLE_NASHER
 
 config DEVICETREE
 	string
 	default "variants/pyro/devicetree.cb" if BOARD_GOOGLE_PYRO
+	default "variants/sand/devicetree.cb" if BOARD_GOOGLE_SAND
 	default "variants/snappy/devicetree.cb" if BOARD_GOOGLE_SNAPPY
 	default "variants/baseboard/devicetree.cb"
 
@@ -79,6 +67,7 @@ config MAINBOARD_PART_NUMBER
 	default "Pyro" if BOARD_GOOGLE_PYRO
 	default "Sand" if BOARD_GOOGLE_SAND
 	default "Snappy" if BOARD_GOOGLE_SNAPPY
+	default "Nasher" if BOARD_GOOGLE_NASHER
 
 config MAINBOARD_FAMILY
 	string
@@ -91,6 +80,7 @@ config GBB_HWID
 	default "PYRO TEST 0290" if BOARD_GOOGLE_PYRO
 	default "SAND TEST 1904" if BOARD_GOOGLE_SAND
 	default "SNAPPY TEST 1088" if BOARD_GOOGLE_SNAPPY
+	default "NASHER TEST 4258" if BOARD_GOOGLE_NASHER
 
 config MAX_CPUS
 	int
@@ -106,7 +96,9 @@ config INCLUDE_NHLT_BLOBS
 	select NHLT_DA7219
 	select NHLT_MAX98357
 
-config DRIVERS_GENERIC_MAX98357A
-	default y
+config PRERAM_CBMEM_CONSOLE_SIZE
+	hex
+	default 0xe00 if CHROMEOS
+	default 0xc00
 
 endif # BOARD_GOOGLE_REEF

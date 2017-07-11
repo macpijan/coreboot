@@ -228,7 +228,7 @@ static void fsp_fill_mrc_cache(FSPM_ARCH_UPD *arch_upd, bool s3wake,
 	/* MRC cache found */
 	arch_upd->NvsBufferPtr = data;
 	arch_upd->BootMode = s3wake ?
-		FSP_BOOT_ON_S3_RESUME:
+		FSP_BOOT_ON_S3_RESUME :
 		FSP_BOOT_ASSUMING_NO_CONFIGURATION_CHANGES;
 	printk(BIOS_SPEW, "MRC cache found, size %zx bootmode:%d\n",
 				region_device_sz(&rdev), arch_upd->BootMode);
@@ -281,6 +281,41 @@ static enum cb_err fsp_fill_common_arch_params(FSPM_ARCH_UPD *arch_upd,
 	return CB_SUCCESS;
 }
 
+__attribute__ ((weak))
+uint8_t fsp_memory_mainboard_version(void)
+{
+	return 0;
+}
+
+__attribute__ ((weak))
+uint8_t fsp_memory_soc_version(void)
+{
+	return 0;
+}
+
+/*
+ * Allow SoC and/or mainboard to bump the revision of the FSP setting
+ * number. The FSP spec uses the low 8 bits as the build number. Take over
+ * bits 3:0 for the SoC setting and bits 7:4 for the mainboard. That way
+ * a tweak in the settings will bump the version used to track the cached
+ * setting which triggers retraining when the FSP version hasn't changed, but
+ * the SoC or mainboard settings have.
+ */
+static uint32_t fsp_memory_settings_version(const struct fsp_header *hdr)
+{
+	/* Use the full FSP version by default. */
+	uint32_t ver = hdr->fsp_revision;
+
+	if (!IS_ENABLED(CONFIG_FSP_PLATFORM_MEMORY_SETTINGS_VERSIONS))
+		return ver;
+
+	ver &= ~0xff;
+	ver |= (0xf & fsp_memory_mainboard_version()) << 4;
+	ver |= (0xf & fsp_memory_soc_version()) << 0;
+
+	return ver;
+}
+
 static void do_fsp_memory_init(struct fsp_header *hdr, bool s3wake,
 					const struct memranges *memmap)
 {
@@ -288,14 +323,16 @@ static void do_fsp_memory_init(struct fsp_header *hdr, bool s3wake,
 	fsp_memory_init_fn fsp_raminit;
 	FSPM_UPD fspm_upd, *upd;
 	FSPM_ARCH_UPD *arch_upd;
+	uint32_t fsp_version;
 
 	post_code(0x34);
 
+	fsp_version = fsp_memory_settings_version(hdr);
+
 	upd = (FSPM_UPD *)(hdr->cfg_region_offset + hdr->image_base);
 
-	if (upd->FspUpdHeader.Signature != FSPM_UPD_SIGNATURE) {
+	if (upd->FspUpdHeader.Signature != FSPM_UPD_SIGNATURE)
 		die("Invalid FSPM signature!\n");
-	}
 
 	/* Copy the default values from the UPD area */
 	memcpy(&fspm_upd, upd, sizeof(fspm_upd));
@@ -306,12 +343,12 @@ static void do_fsp_memory_init(struct fsp_header *hdr, bool s3wake,
 	arch_upd->BootLoaderTolumSize = cbmem_overhead_size();
 
 	/* Fill common settings on behalf of chipset. */
-	if (fsp_fill_common_arch_params(arch_upd, s3wake, hdr->fsp_revision,
+	if (fsp_fill_common_arch_params(arch_upd, s3wake, fsp_version,
 					memmap) != CB_SUCCESS)
 		die("FSPM_ARCH_UPD not found!\n");
 
 	/* Give SoC and mainboard a chance to update the UPD */
-	platform_fsp_memory_init_params_cb(&fspm_upd, hdr->fsp_revision);
+	platform_fsp_memory_init_params_cb(&fspm_upd, fsp_version);
 
 	if (IS_ENABLED(CONFIG_MMA))
 		setup_mma(&fspm_upd.FspmConfig);
@@ -335,7 +372,7 @@ static void do_fsp_memory_init(struct fsp_header *hdr, bool s3wake,
 		die("FspMemoryInit returned an error!\n");
 	}
 
-	do_fsp_post_memory_init(s3wake, hdr->fsp_revision);
+	do_fsp_post_memory_init(s3wake, fsp_version);
 }
 
 /* Load the binary into the memory specified by the info header. */
@@ -417,9 +454,8 @@ void fsp_memory_init(bool s3wake)
 	else
 		status = load_fspm_xip(&hdr, &file_data);
 
-	if (status != CB_SUCCESS) {
+	if (status != CB_SUCCESS)
 		die("Loading FSPM failed!\n");
-	}
 
 	/* Signal that FSP component has been loaded. */
 	prog_segment_loaded(hdr.image_base, hdr.image_size, SEG_FINAL);

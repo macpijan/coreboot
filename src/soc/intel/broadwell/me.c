@@ -88,7 +88,7 @@ static void mei_dump(void *ptr, int dword, int offset, const char *type)
 	}
 }
 #else
-# define mei_dump(ptr,dword,offset,type) do {} while (0)
+# define mei_dump(ptr, dword, offset, type) do {} while (0)
 #endif
 
 /*
@@ -149,7 +149,7 @@ static inline u32 read_cb(void)
 static int mei_wait_for_me_ready(void)
 {
 	struct mei_csr me;
-	unsigned try = ME_RETRY;
+	unsigned int try = ME_RETRY;
 
 	while (try--) {
 		read_me_csr(&me);
@@ -189,7 +189,7 @@ static void mei_reset(void)
 static int mei_send_packet(struct mei_header *mei, void *req_data)
 {
 	struct mei_csr host;
-	unsigned ndata, n;
+	unsigned int ndata, n;
 	u32 *data;
 
 	/* Number of dwords to write */
@@ -293,8 +293,8 @@ static int mei_recv_msg(void *header, int header_bytes,
 {
 	struct mei_header mei_rsp;
 	struct mei_csr me, host;
-	unsigned ndata, n;
-	unsigned expected;
+	unsigned int ndata, n;
+	unsigned int expected;
 	u32 *data;
 
 	/* Total number of dwords to read from circular buffer */
@@ -504,7 +504,7 @@ static int mkhi_get_fwcaps(mbp_mefwcaps *cap)
 			      &cap_msg, sizeof(cap_msg)) < 0) {
 		printk(BIOS_ERR, "ME: GET FWCAPS message failed\n");
 		return -1;
-        }
+	}
 	*cap = cap_msg.caps_sku;
 	return 0;
 }
@@ -616,7 +616,7 @@ static void intel_me_finalize(device_t dev)
 	u32 reg32;
 
 	/* S3 path will have hidden this device already */
-	if (!mei_base_address || mei_base_address == (u8*) 0xfffffff0)
+	if (!mei_base_address || mei_base_address == (u8 *) 0xfffffff0)
 		return;
 
 	/* Make sure IO is disabled */
@@ -647,10 +647,8 @@ static int me_icc_set_clock_enables(u32 mask)
 	if (mei_sendrecv_icc(&icc, &clk, sizeof(clk), NULL, 0) < 0) {
 		printk(BIOS_ERR, "ME: ICC SET CLOCK ENABLES message failed\n");
 		return -1;
-        } else {
-		printk(BIOS_INFO, "ME: ICC SET CLOCK ENABLES 0x%08x\n", mask);
 	}
-
+	printk(BIOS_INFO, "ME: ICC SET CLOCK ENABLES 0x%08x\n", mask);
 	return 0;
 }
 
@@ -700,7 +698,7 @@ static me_bios_path intel_me_path(device_t dev)
 	/* Check if the MBP is ready */
 	if (!hfs2.mbp_rdy) {
 		printk(BIOS_CRIT, "%s: mbp is not ready!\n",
-		       __FUNCTION__);
+		       __func__);
 		path = ME_ERROR_BIOS_PATH;
 	}
 
@@ -916,12 +914,11 @@ static int intel_me_read_mbp(me_bios_payload *mbp_data, device_t dev)
 #if CONFIG_DEBUG_INTEL_ME
 	printk(BIOS_INFO, "ME MBP: Header: items: %d, size dw: %d\n",
 	       mbp->header.num_entries, mbp->header.mbp_size);
-	for (i = 0; i < mbp->header.mbp_size - 1; i++) {
+	for (i = 0; i < mbp->header.mbp_size - 1; i++)
 		printk(BIOS_INFO, "ME MBP: %04x: 0x%08x\n", i, mbp->data[i]);
-	}
 #endif
 
-#define ASSIGN_FIELD_PTR(field_,val_) \
+#define ASSIGN_FIELD_PTR(field_, val_) \
 	{ \
 		mbp_data->field_ = (typeof(mbp_data->field_))(void *)val_; \
 		break; \
@@ -931,7 +928,7 @@ static int intel_me_read_mbp(me_bios_payload *mbp_data, device_t dev)
 	for (i = 0; i < mbp->header.mbp_size - 1;) {
 		mbp_item_header *item = (void *)&mbp->data[i];
 
-		switch(MBP_MAKE_IDENT(item->app_id, item->item_id)) {
+		switch (MBP_MAKE_IDENT(item->app_id, item->item_id)) {
 		case MBP_IDENT(KERNEL, FW_VER):
 			ASSIGN_FIELD_PTR(fw_version_name, &mbp->data[i+1]);
 

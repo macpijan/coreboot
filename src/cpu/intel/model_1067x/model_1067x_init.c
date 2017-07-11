@@ -33,7 +33,7 @@
 static void init_timer(void)
 {
 	/* Set the APIC timer to no interrupts and periodic mode */
-	lapic_write(LAPIC_LVTT, (1 << 17)|(1<< 16)|(0 << 12)|(0 << 0));
+	lapic_write(LAPIC_LVTT, (1 << 17) | (1 << 16) | (0 << 12) | (0 << 0));
 
 	/* Set the divider to 1, no divider */
 	lapic_write(LAPIC_TDCR, LAPIC_TDR_DIV_1);
@@ -66,9 +66,8 @@ static void configure_c_states(const int quad)
 	msr = rdmsr(MSR_PMG_CST_CONFIG_CONTROL);
 	msr.lo &= ~(1 << 9); // Issue a  single stop grant cycle upon stpclk
 	msr.lo |=  (1 << 8);
-	if (quad) {
+	if (quad)
 		msr.lo = (msr.lo & ~(7 << 0)) | (4 << 0);
-	}
 	if (c5) {
 		msr.lo &= ~(1 << 13);
 		msr.lo &= ~(7 <<  0);
@@ -84,7 +83,8 @@ static void configure_c_states(const int quad)
 
 	/* Set Processor MWAIT IO BASE */
 	msr.hi = 0;
-	msr.lo = ((PMB0_BASE + 4) & 0xffff) | (((PMB1_BASE + 9) & 0xffff) << 16);
+	msr.lo = ((PMB0_BASE + 4) & 0xffff) | (((PMB1_BASE + 9) & 0xffff)
+		<< 16);
 	wrmsr(MSR_PMG_IO_BASE_ADDR, msr);
 
 	/* Set IO Capture Address */
@@ -203,9 +203,8 @@ static void configure_misc(const int eist, const int tm2, const int emttm)
 		msr.lo |= (1 << 16);	/* Enhanced SpeedStep Enable */
 
 	/* Enable C2E */
-	if (((sub_cstates >> (2 * 4)) & 0xf) >= 2) {
+	if (((sub_cstates >> (2 * 4)) & 0xf) >= 2)
 		msr.lo |= (1 << 26);
-	}
 
 	/* Enable C4E */
 	if (((sub_cstates >> (4 * 4)) & 0xf) >= 2) {

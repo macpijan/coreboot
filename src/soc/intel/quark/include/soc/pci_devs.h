@@ -3,7 +3,7 @@
  *
  * Copyright (C) 2013 Google Inc.
  * Copyright (C) 2013 Sage Electronic Engineering, LLC.
- * Copyright (C) 2015-2016 Intel Corporation.
+ * Copyright (C) 2015-2017 Intel Corporation.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,7 +20,6 @@
 
 #include <device/pci.h>
 #include <device/pci_def.h>
-#include <soc/reg_access.h>
 
 /* DEVICE 0 (Memory Controller Hub) */
 #define MC_BDF			PCI_DEV(PCI_BUS_NUMBER_QNC, MC_DEV, MC_FUN)
@@ -60,7 +59,7 @@
 
 #define PCIE_PORT1_DEV		PCIE_DEV
 #define PCIE_PORT1_FUNC		1
-#define PCIE_PORT1_DEV_FUNC	PCI_DEVFN(PCIE_DEV,PCIE_PORT1_FUNC)
+#define PCIE_PORT1_DEV_FUNC	PCI_DEVFN(PCIE_DEV, PCIE_PORT1_FUNC)
 #define PCIE_PORT1_BDF	PCI_DEV(PCI_BUS_NUMBER_QNC, PCIE_DEV, PCIE_PORT1_FUNC)
 
 /* Platform Controller Unit */

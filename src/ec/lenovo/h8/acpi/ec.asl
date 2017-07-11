@@ -32,12 +32,18 @@ Device(EC)
 				HSPA, 1,
 		Offset (0x0C),
 				LEDS, 8,	/* LED state */
+		Offset (0x0F),
+				    , 7,
+				TBSW, 1,	/* Tablet mode switch */
 		Offset (0x1a),
 				DKR2, 1,	/* Dock register 2 */
 		Offset (0x2a),
 				EVNT, 8,	/* write will trigger EC event */
+		Offset (0x30),
+				    , 6,
+				ALMT, 1,	/* Audio Mute + LED */
 		Offset (0x3a),
-				AMUT, 1,	/* Audio Mute */
+				AMUT, 1,	/* Audio Mute (internal use) */
 				    , 3,
 				BTEB, 1,
 				WLEB, 1,
@@ -353,6 +359,28 @@ Device(EC)
 		Method (MHKA, 0, NotSerialized)
 		{
 			Return (0x07FFFFFF)
+		}
+		/* Report tablet mode switch state */
+		Method (MHKG, 0, NotSerialized)
+		{
+			Return (ShiftLeft(TBSW, 3))
+		}
+		/* Mute audio */
+		Method (SSMS, 1, NotSerialized)
+		{
+			Store(Arg0, ALMT)
+		}
+		/* Control mute microphone LED */
+		Method (MMTS, 1, NotSerialized)
+		{
+			If (Arg0)
+			{
+				TLED(0x8E)
+			}
+			Else
+			{
+				TLED(0x0E)
+			}
 		}
 		/* Version */
 		Method (MHKV, 0, NotSerialized)

@@ -19,16 +19,6 @@
 
 Scope (\_SB)
 {
-	Device (LID0)
-	{
-		Name (_HID, EisaId ("PNP0C0D"))
-		Method (_LID, 0)
-		{
-			Store (\_SB.PCI0.LPCB.EC0.LIDS, \LIDS)
-			Return (\LIDS)
-		}
-	}
-
 	Device (PWRB)
 	{
 		Name (_HID, EisaId ("PNP0C0C"))
@@ -36,13 +26,6 @@ Scope (\_SB)
 	}
 }
 
-/*
- * LPC Trusted Platform Module
- */
-Scope (\_SB.PCI0.LPCB)
-{
-	#include <drivers/pc80/tpm/acpi/tpm.asl>
-}
 Scope (\_SB.I2C1)
 {
 	Device (ATSB)

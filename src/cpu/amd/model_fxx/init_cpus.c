@@ -11,10 +11,16 @@
  * GNU General Public License for more details.
  */
 
+#include <cpu/x86/lapic.h>
+#include <northbridge/amd/amdk8/amdk8.h>
 #include "cpu/amd/car/post_cache_as_ram.c"
 
 #if CONFIG_HAVE_OPTION_TABLE
 #include "option_table.h"
+#endif
+
+#if IS_ENABLED(CONFIG_K8_REV_F_SUPPORT)
+#include <northbridge/amd/amdk8/f.h>
 #endif
 
 typedef void (*process_ap_t) (u32 apicid, void *gp);

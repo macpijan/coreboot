@@ -42,26 +42,61 @@ static int spi_acpi_get_bus(struct device *dev)
 	return -1;
 }
 
+static bool spi_acpi_add_gpios_to_crs(struct drivers_spi_acpi_config *config)
+{
+	/*
+	 * Return false if:
+	 * 1. Request to explicitly disable export of GPIOs in CRS, or
+	 * 2. Both reset and enable GPIOs are not provided.
+	 */
+	if (config->disable_gpio_export_in_crs ||
+	    ((config->reset_gpio.pin_count == 0) &&
+	     (config->enable_gpio.pin_count == 0)))
+		return false;
+
+	return true;
+}
+
+static int spi_acpi_write_gpio(struct acpi_gpio *gpio, int *curr_index)
+{
+	int ret = -1;
+
+	if (gpio->pin_count == 0)
+		return ret;
+
+	acpi_device_write_gpio(gpio);
+	ret = *curr_index;
+	(*curr_index)++;
+
+	return ret;
+}
+
 static void spi_acpi_fill_ssdt_generator(struct device *dev)
 {
 	struct drivers_spi_acpi_config *config = dev->chip_info;
 	const char *scope = acpi_device_scope(dev);
-	struct spi_cfg spi_cfg;
-	struct spi_slave slave;
-	int bus = -1, cs = dev->path.spi.cs;
+	const char *path = acpi_device_path(dev);
 	struct acpi_spi spi = {
-		.device_select = cs,
+		.device_select = dev->path.spi.cs,
 		.speed = config->speed ? : 1 * MHz,
 		.resource = scope,
+		.device_select_polarity = SPI_POLARITY_LOW,
+		.wire_mode = SPI_4_WIRE_MODE,
+		.data_bit_length = 8,
+		.clock_phase = SPI_CLOCK_PHASE_FIRST,
+		.clock_polarity = SPI_POLARITY_LOW,
 	};
+	int curr_index = 0;
+	int irq_gpio_index = -1;
+	int reset_gpio_index = -1;
+	int enable_gpio_index = -1;
 
 	if (!dev->enabled || !scope)
 		return;
 
-	bus = spi_acpi_get_bus(dev);
-	if (bus == -1) {
+	if (spi_acpi_get_bus(dev) == -1) {
 		printk(BIOS_ERR, "%s: ERROR: Cannot get bus for device.\n",
-		       dev_path(dev));
+			dev_path(dev));
 		return;
 	}
 
@@ -69,23 +104,6 @@ static void spi_acpi_fill_ssdt_generator(struct device *dev)
 		printk(BIOS_ERR, "%s: ERROR: HID required.\n", dev_path(dev));
 		return;
 	}
-
-	if (spi_setup_slave(bus, cs, &slave)) {
-		printk(BIOS_ERR, "%s: ERROR: SPI setup failed.\n",
-			dev_path(dev));
-		return;
-	}
-
-	if (spi_get_config(&slave, &spi_cfg)) {
-		printk(BIOS_ERR, "%s: ERROR: SPI get config failed.\n",
-			dev_path(dev));
-		return;
-	}
-
-	spi.device_select_polarity = spi_cfg.cs_polarity;
-	spi.wire_mode = spi_cfg.wire_mode;
-	spi.data_bit_length = spi_cfg.data_bit_length;
-	spi.clock_phase = spi_cfg.clk_phase;
 
 	/* Device */
 	acpigen_write_scope(scope);
@@ -101,17 +119,62 @@ static void spi_acpi_fill_ssdt_generator(struct device *dev)
 	acpigen_write_name("_CRS");
 	acpigen_write_resourcetemplate_header();
 	acpi_device_write_spi(&spi);
-	acpi_device_write_interrupt(&config->irq);
+
+	/* Use either Interrupt() or GpioInt() */
+	if (config->irq_gpio.pin_count)
+		irq_gpio_index = spi_acpi_write_gpio(&config->irq_gpio,
+						     &curr_index);
+	else
+		acpi_device_write_interrupt(&config->irq);
+
+	/* Add enable/reset GPIOs if needed */
+	if (spi_acpi_add_gpios_to_crs(config)) {
+		reset_gpio_index = spi_acpi_write_gpio(&config->reset_gpio,
+						       &curr_index);
+		enable_gpio_index = spi_acpi_write_gpio(&config->enable_gpio,
+							&curr_index);
+	}
 	acpigen_write_resourcetemplate_footer();
 
-	if (config->compat_string) {
+	/* Wake capabilities */
+	if (config->wake) {
+		acpigen_write_name_integer("_S0W", 4);
+		acpigen_write_PRW(config->wake, 3);
+	};
+
+	/* Write device properties if needed */
+	if (config->compat_string || irq_gpio_index >= 0 ||
+	    reset_gpio_index >= 0 || enable_gpio_index >= 0) {
 		struct acpi_dp *dsd = acpi_dp_new_table("_DSD");
-		acpi_dp_add_string(dsd, "compatible", config->compat_string);
+		if (config->compat_string)
+			acpi_dp_add_string(dsd, "compatible",
+					   config->compat_string);
+		if (irq_gpio_index >= 0)
+			acpi_dp_add_gpio(dsd, "irq-gpios", path,
+					 irq_gpio_index, 0,
+					 config->irq_gpio.polarity);
+		if (reset_gpio_index >= 0)
+			acpi_dp_add_gpio(dsd, "reset-gpios", path,
+					 reset_gpio_index, 0,
+					 config->reset_gpio.polarity);
+		if (enable_gpio_index >= 0)
+			acpi_dp_add_gpio(dsd, "enable-gpios", path,
+					 enable_gpio_index, 0,
+					 config->enable_gpio.polarity);
 		acpi_dp_write(dsd);
 	}
 
+	/* Power Resource */
+	if (config->has_power_resource)
+		acpi_device_add_power_res(
+			&config->reset_gpio, config->reset_delay_ms,
+			&config->enable_gpio, config->enable_delay_ms);
+
 	acpigen_pop_len(); /* Device */
 	acpigen_pop_len(); /* Scope */
+
+	printk(BIOS_INFO, "%s: %s at %s\n", path,
+	       config->desc ? : dev->chip_ops->name, dev_path(dev));
 }
 
 static const char *spi_acpi_name(struct device *dev)

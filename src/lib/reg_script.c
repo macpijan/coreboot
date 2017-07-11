@@ -41,14 +41,14 @@
 #endif
 
 static inline void reg_script_set_dev(struct reg_script_context *ctx,
-                                      device_t dev)
+				      device_t dev)
 {
 	ctx->dev = dev;
 	ctx->res = NULL;
 }
 
 static inline void reg_script_set_step(struct reg_script_context *ctx,
-                                       const struct reg_script *step)
+				       const struct reg_script *step)
 {
 	ctx->step = step;
 }
@@ -192,8 +192,7 @@ static uint32_t reg_script_read_res(struct reg_script_context *ctx)
 		};
 		reg_script_set_step(ctx, &io_step);
 		val = reg_script_read_io(ctx);
-	}
-	else if (res->flags & IORESOURCE_MEM) {
+	} else if (res->flags & IORESOURCE_MEM) {
 		const struct reg_script mmio_step = {
 			.size = step->size,
 			.reg = res->base + step->reg,
@@ -223,8 +222,7 @@ static void reg_script_write_res(struct reg_script_context *ctx)
 		};
 		reg_script_set_step(ctx, &io_step);
 		reg_script_write_io(ctx);
-	}
-	else if (res->flags & IORESOURCE_MEM) {
+	} else if (res->flags & IORESOURCE_MEM) {
 		const struct reg_script mmio_step = {
 			.size = step->size,
 			.reg = res->base + step->reg,
@@ -399,7 +397,7 @@ static const struct reg_script_bus_entry
 {
 	extern const struct reg_script_bus_entry *_rsbe_init_begin[];
 	extern const struct reg_script_bus_entry *_ersbe_init_begin[];
-	const struct reg_script_bus_entry * const * bus;
+	const struct reg_script_bus_entry * const *bus;
 	size_t table_entries;
 	size_t i;
 
@@ -478,7 +476,7 @@ static uint64_t reg_script_read(struct reg_script_context *ctx)
 
 			/* Read from the platform specific bus */
 			bus = find_bus(step);
-			if (NULL != bus) {
+			if (bus != NULL) {
 				value = bus->reg_script_read(ctx);
 				break;
 			}
@@ -532,7 +530,7 @@ static void reg_script_write(struct reg_script_context *ctx)
 
 			/* Write to the platform specific bus */
 			bus = find_bus(step);
-			if (NULL != bus) {
+			if (bus != NULL) {
 				bus->reg_script_write(ctx);
 				break;
 			}
@@ -603,7 +601,7 @@ static void reg_script_rxw(struct reg_script_context *ctx)
  * as the previous one. That will run to completion and then move on to the
  * next step of the previous context. */
 static void reg_script_run_next(struct reg_script_context *ctx,
-                                const struct reg_script *step);
+				const struct reg_script *step);
 
 
 static void reg_script_run_step(struct reg_script_context *ctx,
@@ -670,7 +668,7 @@ static void reg_script_run_with_context(struct reg_script_context *ctx)
 }
 
 static void reg_script_run_next(struct reg_script_context *prev_ctx,
-                                const struct reg_script *step)
+				const struct reg_script *step)
 {
 	struct reg_script_context ctx;
 

@@ -61,15 +61,20 @@ struct vr_config {
 
 	/* VR Voltage Limit. Range is 0-7999mV */
 	int voltage_limit;
+
+	/* AC and DC Loadline in 1/100 mOhms. Range is 0-6249 */
+	int ac_loadline;
+	int dc_loadline;
 };
 
 #define VR_CFG_AMP(i) ((i) * 4)
 
+#if IS_ENABLED(CONFIG_PLATFORM_USES_FSP1_1)
 /* VrConfig Settings for 5 domains
  * 0 = System Agent, 1 = IA Core, 2 = Ring,
  * 3 = GT unsliced,  4 = GT sliced
  */
-enum vr_domain{
+enum vr_domain {
 	VR_SYSTEM_AGENT,
 	VR_IA_CORE,
 	VR_RING,
@@ -77,6 +82,19 @@ enum vr_domain{
 	VR_GT_SLICED,
 	NUM_VR_DOMAINS
 };
+#else
+/* VrConfig Settings for 4 domains
+ * 0 = System Agent, 1 = IA Core,
+ * 2 = GT unsliced,  3 = GT sliced
+ */
+enum vr_domain {
+	VR_SYSTEM_AGENT,
+	VR_IA_CORE,
+	VR_GT_UNSLICED,
+	VR_GT_SLICED,
+	NUM_VR_DOMAINS
+};
+#endif
 
 void fill_vr_domain_config(void *params,
 			int domain, const struct vr_config *cfg);

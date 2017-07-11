@@ -29,7 +29,7 @@
 
 #define DPTF_TSR1_SENSOR_ID	1
 #define DPTF_TSR1_SENSOR_NAME	"Ambient"
-#define DPTF_TSR1_PASSIVE	46
+#define DPTF_TSR1_PASSIVE	50
 #define DPTF_TSR1_CRITICAL	70
 
 #define DPTF_TSR2_SENSOR_ID	2
@@ -56,15 +56,12 @@ Name (DTRT, Package () {
 	Package () { \_SB.PCI0.TCPU, \_SB.DPTF.TSR0, 100, 500, 0, 0, 0, 0 },
 
 #ifdef DPTF_ENABLE_CHARGER
-	/* Charger Effect on Temp Sensor 1 */
-	Package () { \_SB.DPTF.TCHG, \_SB.DPTF.TSR1, 200, 600, 0, 0, 0, 0 },
+	/* Charger Effect on Temp Sensor 2 */
+	Package () { \_SB.DPTF.TCHG, \_SB.DPTF.TSR2, 200, 600, 0, 0, 0, 0 },
 #endif
 
 	/* CPU Effect on Temp Sensor 1 */
 	Package () { \_SB.PCI0.TCPU, \_SB.DPTF.TSR1, 100, 80, 0, 0, 0, 0 },
-
-	/* CPU Effect on Temp Sensor 2 */
-	Package () { \_SB.PCI0.TCPU, \_SB.DPTF.TSR2, 100, 1200, 0, 0, 0, 0 },
 })
 
 Name (MPPC, Package ()
@@ -72,7 +69,7 @@ Name (MPPC, Package ()
 	0x2,		/* Revision */
 	Package () {	/* Power Limit 1 */
 		0,	/* PowerLimitIndex, 0 for Power Limit 1 */
-		1600,	/* PowerLimitMinimum */
+		2500,	/* PowerLimitMinimum */
 		12000,	/* PowerLimitMaximum */
 		1000,	/* TimeWindowMinimum */
 		1000,	/* TimeWindowMaximum */

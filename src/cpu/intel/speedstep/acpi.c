@@ -33,9 +33,8 @@ static int determine_total_number_of_cores(void)
 			(cpu->bus->dev->path.type != DEVICE_PATH_CPU_CLUSTER)) {
 			continue;
 		}
-		if (!cpu->enabled) {
+		if (!cpu->enabled)
 			continue;
-		}
 		count++;
 	}
 	return count;
@@ -51,13 +50,13 @@ static int get_fsb(void)
 {
 	const u32 fsbcode = rdmsr(MSR_FSB_FREQ).lo & 7;
 	switch (fsbcode) {
-		case 0: return  800; /*  / 3 == 266 */
-		case 1: return  400; /*  / 3 == 133 */
-		case 2: return  600; /*  / 3 == 200 */
-		case 3: return  500; /*  / 3 == 166 */
-		case 4: return 1000; /*  / 3 == 333 */
-		case 5: return  300; /*  / 3 == 100 */
-		case 6: return 1200; /*  / 3 == 400 */
+	case 0: return  800; /*  / 3 == 266 */
+	case 1: return  400; /*  / 3 == 133 */
+	case 2: return  600; /*  / 3 == 200 */
+	case 3: return  500; /*  / 3 == 166 */
+	case 4: return 1000; /*  / 3 == 333 */
+	case 5: return  300; /*  / 3 == 100 */
+	case 6: return 1200; /*  / 3 == 400 */
 	}
 	printk(BIOS_WARNING,
 	       "Warning: No supported FSB frequency. Assuming 200MHz\n");
@@ -85,8 +84,8 @@ static void gen_pstate_entries(const sst_table_t *const pstates,
 		/ (pstates->states[pstates->num_states - 1].is_slfm ? 12 : 6),
 	       (max_ratio2 * fsb3) / 6);
 
-	printk(BIOS_DEBUG, "adding %x P-States between "
-			   "busratio %x and %x, ""incl. P0\n",
+	printk(BIOS_DEBUG,
+		"adding %x P-States between busratio %x and %x, incl. P0\n",
 	       pstates->num_states, min_ratio2 / 2, max_ratio2 / 2);
 	acpigen_write_package(pstates->num_states);
 	for (i = 0; i < pstates->num_states; ++i) {
@@ -139,8 +138,8 @@ void generate_cpu_entries(device_t device)
 		coordination = SW_ANY;
 
 	for (cpuID = 0; cpuID < numcpus; ++cpuID) {
-		for (coreID=1; coreID<=cores_per_package; coreID++) {
-			if (coreID>1) {
+		for (coreID = 1; coreID <= cores_per_package; coreID++) {
+			if (coreID > 1) {
 				pcontrol_blk = 0;
 				plen = 0;
 			}

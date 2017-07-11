@@ -1,5 +1,8 @@
 ifeq ($(CONFIG_SOC_INTEL_COMMON),y)
 
+subdirs-y += basecode/
+subdirs-y += block/
+
 bootblock-y += util.c
 
 verstage-$(CONFIG_SOC_INTEL_COMMON_LPSS_I2C) += lpss_i2c.c
@@ -13,6 +16,7 @@ romstage-$(CONFIG_SOC_INTEL_COMMON_LPSS_I2C) += lpss_i2c.c
 romstage-$(CONFIG_SOC_INTEL_COMMON_RESET) += reset.c
 romstage-y += util.c
 romstage-$(CONFIG_MMA) += mma.c
+romstage-y += smbios.c
 
 postcar-y += util.c
 postcar-$(CONFIG_SOC_INTEL_COMMON_RESET) += reset.c
@@ -32,6 +36,11 @@ ramstage-$(CONFIG_SOC_INTEL_COMMON_ACPI) += ./acpi/acpi.c
 ramstage-$(CONFIG_SOC_INTEL_COMMON_NHLT) += nhlt.c
 
 smm-$(CONFIG_SOC_INTEL_COMMON_SMI) += smihandler.c
+
+bootblock-$(CONFIG_MAINBOARD_HAS_TPM_CR50) += tpm_tis.c
+verstage-$(CONFIG_MAINBOARD_HAS_TPM_CR50) += tpm_tis.c
+romstage-$(CONFIG_MAINBOARD_HAS_TPM_CR50) += tpm_tis.c
+ramstage-$(CONFIG_MAINBOARD_HAS_TPM_CR50) += tpm_tis.c
 
 # Create and add the MRC cache to the cbfs image
 ifneq ($(CONFIG_CHROMEOS),y)

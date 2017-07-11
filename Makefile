@@ -91,6 +91,7 @@ help_coreboot help::
 	@echo  '  clean                 - Remove coreboot build artifacts'
 	@echo  '  distclean             - Remove build artifacts and config files'
 	@echo  '  doxygen               - Build doxygen documentation for coreboot'
+	@echo  '  doxyplatform          - Build doxygen documentation for the current platform'
 	@echo  '  what-jenkins-does     - Run platform build tests (Use CPUS=# for more cores)'
 	@echo  '  printall              - print makefile info for debugging'
 	@echo  '  lint / lint-stable    - run coreboot lint tools (all / minimal)'
@@ -242,10 +243,14 @@ evaluate_subdirs= \
 
 # collect all object files eligible for building
 subdirs:=$(TOPLEVEL)
+postinclude-hooks :=
 $(eval $(call evaluate_subdirs))
 ifeq ($(FAILBUILD),1)
 $(error cannot continue build)
 endif
+
+# Run hooks registered by subdirectories that need to be evaluated after all files have been parsed
+$(eval $(postinclude-hooks))
 
 # Eliminate duplicate mentions of source files in a class
 $(foreach class,$(classes),$(eval $(class)-srcs:=$(sort $($(class)-srcs))))
@@ -381,6 +386,15 @@ doxygen:
 doxygen_simple:
 	$(DOXYGEN) Documentation/Doxyfile.coreboot_simple
 
+doxyplatform doxygen_platform: $(obj)/project_filelist.txt
+	echo
+	echo "Building doxygen documentation for $(CONFIG_MAINBOARD_PART_NUMBER)"
+	export DOXYGEN_OUTPUT_DIR="$(DOXYGEN_OUTPUT_DIR)/$(CONFIG_MAINBOARD_VENDOR)/$(CONFIG_MAINBOARD_PART_NUMBER)"; \
+	mkdir -p "$$DOXYGEN_OUTPUT_DIR"; \
+	export DOXYFILES="$$(cat $(obj)/project_filelist.txt | grep -v '\.ld$$' | sed 's/\.aml/\.dsl/' | tr '\n' ' ')"; \
+	export DOXYGEN_PLATFORM="$(CONFIG_MAINBOARD_DIR) ($(CONFIG_MAINBOARD_PART_NUMBER)) version $(KERNELVERSION)"; \
+	$(DOXYGEN) Documentation/doxygen/Doxyfile.coreboot_platform
+
 doxyclean: doxygen-clean
 doxygen-clean:
 	rm -rf $(DOXYGEN_OUTPUT_DIR)
@@ -398,7 +412,7 @@ clean-ctags:
 	rm -f tags
 
 distclean: clean clean-ctags clean-cscope distclean-payloads
-	rm -f .config .config.old ..config.tmp .kconfig.d .tmpconfig* .ccwrap .xcompile
+	rm -f .config .config.old ..config.tmp* .kconfig.d .tmpconfig* .ccwrap .xcompile
 
 .PHONY: $(PHONY) clean clean-for-update clean-cscope cscope distclean doxygen doxy doxygen_simple
 .PHONY: ctags-project cscope-project clean-ctags

@@ -15,16 +15,13 @@
 
 #include <AGESA.h>
 #include <cbfs.h>
-#include <cpu/amd/pi/s3_resume.h>
+#include <delay.h>
 #include <cpu/x86/mtrr.h>
 #include <cpuRegisters.h>
 #include <FchPlatform.h>
 #include <heapManager.h>
 #include <northbridge/amd/pi/agesawrapper.h>
 #include <northbridge/amd/pi/BiosCallOuts.h>
-
-VOID FchInitS3LateRestore (IN FCH_DATA_BLOCK *FchDataPtr);
-VOID FchInitS3EarlyRestore (IN FCH_DATA_BLOCK *FchDataPtr);
 
 void __attribute__((weak)) OemPostParams(AMD_POST_PARAMS *PostParams) {}
 
@@ -107,6 +104,12 @@ AGESA_STATUS agesawrapper_amdinitearly(void)
 
 	AmdEarlyParamsPtr->GnbConfig.PsppPolicy = PsppDisabled;
 	status = AmdInitEarly ((AMD_EARLY_PARAMS *)AmdParamStruct.NewStructPtr);
+	/*
+	 * init_timer() needs to be called on CZ PI, because AGESA resets the LAPIC reload value
+	 * on the AMD_INIT_EARLY call
+	 */
+	if (IS_ENABLED(CONFIG_CPU_AMD_PI_00660F01))
+		init_timer();
 	if (status != AGESA_SUCCESS) agesawrapper_amdreadeventlog(AmdParamStruct.StdHeader.HeapStatus);
 	AmdReleaseStruct (&AmdParamStruct);
 
@@ -361,215 +364,6 @@ AGESA_STATUS agesawrapper_amdlaterunaptask (
 	return Status;
 }
 
-#if CONFIG_HAVE_ACPI_RESUME
-
-AGESA_STATUS agesawrapper_amdinitresume(void)
-{
-	AGESA_STATUS status;
-	AMD_INTERFACE_PARAMS AmdParamStruct;
-	AMD_RESUME_PARAMS     *AmdResumeParamsPtr;
-	S3_DATA_TYPE            S3DataType;
-
-	LibAmdMemFill (&AmdParamStruct,
-		       0,
-		       sizeof(AMD_INTERFACE_PARAMS),
-		       &(AmdParamStruct.StdHeader));
-
-	AmdParamStruct.AgesaFunctionName = AMD_INIT_RESUME;
-	AmdParamStruct.AllocationMethod = PreMemHeap;
-	AmdParamStruct.StdHeader.AltImageBasePtr = 0;
-	AmdParamStruct.StdHeader.CalloutPtr = &GetBiosCallout;
-	AmdParamStruct.StdHeader.Func = 0;
-	AmdParamStruct.StdHeader.ImageBasePtr = 0;
-	AmdCreateStruct (&AmdParamStruct);
-
-	AmdResumeParamsPtr = (AMD_RESUME_PARAMS *)AmdParamStruct.NewStructPtr;
-
-	AmdResumeParamsPtr->S3DataBlock.NvStorageSize = 0;
-	AmdResumeParamsPtr->S3DataBlock.VolatileStorageSize = 0;
-	S3DataType = S3DataTypeNonVolatile;
-	OemAgesaGetS3Info (S3DataType,
-			   (u32 *) &AmdResumeParamsPtr->S3DataBlock.NvStorageSize,
-			   (void **) &AmdResumeParamsPtr->S3DataBlock.NvStorage);
-
-	status = AmdInitResume ((AMD_RESUME_PARAMS *)AmdParamStruct.NewStructPtr);
-
-	if (status != AGESA_SUCCESS) agesawrapper_amdreadeventlog(AmdParamStruct.StdHeader.HeapStatus);
-	AmdReleaseStruct (&AmdParamStruct);
-
-	return status;
-}
-
-#ifndef __PRE_RAM__
-AGESA_STATUS agesawrapper_fchs3earlyrestore(void)
-{
-	AGESA_STATUS status = AGESA_SUCCESS;
-
-	FCH_DATA_BLOCK      FchParams;
-	AMD_CONFIG_PARAMS StdHeader;
-
-	StdHeader.HeapStatus = HEAP_SYSTEM_MEM;
-	StdHeader.HeapBasePtr = GetHeapBase(&StdHeader) + 0x10;
-	StdHeader.AltImageBasePtr = 0;
-	StdHeader.CalloutPtr = &GetBiosCallout;
-	StdHeader.Func = 0;
-	StdHeader.ImageBasePtr = 0;
-
-	LibAmdMemFill (&FchParams,
-		       0,
-		       sizeof(FchParams),
-		       &StdHeader);
-
-	FchParams.StdHeader = &StdHeader;
-	s3_resume_init_data(&FchParams);
-
-	FchInitS3EarlyRestore(&FchParams);
-
-	return status;
-}
-#endif /* #ifndef __PRE_RAM__ */
-
-AGESA_STATUS agesawrapper_amds3laterestore(void)
-{
-	AGESA_STATUS Status;
-	AMD_INTERFACE_PARAMS    AmdInterfaceParams;
-	AMD_S3LATE_PARAMS       AmdS3LateParams;
-	AMD_S3LATE_PARAMS       *AmdS3LateParamsPtr;
-	S3_DATA_TYPE          S3DataType;
-
-	agesawrapper_amdinitcpuio();
-	LibAmdMemFill (&AmdS3LateParams,
-		       0,
-		       sizeof(AMD_S3LATE_PARAMS),
-		       &(AmdS3LateParams.StdHeader));
-	AmdInterfaceParams.StdHeader.ImageBasePtr = 0;
-	AmdInterfaceParams.AllocationMethod = ByHost;
-	AmdInterfaceParams.AgesaFunctionName = AMD_S3LATE_RESTORE;
-	AmdInterfaceParams.NewStructPtr = &AmdS3LateParams;
-	AmdInterfaceParams.StdHeader.CalloutPtr = &GetBiosCallout;
-	AmdS3LateParamsPtr = &AmdS3LateParams;
-	AmdInterfaceParams.NewStructSize = sizeof(AMD_S3LATE_PARAMS);
-
-	AmdCreateStruct (&AmdInterfaceParams);
-
-	AmdS3LateParamsPtr->S3DataBlock.VolatileStorageSize = 0;
-	S3DataType = S3DataTypeVolatile;
-
-	OemAgesaGetS3Info (S3DataType,
-			   (u32 *) &AmdS3LateParamsPtr->S3DataBlock.VolatileStorageSize,
-			   (void **) &AmdS3LateParamsPtr->S3DataBlock.VolatileStorage);
-
-	Status = AmdS3LateRestore (AmdS3LateParamsPtr);
-	if (Status != AGESA_SUCCESS) {
-		agesawrapper_amdreadeventlog(AmdInterfaceParams.StdHeader.HeapStatus);
-		ASSERT(Status == AGESA_SUCCESS);
-	}
-
-	return Status;
-}
-
-#ifndef __PRE_RAM__
-
-AGESA_STATUS agesawrapper_fchs3laterestore(void)
-{
-	AGESA_STATUS status = AGESA_SUCCESS;
-
-	AMD_CONFIG_PARAMS       StdHeader;
-	FCH_DATA_BLOCK          FchParams;
-
-	StdHeader.HeapStatus = HEAP_SYSTEM_MEM;
-	StdHeader.HeapBasePtr = GetHeapBase(&StdHeader) + 0x10;
-	StdHeader.AltImageBasePtr = 0;
-	StdHeader.CalloutPtr = &GetBiosCallout;
-	StdHeader.Func = 0;
-	StdHeader.ImageBasePtr = 0;
-
-	LibAmdMemFill (&FchParams,
-		       0,
-		       sizeof(FchParams),
-		       &StdHeader);
-
-	FchParams.StdHeader = &StdHeader;
-	s3_resume_init_data(&FchParams);
-	FchInitS3LateRestore(&FchParams);
-
-	/* PIC IRQ routine */
-	for (byte = 0x0; byte < sizeof(picr_data); byte ++) {
-		outb(byte, 0xC00);
-		outb(picr_data[byte], 0xC01);
-	}
-
-	/* APIC IRQ routine */
-	for (byte = 0x0; byte < sizeof(intr_data); byte ++) {
-		outb(byte | 0x80, 0xC00);
-		outb(intr_data[byte], 0xC01);
-	}
-
-	return status;
-}
-
-AGESA_STATUS agesawrapper_amdS3Save(void)
-{
-	AGESA_STATUS Status;
-	AMD_S3SAVE_PARAMS *AmdS3SaveParamsPtr;
-	AMD_INTERFACE_PARAMS  AmdInterfaceParams;
-	S3_DATA_TYPE          S3DataType;
-
-	LibAmdMemFill (&AmdInterfaceParams,
-		       0,
-		       sizeof(AMD_INTERFACE_PARAMS),
-		       &(AmdInterfaceParams.StdHeader));
-
-	AmdInterfaceParams.StdHeader.ImageBasePtr = 0;
-	AmdInterfaceParams.StdHeader.HeapStatus = HEAP_SYSTEM_MEM;
-	AmdInterfaceParams.StdHeader.CalloutPtr = &GetBiosCallout;
-	AmdInterfaceParams.AllocationMethod = PostMemDram;
-	AmdInterfaceParams.AgesaFunctionName = AMD_S3_SAVE;
-	AmdInterfaceParams.StdHeader.AltImageBasePtr = 0;
-	AmdInterfaceParams.StdHeader.Func = 0;
-
-	AmdCreateStruct(&AmdInterfaceParams);
-	AmdS3SaveParamsPtr = (AMD_S3SAVE_PARAMS *)AmdInterfaceParams.NewStructPtr;
-	AmdS3SaveParamsPtr->StdHeader = AmdInterfaceParams.StdHeader;
-
-	Status = AmdS3Save(AmdS3SaveParamsPtr);
-	if (Status != AGESA_SUCCESS) {
-		agesawrapper_amdreadeventlog(AmdInterfaceParams.StdHeader.HeapStatus);
-		ASSERT(Status == AGESA_SUCCESS);
-	}
-
-	S3DataType = S3DataTypeNonVolatile;
-	printk(BIOS_DEBUG, "NvStorageSize=%x, NvStorage=%x\n",
-	       (unsigned int)AmdS3SaveParamsPtr->S3DataBlock.NvStorageSize,
-	       (unsigned int)AmdS3SaveParamsPtr->S3DataBlock.NvStorage);
-
-	Status = OemAgesaSaveS3Info (
-		S3DataType,
-		AmdS3SaveParamsPtr->S3DataBlock.NvStorageSize,
-		AmdS3SaveParamsPtr->S3DataBlock.NvStorage);
-
-	printk(BIOS_DEBUG, "VolatileStorageSize=%x, VolatileStorage=%x\n",
-	       (unsigned int)AmdS3SaveParamsPtr->S3DataBlock.VolatileStorageSize,
-	       (unsigned int)AmdS3SaveParamsPtr->S3DataBlock.VolatileStorage);
-
-	if (AmdS3SaveParamsPtr->S3DataBlock.VolatileStorageSize != 0) {
-		S3DataType = S3DataTypeVolatile;
-
-		Status = OemAgesaSaveS3Info (
-			S3DataType,
-			AmdS3SaveParamsPtr->S3DataBlock.VolatileStorageSize,
-			AmdS3SaveParamsPtr->S3DataBlock.VolatileStorage);
-	}
-	OemAgesaSaveMtrr();
-
-	AmdReleaseStruct (&AmdInterfaceParams);
-
-	return Status;
-}
-
-#endif  /* #ifndef __PRE_RAM__ */
-#endif  /* CONFIG_HAVE_ACPI_RESUME */
-
 AGESA_STATUS agesawrapper_amdreadeventlog (UINT8 HeapStatus)
 {
 	AGESA_STATUS Status;
@@ -603,8 +397,15 @@ const void *agesawrapper_locate_module (const CHAR8 name[8])
 	const AMD_MODULE_HEADER* module;
 	size_t file_size;
 
-	agesa = cbfs_boot_map_with_leak((const char *)CONFIG_CBFS_AGESA_NAME,
+	if (IS_ENABLED(CONFIG_VBOOT)) {
+		/* Use phys. location in flash and prevent vboot from searching cbmem */
+		agesa = (void *)CONFIG_AGESA_BINARY_PI_LOCATION;
+		file_size = 0x100000;
+	} else {
+		agesa = cbfs_boot_map_with_leak((const char *)CONFIG_CBFS_AGESA_NAME,
 					CBFS_TYPE_RAW, &file_size);
+	}
+
 	if (!agesa)
 		return NULL;
 	image =  LibAmdLocateImage(agesa, agesa + file_size - 1, 4096, name);

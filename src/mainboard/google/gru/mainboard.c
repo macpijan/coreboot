@@ -155,7 +155,6 @@ static void register_poweroff_to_bl31(void)
 
 static void configure_sdmmc(void)
 {
-	gpio_output(GPIO(4, D, 5), 1);  /* SDMMC_PWR_EN */
 	gpio_output(GPIO(2, A, 2), 1);  /* SDMMC_SDIO_PWR_EN */
 
 	/* SDMMC_DET_L is different on Kevin board revision 0. */
@@ -253,53 +252,56 @@ static void setup_usb(void)
 	write32(&rk3399_grf->usbphy0_ctrl[3], RK_CLRSETBITS(0xfff, 0x2e3));
 	write32(&rk3399_grf->usbphy1_ctrl[3], RK_CLRSETBITS(0xfff, 0x2e3));
 
-	if (IS_ENABLED(CONFIG_BOARD_GOOGLE_KEVIN)) {
-		/* Set max pre-emphasis level, only on Kevin PHY0 and PHY1. */
-		write32(&rk3399_grf->usbphy0_ctrl[12],
-			RK_CLRSETBITS(0xffff, 0xa7));
-		write32(&rk3399_grf->usbphy1_ctrl[12],
-			RK_CLRSETBITS(0xffff, 0xa7));
+	/* Set max pre-emphasis level on PHY0 and PHY1. */
+	write32(&rk3399_grf->usbphy0_ctrl[12],
+		RK_CLRSETBITS(0xffff, 0xa7));
+	write32(&rk3399_grf->usbphy1_ctrl[12],
+		RK_CLRSETBITS(0xffff, 0xa7));
 
-		/*
-		 * Disable the pre-emphasize in eop state and chirp
-		 * state to avoid mis-trigger the disconnect detection
-		 * and also avoid high-speed handshake fail for PHY0
-		 * and PHY1 consist of otg-port and host-port.
-		 */
-		write32(&rk3399_grf->usbphy0_ctrl[0], RK_CLRBITS(0x3));
-		write32(&rk3399_grf->usbphy1_ctrl[0], RK_CLRBITS(0x3));
-		write32(&rk3399_grf->usbphy0_ctrl[13], RK_CLRBITS(0x3));
-		write32(&rk3399_grf->usbphy1_ctrl[13], RK_CLRBITS(0x3));
+	/*
+	 * 1. Disable the pre-emphasize in eop state and chirp
+	 * state to avoid mis-trigger the disconnect detection
+	 * and also avoid high-speed handshake fail for PHY0
+	 * and PHY1 consist of otg-port and host-port.
+	 *
+	 * 2. Configure PHY0 and PHY1 otg-ports squelch detection
+	 * threshold to 125mV (default is 150mV).
+	 */
+	write32(&rk3399_grf->usbphy0_ctrl[0],
+		RK_CLRSETBITS(7 << 13 | 3 << 0, 6 << 13));
+	write32(&rk3399_grf->usbphy1_ctrl[0],
+		RK_CLRSETBITS(7 << 13 | 3 << 0, 6 << 13));
+	write32(&rk3399_grf->usbphy0_ctrl[13], RK_CLRBITS(3 << 0));
+	write32(&rk3399_grf->usbphy1_ctrl[13], RK_CLRBITS(3 << 0));
 
-		/*
-		 * ODT auto compensation bypass, and set max driver
-		 * strength only for PHY0 and PHY1 otg-port.
-		 */
-		write32(&rk3399_grf->usbphy0_ctrl[2],
-			RK_CLRSETBITS(0x7e << 4, 0x60 << 4));
-		write32(&rk3399_grf->usbphy1_ctrl[2],
-			RK_CLRSETBITS(0x7e << 4, 0x60 << 4));
+	/*
+	 * ODT auto compensation bypass, and set max driver
+	 * strength only for PHY0 and PHY1 otg-port.
+	 */
+	write32(&rk3399_grf->usbphy0_ctrl[2],
+		RK_CLRSETBITS(0x7e << 4, 0x60 << 4));
+	write32(&rk3399_grf->usbphy1_ctrl[2],
+		RK_CLRSETBITS(0x7e << 4, 0x60 << 4));
 
-		/*
-		 * ODT auto refresh bypass, and set the max bias current
-		 * tuning reference only for PHY0 and PHY1 otg-port.
-		 */
-		write32(&rk3399_grf->usbphy0_ctrl[3],
-			RK_CLRSETBITS(0x21c, 1 << 4));
-		write32(&rk3399_grf->usbphy1_ctrl[3],
-			RK_CLRSETBITS(0x21c, 1 << 4));
+	/*
+	 * ODT auto refresh bypass, and set the max bias current
+	 * tuning reference only for PHY0 and PHY1 otg-port.
+	 */
+	write32(&rk3399_grf->usbphy0_ctrl[3],
+		RK_CLRSETBITS(0x21c, 1 << 4));
+	write32(&rk3399_grf->usbphy1_ctrl[3],
+		RK_CLRSETBITS(0x21c, 1 << 4));
 
-		/*
-		 * ODT auto compensation bypass, and set default driver
-		 * strength only for PHY0 and PHY1 host-port.
-		 */
-		write32(&rk3399_grf->usbphy0_ctrl[15], RK_SETBITS(1 << 10));
-		write32(&rk3399_grf->usbphy1_ctrl[15], RK_SETBITS(1 << 10));
+	/*
+	 * ODT auto compensation bypass, and set default driver
+	 * strength only for PHY0 and PHY1 host-port.
+	 */
+	write32(&rk3399_grf->usbphy0_ctrl[15], RK_SETBITS(1 << 10));
+	write32(&rk3399_grf->usbphy1_ctrl[15], RK_SETBITS(1 << 10));
 
-		/* ODT auto refresh bypass only for PHY0 and PHY1 host-port. */
-		write32(&rk3399_grf->usbphy0_ctrl[16], RK_CLRBITS(1 << 9));
-		write32(&rk3399_grf->usbphy1_ctrl[16], RK_CLRBITS(1 << 9));
-	}
+	/* ODT auto refresh bypass only for PHY0 and PHY1 host-port. */
+	write32(&rk3399_grf->usbphy0_ctrl[16], RK_CLRBITS(1 << 9));
+	write32(&rk3399_grf->usbphy1_ctrl[16], RK_CLRBITS(1 << 9));
 
 	setup_usb_otg0();
 	setup_usb_otg1();
@@ -330,30 +332,8 @@ static void mainboard_init(device_t dev)
 	register_apio_suspend();
 }
 
-static void enable_backlight_booster(void)
+static void prepare_backlight_i2c(void)
 {
-	const struct {
-		uint8_t reg;
-		uint8_t value;
-	} i2c_writes[] = {
-		{1, 0x84},
-		{1, 0x85},
-		{0, 0x26}
-	};
-	int i;
-	const int booster_i2c_port = 0;
-	uint8_t i2c_buf[2];
-	struct i2c_seg i2c_command = { .read = 0, .chip = 0x2c,
-				       .buf = i2c_buf, .len = sizeof(i2c_buf)
-	};
-
-	/*
-	 * This function is called on Gru right after BL_EN is asserted. It
-	 * takes time for the switcher chip to come online, let's wait a bit
-	 * to let the voltage settle, so that the chip can be accessed.
-	 */
-	udelay(1000);
-
 	gpio_input(GPIO(1, B, 7));	/* I2C0_SDA remove pull_up */
 	gpio_input(GPIO(1, C, 0));	/* I2C0_SCL remove pull_up */
 
@@ -361,20 +341,14 @@ static void enable_backlight_booster(void)
 
 	write32(&rk3399_pmugrf->iomux_i2c0_sda, IOMUX_I2C0_SDA);
 	write32(&rk3399_pmugrf->iomux_i2c0_scl, IOMUX_I2C0_SCL);
-
-	for (i = 0; i < ARRAY_SIZE(i2c_writes); i++) {
-		i2c_buf[0] = i2c_writes[i].reg;
-		i2c_buf[1] = i2c_writes[i].value;
-		i2c_transfer(booster_i2c_port, &i2c_command, 1);
-	}
 }
 
 void mainboard_power_on_backlight(void)
 {
 	gpio_output(GPIO_BACKLIGHT, 1);  /* BL_EN */
 
-	if (IS_ENABLED(CONFIG_BOARD_GOOGLE_GRU) && board_id() == 0)
-		enable_backlight_booster();
+	if (IS_ENABLED(CONFIG_BOARD_GOOGLE_GRU))
+		prepare_backlight_i2c();
 }
 
 static void mainboard_enable(device_t dev)

@@ -19,21 +19,20 @@
 #include <device/device.h>
 #include <device/i2c.h>
 #include <device/pci_def.h>
+#include <intelblocks/lpss.h>
 #include <soc/intel/common/lpss_i2c.h>
 #include <soc/i2c.h>
 #include <soc/iomap.h>
 #include <soc/pci_devs.h>
 #include "chip.h"
 
-static int i2c_early_init_bus(unsigned bus)
+static int i2c_early_init_bus(unsigned int bus)
 {
-	ROMSTAGE_CONST struct soc_intel_apollolake_config *config;
-	ROMSTAGE_CONST struct device *tree_dev;
+	DEVTREE_CONST struct soc_intel_apollolake_config *config;
+	DEVTREE_CONST struct device *tree_dev;
 	pci_devfn_t dev;
 	int devfn;
 	uintptr_t base;
-	uint32_t value;
-	void *reg;
 
 	/* Find the PCI device for this bus controller */
 	devfn = i2c_bus_to_devfn(bus);
@@ -64,10 +63,7 @@ static int i2c_early_init_bus(unsigned bus)
 			   PCI_COMMAND_MEMORY | PCI_COMMAND_MASTER);
 
 	/* Take device out of reset */
-	reg = (void *)(base + I2C_LPSS_REG_RESET);
-	value = read32(reg);
-	value |= I2C_LPSS_RESET_RELEASE_HC;
-	write32(reg, value);
+	lpss_reset_release(base);
 
 	/* Initialize the controller */
 	if (lpss_i2c_init(bus, &config->i2c[bus]) < 0) {
@@ -78,9 +74,9 @@ static int i2c_early_init_bus(unsigned bus)
 	return 0;
 }
 
-uintptr_t lpss_i2c_base_address(unsigned bus)
+uintptr_t lpss_i2c_base_address(unsigned int bus)
 {
-	unsigned devfn;
+	unsigned int devfn;
 	pci_devfn_t dev;
 	uintptr_t base;
 

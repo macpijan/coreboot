@@ -170,12 +170,12 @@ size_t ulz4fn(const void *src, size_t srcn, void *dst, size_t dstn)
 		}
 
 		if (b.not_compressed) {
-			size_t size = MIN((uintptr_t)b.size, (uintptr_t)dst + dstn - (uintptr_t)out);
+			size_t size = MIN((uintptr_t)b.size, (uintptr_t)dst
+				+ dstn - (uintptr_t)out);
 			memcpy(out, in, size);
 			if (size < b.size)
 				break;		/* output overrun */
-			else
-				out += size;
+			out += size;
 		} else {
 			/* constant folding essential, do not touch params! */
 			int ret = LZ4_decompress_generic(in, out, b.size,
@@ -183,8 +183,7 @@ size_t ulz4fn(const void *src, size_t srcn, void *dst, size_t dstn)
 					full, 0, noDict, out, NULL, 0);
 			if (ret < 0)
 				break;		/* decompression error */
-			else
-				out += ret;
+			out += ret;
 		}
 
 		in += b.size;

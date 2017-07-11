@@ -32,9 +32,8 @@ static void do_silicon_init(struct fsp_header *hdr)
 
 	supd = (FSPS_UPD *) (hdr->cfg_region_offset + hdr->image_base);
 
-	if (supd->FspUpdHeader.Signature != FSPS_UPD_SIGNATURE) {
+	if (supd->FspUpdHeader.Signature != FSPS_UPD_SIGNATURE)
 		die("Invalid FSPS signature\n");
-	}
 
 	memcpy(&upd, supd, sizeof(upd));
 
@@ -62,7 +61,7 @@ static void do_silicon_init(struct fsp_header *hdr)
 	}
 }
 
-void fsp_silicon_init(bool s3wake)
+void fsps_load(bool s3wake)
 {
 	struct fsp_header *hdr = &fsps_hdr;
 	struct cbfsf file_desc;
@@ -71,16 +70,19 @@ void fsp_silicon_init(bool s3wake)
 	void *dest;
 	size_t size;
 	struct prog fsps = PROG_INIT(PROG_REFCODE, name);
+	static int load_done;
+
+	if (load_done)
+		return;
 
 	if (s3wake && !IS_ENABLED(CONFIG_NO_STAGE_CACHE)) {
 		printk(BIOS_DEBUG, "Loading FSPS from stage_cache\n");
 		stage_cache_load_stage(STAGE_REFCODE, &fsps);
 		if (fsp_validate_component(hdr, prog_rdev(&fsps)) != CB_SUCCESS)
 			die("On resume fsps header is invalid\n");
-		do_silicon_init(hdr);
+		load_done = 1;
 		return;
 	}
-
 
 	if (cbfs_boot_locate(&file_desc, name, NULL)) {
 		printk(BIOS_ERR, "Could not locate %s in CBFS\n", name);
@@ -93,16 +95,14 @@ void fsp_silicon_init(bool s3wake)
 	size = region_device_sz(&rdev);
 	dest = cbmem_add(CBMEM_ID_REFCODE, size);
 
-	if (dest == NULL) {
+	if (dest == NULL)
 		die("Could not add FSPS to CBMEM!\n");
-	}
 
 	if (rdev_readat(&rdev, dest, 0, size) < 0)
 		die("Failed to read FSPS!\n");
 
-	if (fsp_component_relocate((uintptr_t)dest, dest, size) < 0) {
+	if (fsp_component_relocate((uintptr_t)dest, dest, size) < 0)
 		die("Unable to relocate FSPS!\n");
-	}
 
 	/* Create new region device in memory after relocation. */
 	rdev_chain(&rdev, &addrspace_32bit.rdev, (uintptr_t)dest, size);
@@ -116,6 +116,11 @@ void fsp_silicon_init(bool s3wake)
 
 	/* Signal that FSP component has been loaded. */
 	prog_segment_loaded(hdr->image_base, hdr->image_size, SEG_FINAL);
+	load_done = 1;
+}
 
-	do_silicon_init(hdr);
+void fsp_silicon_init(bool s3wake)
+{
+	fsps_load(s3wake);
+	do_silicon_init(&fsps_hdr);
 }

@@ -1,7 +1,8 @@
 /*
  * This file is part of the coreboot project.
  *
- * Copyright (C) 2015 Timothy Pearson <tpearson@raptorengineeringinc.com>, Raptor Engineering
+ * Copyright (C) 2015 Timothy Pearson <tpearson@raptorengineeringinc.com>,
+ * Raptor Engineering
  * Copyright (C) 2011 Sven Schnelle <svens@stackframe.org>
  *
  * This program is free software; you can redistribute it and/or
@@ -75,7 +76,7 @@ int smbios_string_table_len(char *start)
 	char *p = start;
 	int i, len = 0;
 
-	while(*p) {
+	while (*p) {
 		i = strlen(p) + 1;
 		p += i;
 		len += i;
@@ -124,63 +125,65 @@ static int smbios_processor_name(char *start)
 }
 
 /* this function will fill the corresponding manufacturer */
-void smbios_fill_dimm_manufacturer_from_id(uint16_t mod_id, struct smbios_type17 *t)
+void smbios_fill_dimm_manufacturer_from_id(uint16_t mod_id,
+	struct smbios_type17 *t)
 {
 	switch (mod_id) {
-		case 0x2c80:
-			t->manufacturer = smbios_add_string(t->eos,
-							    "Crucial");
-			break;
-		case 0x4304:
-			t->manufacturer = smbios_add_string(t->eos,
-							    "Ramaxel");
-			break;
-		case 0x4f01:
-			t->manufacturer = smbios_add_string(t->eos,
-							    "Transcend");
-			break;
-		case 0x9801:
-			t->manufacturer = smbios_add_string(t->eos,
-							    "Kingston");
-			break;
-		case 0x987f:
-			t->manufacturer = smbios_add_string(t->eos,
-							    "Hynix");
-			break;
-		case 0x9e02:
-			t->manufacturer = smbios_add_string(t->eos,
-							    "Corsair");
-			break;
-		case 0xb004:
-			t->manufacturer = smbios_add_string(t->eos,
-							    "OCZ");
-			break;
-		case 0xad80:
-			t->manufacturer = smbios_add_string(t->eos,
-							    "Hynix/Hyundai");
-			break;
-		case 0xb502:
-			t->manufacturer = smbios_add_string(t->eos,
-							    "SuperTalent");
-			break;
-		case 0xcd04:
-			t->manufacturer = smbios_add_string(t->eos,
-							    "GSkill");
-			break;
-		case 0xce80:
-			t->manufacturer = smbios_add_string(t->eos,
-							    "Samsung");
-			break;
-		case 0xfe02:
-			t->manufacturer = smbios_add_string(t->eos,
-							    "Elpida");
-			break;
-		case 0xff2c:
-			t->manufacturer = smbios_add_string(t->eos,
-							    "Micron");
-			break;
-		default: {
+	case 0x2c80:
+		t->manufacturer = smbios_add_string(t->eos,
+						    "Crucial");
+		break;
+	case 0x4304:
+		t->manufacturer = smbios_add_string(t->eos,
+						    "Ramaxel");
+		break;
+	case 0x4f01:
+		t->manufacturer = smbios_add_string(t->eos,
+						    "Transcend");
+		break;
+	case 0x9801:
+		t->manufacturer = smbios_add_string(t->eos,
+						    "Kingston");
+		break;
+	case 0x987f:
+		t->manufacturer = smbios_add_string(t->eos,
+						    "Hynix");
+		break;
+	case 0x9e02:
+		t->manufacturer = smbios_add_string(t->eos,
+						    "Corsair");
+		break;
+	case 0xb004:
+		t->manufacturer = smbios_add_string(t->eos,
+						    "OCZ");
+		break;
+	case 0xad80:
+		t->manufacturer = smbios_add_string(t->eos,
+						    "Hynix/Hyundai");
+		break;
+	case 0xb502:
+		t->manufacturer = smbios_add_string(t->eos,
+						    "SuperTalent");
+		break;
+	case 0xcd04:
+		t->manufacturer = smbios_add_string(t->eos,
+						    "GSkill");
+		break;
+	case 0xce80:
+		t->manufacturer = smbios_add_string(t->eos,
+						    "Samsung");
+		break;
+	case 0xfe02:
+		t->manufacturer = smbios_add_string(t->eos,
+						    "Elpida");
+		break;
+	case 0xff2c:
+		t->manufacturer = smbios_add_string(t->eos,
+						    "Micron");
+		break;
+	default: {
 			char string_buffer[256];
+
 			snprintf(string_buffer, sizeof(string_buffer),
 						"Unknown (%x)", mod_id);
 			t->manufacturer = smbios_add_string(t->eos,
@@ -207,21 +210,21 @@ static int create_smbios_type17_for_dimm(struct dimm_info *dimm,
 	t->total_width = t->data_width + 8 * ((dimm->bus_width & 0x18) >> 3);
 
 	switch (dimm->mod_type) {
-		case SPD_RDIMM:
-		case SPD_MINI_RDIMM:
-			t->form_factor = MEMORY_FORMFACTOR_RIMM;
-			break;
-		case SPD_UDIMM:
-		case SPD_MICRO_DIMM:
-		case SPD_MINI_UDIMM:
-			t->form_factor = MEMORY_FORMFACTOR_DIMM;
-			break;
-		case SPD_SODIMM:
-			t->form_factor = MEMORY_FORMFACTOR_SODIMM;
-			break;
-		default:
-			t->form_factor = MEMORY_FORMFACTOR_UNKNOWN;
-			break;
+	case SPD_RDIMM:
+	case SPD_MINI_RDIMM:
+		t->form_factor = MEMORY_FORMFACTOR_RIMM;
+		break;
+	case SPD_UDIMM:
+	case SPD_MICRO_DIMM:
+	case SPD_MINI_UDIMM:
+		t->form_factor = MEMORY_FORMFACTOR_DIMM;
+		break;
+	case SPD_SODIMM:
+		t->form_factor = MEMORY_FORMFACTOR_SODIMM;
+		break;
+	default:
+		t->form_factor = MEMORY_FORMFACTOR_UNKNOWN;
+		break;
 	}
 
 	smbios_fill_dimm_manufacturer_from_id(dimm->mod_id, t);
@@ -282,7 +285,8 @@ static int smbios_write_type0(unsigned long *current, int handle)
 #if !CONFIG_CHROMEOS
 	t->bios_release_date = smbios_add_string(t->eos, coreboot_dmi_date);
 
-	t->bios_version = smbios_add_string(t->eos, smbios_mainboard_bios_version());
+	t->bios_version = smbios_add_string(t->eos,
+		smbios_mainboard_bios_version());
 #else
 #define SPACES \
 	"                                                                  "
@@ -373,9 +377,12 @@ static int smbios_write_type1(unsigned long *current, int handle)
 	t->type = SMBIOS_SYSTEM_INFORMATION;
 	t->handle = handle;
 	t->length = len - 2;
-	t->manufacturer = smbios_add_string(t->eos, smbios_mainboard_manufacturer());
-	t->product_name = smbios_add_string(t->eos, smbios_mainboard_product_name());
-	t->serial_number = smbios_add_string(t->eos, smbios_mainboard_serial_number());
+	t->manufacturer = smbios_add_string(t->eos,
+		smbios_mainboard_manufacturer());
+	t->product_name = smbios_add_string(t->eos,
+		smbios_mainboard_product_name());
+	t->serial_number = smbios_add_string(t->eos,
+		smbios_mainboard_serial_number());
 	t->sku = smbios_add_string(t->eos, smbios_mainboard_sku());
 	t->version = smbios_add_string(t->eos, smbios_mainboard_version());
 #ifdef CONFIG_MAINBOARD_FAMILY
@@ -396,9 +403,12 @@ static int smbios_write_type2(unsigned long *current, int handle)
 	t->type = SMBIOS_BOARD_INFORMATION;
 	t->handle = handle;
 	t->length = len - 2;
-	t->manufacturer = smbios_add_string(t->eos, smbios_mainboard_manufacturer());
-	t->product_name = smbios_add_string(t->eos, smbios_mainboard_product_name());
-	t->serial_number = smbios_add_string(t->eos, smbios_mainboard_serial_number());
+	t->manufacturer = smbios_add_string(t->eos,
+		smbios_mainboard_manufacturer());
+	t->product_name = smbios_add_string(t->eos,
+		smbios_mainboard_product_name());
+	t->serial_number = smbios_add_string(t->eos,
+		smbios_mainboard_serial_number());
 	t->version = smbios_add_string(t->eos, smbios_mainboard_version());
 	len = t->length + smbios_string_table_len(t->eos);
 	*current += len;
@@ -414,15 +424,15 @@ static int smbios_write_type3(unsigned long *current, int handle)
 	t->type = SMBIOS_SYSTEM_ENCLOSURE;
 	t->handle = handle;
 	t->length = len - 2;
-	t->manufacturer = smbios_add_string(t->eos, smbios_mainboard_manufacturer());
+	t->manufacturer = smbios_add_string(t->eos,
+		smbios_mainboard_manufacturer());
 	t->bootup_state = SMBIOS_STATE_SAFE;
 	t->power_supply_state = SMBIOS_STATE_SAFE;
 	t->thermal_state = SMBIOS_STATE_SAFE;
-	if (IS_ENABLED(CONFIG_SYSTEM_TYPE_LAPTOP)) {
+	if (IS_ENABLED(CONFIG_SYSTEM_TYPE_LAPTOP))
 		t->_type = SMBIOS_ENCLOSURE_NOTEBOOK;
-	} else {
+	else
 		t->_type = SMBIOS_ENCLOSURE_DESKTOP;
-	}
 	t->security_status = SMBIOS_STATE_SAFE;
 	len = t->length + smbios_string_table_len(t->eos);
 	*current += len;
@@ -439,9 +449,8 @@ static int smbios_write_type4(unsigned long *current, int handle)
 	res.eax = res.edx = 0;
 	res.ebx = 0x10000;
 
-	if (cpu_have_cpuid()) {
+	if (cpu_have_cpuid())
 		res = cpuid(1);
-	}
 
 	memset(t, 0, sizeof(struct smbios_type4));
 	t->type = SMBIOS_PROCESSOR_INFORMATION;
@@ -470,10 +479,10 @@ static int smbios_write_type11(unsigned long *current, int *handle)
 	int len;
 	struct device *dev;
 
-	memset(t, 0, sizeof *t);
+	memset(t, 0, sizeof(*t));
 	t->type = SMBIOS_OEM_STRINGS;
 	t->handle = *handle;
-	t->length = len = sizeof *t - 2;
+	t->length = len = sizeof(*t) - 2;
 
 	for (dev = all_devices; dev; dev = dev->next) {
 		if (dev->ops && dev->ops->get_smbios_strings)
@@ -481,7 +490,7 @@ static int smbios_write_type11(unsigned long *current, int *handle)
 	}
 
 	if (t->count == 0) {
-		memset(t, 0, sizeof *t);
+		memset(t, 0, sizeof(*t));
 		return 0;
 	}
 
@@ -504,7 +513,8 @@ static int smbios_write_type17(unsigned long *current, int *handle)
 		return 0;	/* can't find mem info in cbmem */
 
 	printk(BIOS_INFO, "Create SMBIOS type 17\n");
-	for (i = 0; i < meminfo->dimm_cnt && i < ARRAY_SIZE(meminfo->dimm); i++) {
+	for (i = 0; i < meminfo->dimm_cnt && i < ARRAY_SIZE(meminfo->dimm);
+		i++) {
 		struct dimm_info *dimm;
 		dimm = &meminfo->dimm[i];
 		len = create_smbios_type17_for_dimm(dimm, current, handle);
@@ -566,7 +576,8 @@ static int smbios_write_type127(unsigned long *current, int handle)
 	return len;
 }
 
-static int smbios_walk_device_tree(struct device *tree, int *handle, unsigned long *current)
+static int smbios_walk_device_tree(struct device *tree, int *handle,
+	unsigned long *current)
 {
 	struct device *dev;
 	int len = 0;
@@ -580,7 +591,14 @@ static int smbios_walk_device_tree(struct device *tree, int *handle, unsigned lo
 	return len;
 }
 
-#define update_max(len, max_len, stmt) do { int tmp = stmt; max_len = MAX(max_len, tmp); len += tmp; } while(0)
+#define update_max(len, max_len, stmt)		\
+	do {					\
+		int tmp = stmt;			\
+						\
+		max_len = MAX(max_len, tmp);	\
+		len += tmp;			\
+	} while (0)
+
 unsigned long smbios_write_tables(unsigned long current)
 {
 	struct smbios_entry *se;
@@ -597,21 +615,32 @@ unsigned long smbios_write_tables(unsigned long current)
 	current = ALIGN(current, 16);
 
 	tables = current;
-	update_max(len, max_struct_size, smbios_write_type0(&current, handle++));
-	update_max(len, max_struct_size, smbios_write_type1(&current, handle++));
-	update_max(len, max_struct_size, smbios_write_type2(&current, handle++));
-	update_max(len, max_struct_size, smbios_write_type3(&current, handle++));
-	update_max(len, max_struct_size, smbios_write_type4(&current, handle++));
-	update_max(len, max_struct_size, smbios_write_type11(&current, &handle));
+	update_max(len, max_struct_size, smbios_write_type0(&current,
+		handle++));
+	update_max(len, max_struct_size, smbios_write_type1(&current,
+		handle++));
+	update_max(len, max_struct_size, smbios_write_type2(&current,
+		handle++));
+	update_max(len, max_struct_size, smbios_write_type3(&current,
+		handle++));
+	update_max(len, max_struct_size, smbios_write_type4(&current,
+		handle++));
+	update_max(len, max_struct_size, smbios_write_type11(&current,
+		&handle));
 #if CONFIG_ELOG
-	update_max(len, max_struct_size, elog_smbios_write_type15(&current, handle++));
+	update_max(len, max_struct_size, elog_smbios_write_type15(&current,
+		handle++));
 #endif
-	update_max(len, max_struct_size, smbios_write_type17(&current, &handle));
-	update_max(len, max_struct_size, smbios_write_type32(&current, handle++));
+	update_max(len, max_struct_size, smbios_write_type17(&current,
+		&handle));
+	update_max(len, max_struct_size, smbios_write_type32(&current,
+		handle++));
 
-	update_max(len, max_struct_size, smbios_walk_device_tree(all_devices, &handle, &current));
+	update_max(len, max_struct_size, smbios_walk_device_tree(all_devices,
+		&handle, &current));
 
-	update_max(len, max_struct_size, smbios_write_type127(&current, handle++));
+	update_max(len, max_struct_size, smbios_write_type127(&current,
+		handle++));
 
 	memset(se, 0, sizeof(struct smbios_entry));
 	memcpy(se->anchor, "_SM_", 4);
@@ -626,7 +655,8 @@ unsigned long smbios_write_tables(unsigned long current)
 	se->struct_table_length = len;
 
 	se->intermediate_checksum = smbios_checksum((u8 *)se + 0x10,
-						    sizeof(struct smbios_entry) - 0x10);
+						    sizeof(struct smbios_entry)
+						    - 0x10);
 	se->checksum = smbios_checksum((u8 *)se, sizeof(struct smbios_entry));
 	return current;
 }

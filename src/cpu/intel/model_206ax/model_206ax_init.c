@@ -42,7 +42,7 @@
  */
 static acpi_cstate_t cstate_map[] = {
 	{	/* 0: C0 */
-	},{	/* 1: C1 */
+	}, {	/* 1: C1 */
 		.latency = 1,
 		.power = 1000,
 		.resource = {
@@ -190,8 +190,8 @@ void set_power_limits(u8 power_limit_1_time)
 {
 	msr_t msr = rdmsr(MSR_PLATFORM_INFO);
 	msr_t limit;
-	unsigned power_unit;
-	unsigned tdp, min_power, max_power, max_time;
+	unsigned int power_unit;
+	unsigned int tdp, min_power, max_power, max_time;
 	u8 power_limit_1_val;
 
 	if (power_limit_1_time >= ARRAY_SIZE(power_limit_time_sec_to_msr))
@@ -336,7 +336,7 @@ static void configure_misc(void)
 
 	msr = rdmsr(IA32_MISC_ENABLE);
 	msr.lo |= (1 << 0);	  /* Fast String enable */
-	msr.lo |= (1 << 3); 	  /* TM1/TM2/EMTTM enable */
+	msr.lo |= (1 << 3);	  /* TM1/TM2/EMTTM enable */
 	msr.lo |= (1 << 16);	  /* Enhanced SpeedStep Enable */
 	wrmsr(IA32_MISC_ENABLE, msr);
 
@@ -424,7 +424,7 @@ static void configure_mca(void)
 int cpu_get_apic_id_map(int *apic_id_map)
 {
 	struct cpuid_result result;
-	unsigned threads_per_package, threads_per_core, i, shift = 0;
+	unsigned int threads_per_package, threads_per_core, i, shift = 0;
 
 	/* Logical processors (threads) per core */
 	result = cpuid_ext(0xb, 0);
@@ -449,7 +449,7 @@ int cpu_get_apic_id_map(int *apic_id_map)
 static void intel_cores_init(struct device *cpu)
 {
 	struct cpuid_result result;
-	unsigned threads_per_package, threads_per_core, i;
+	unsigned int threads_per_package, threads_per_core, i;
 
 	/* Logical processors (threads) per core */
 	result = cpuid_ext(0xb, 0);

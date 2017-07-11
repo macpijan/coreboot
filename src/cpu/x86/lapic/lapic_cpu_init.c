@@ -5,7 +5,8 @@
  * Copyright (C) 2001 Ronald G. Minnich
  * Copyright (C) 2005 Yinghai Lu
  * Copyright (C) 2008 coresystems GmbH
- * Copyright (C) 2015 Timothy Pearson <tpearson@raptorengineeringinc.com>, Raptor Engineering
+ * Copyright (C) 2015 Timothy Pearson <tpearson@raptorengineeringinc.com>,
+ * Raptor Engineering
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -74,7 +75,8 @@ static void copy_secondary_start_to_lowest_1M(void)
 	/* Fill in secondary_start's local gdt. */
 	setup_secondary_gdt();
 
-	code_size = (unsigned long)_secondary_start_end - (unsigned long)_secondary_start;
+	code_size = (unsigned long)_secondary_start_end
+		- (unsigned long)_secondary_start;
 
 	if (acpi_is_wakeup_s3()) {
 		/* need to save it for RAM resume */
@@ -89,10 +91,11 @@ static void copy_secondary_start_to_lowest_1M(void)
 	}
 
 	/* copy the _secondary_start to the RAM below 1M*/
-	memcpy((unsigned char *)AP_SIPI_VECTOR, (unsigned char *)_secondary_start, code_size);
+	memcpy((unsigned char *)AP_SIPI_VECTOR,
+		(unsigned char *)_secondary_start, code_size);
 
 	printk(BIOS_DEBUG, "start_eip=0x%08lx, code_size=0x%08lx\n",
-		(long unsigned int)AP_SIPI_VECTOR, code_size);
+		(unsigned long int)AP_SIPI_VECTOR, code_size);
 }
 
 static void recover_lowest_1M(void)
@@ -145,7 +148,8 @@ static int lapic_start_cpu(unsigned long apicid)
 		}
 		return 0;
 	}
-#if !CONFIG_CPU_AMD_MODEL_10XXX && !CONFIG_CPU_INTEL_MODEL_206AX && !CONFIG_CPU_INTEL_MODEL_2065X
+#if !CONFIG_CPU_AMD_MODEL_10XXX && !CONFIG_CPU_INTEL_MODEL_206AX \
+	&& !CONFIG_CPU_INTEL_MODEL_2065X
 	mdelay(10);
 #endif
 
@@ -404,7 +408,7 @@ void stop_this_cpu(void)
 #endif
 
 /* C entry point of secondary cpus */
-void asmlinkage secondary_cpu_init(unsigned int index)
+asmlinkage void secondary_cpu_init(unsigned int index)
 {
 	atomic_inc(&active_cpus);
 
@@ -437,26 +441,22 @@ static void start_other_cpus(struct bus *cpu_bus, struct device *bsp_cpu)
 	/* Loop through the cpus once getting them started */
 
 	for (cpu = cpu_bus->children; cpu; cpu = cpu->sibling) {
-		if (cpu->path.type != DEVICE_PATH_APIC) {
-			continue;
-		}
-
-		if (IS_ENABLED(CONFIG_PARALLEL_CPU_INIT) && (cpu==bsp_cpu))
+		if (cpu->path.type != DEVICE_PATH_APIC)
 			continue;
 
-		if (!cpu->enabled) {
+		if (IS_ENABLED(CONFIG_PARALLEL_CPU_INIT) && (cpu == bsp_cpu))
 			continue;
-		}
 
-		if (cpu->initialized) {
+		if (!cpu->enabled)
 			continue;
-		}
 
-		if (!start_cpu(cpu)) {
+		if (cpu->initialized)
+			continue;
+
+		if (!start_cpu(cpu))
 			/* Record the error in cpu? */
 			printk(BIOS_ERR, "CPU 0x%02x would not start!\n",
 				cpu->path.apic.apic_id);
-		}
 
 		if (!IS_ENABLED(CONFIG_PARALLEL_CPU_INIT))
 			udelay(10);
@@ -472,9 +472,8 @@ static void smm_other_cpus(struct bus *cpu_bus, device_t bsp_cpu)
 	/* Loop through the cpus once to let them run through SMM relocator */
 
 	for (cpu = cpu_bus->children; cpu; cpu = cpu->sibling) {
-		if (cpu->path.type != DEVICE_PATH_APIC) {
+		if (cpu->path.type != DEVICE_PATH_APIC)
 			continue;
-		}
 
 		printk(BIOS_ERR, "considering CPU 0x%02x for SMM init\n",
 			cpu->path.apic.apic_id);
@@ -482,18 +481,17 @@ static void smm_other_cpus(struct bus *cpu_bus, device_t bsp_cpu)
 		if (cpu == bsp_cpu)
 			continue;
 
-		if (!cpu->enabled) {
+		if (!cpu->enabled)
 			continue;
-		}
 
-		if (!start_cpu(cpu)) {
+		if (!start_cpu(cpu))
 			/* Record the error in cpu? */
 			printk(BIOS_ERR, "CPU 0x%02x would not start!\n",
 				cpu->path.apic.apic_id);
-		}
 
 		/* FIXME: endless loop */
-		while (atomic_read(&active_cpus) != pre_count);
+		while (atomic_read(&active_cpus) != pre_count)
+			;
 	}
 }
 
@@ -518,16 +516,13 @@ static void wait_other_cpus_stop(struct bus *cpu_bus)
 		loopcount++;
 	}
 	for (cpu = cpu_bus->children; cpu; cpu = cpu->sibling) {
-		if (cpu->path.type != DEVICE_PATH_APIC) {
+		if (cpu->path.type != DEVICE_PATH_APIC)
 			continue;
-		}
-		if (cpu->path.apic.apic_id == SPEEDSTEP_APIC_MAGIC) {
+		if (cpu->path.apic.apic_id == SPEEDSTEP_APIC_MAGIC)
 			continue;
-		}
-		if (!cpu->initialized) {
+		if (!cpu->initialized)
 			printk(BIOS_ERR, "CPU 0x%02x did not initialize!\n",
 				cpu->path.apic.apic_id);
-		}
 	}
 	printk(BIOS_DEBUG, "All AP CPUs stopped (%ld loops)\n", loopcount);
 	checkstack(_estack, 0);

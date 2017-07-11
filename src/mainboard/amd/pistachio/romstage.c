@@ -25,26 +25,23 @@
 #include <northbridge/amd/amdk8/raminit.h>
 #include <delay.h>
 #include <cpu/x86/lapic.h>
-#include "northbridge/amd/amdk8/reset_test.c"
 #include <spd.h>
 #include <cpu/x86/bist.h>
 #include "northbridge/amd/amdk8/setup_resource_map.c"
 #include "southbridge/amd/rs690/early_setup.c"
 #include "southbridge/amd/sb600/early_setup.c"
-#include "northbridge/amd/amdk8/debug.c" /* After sb600/early_setup.c! */
+#include <northbridge/amd/amdk8/f.h>
 
-static void memreset(int controllers, const struct mem_controller *ctrl) { }
-static void activate_spd_rom(const struct mem_controller *ctrl) { }
+void memreset(int controllers, const struct mem_controller *ctrl) { }
+void activate_spd_rom(const struct mem_controller *ctrl) { }
 
-static inline int spd_read_byte(u32 device, u32 address)
+int spd_read_byte(u32 device, u32 address)
 {
 	return smbus_read_byte(device, address);
 }
 
 #include <northbridge/amd/amdk8/amdk8.h>
 #include "northbridge/amd/amdk8/incoherent_ht.c"
-#include "northbridge/amd/amdk8/raminit_f.c"
-#include "northbridge/amd/amdk8/coherent_ht.c"
 #include "lib/generic_sdram.c"
 #include "resourcemap.c"
 #include "cpu/amd/dualcore/dualcore.c"

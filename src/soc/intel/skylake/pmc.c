@@ -24,6 +24,7 @@
 #include <arch/ioapic.h>
 #include <arch/acpi.h>
 #include <cpu/cpu.h>
+#include <intelblocks/pcr.h>
 #include <pc80/mc146818rtc.h>
 #include <reg_script.h>
 #include <string.h>
@@ -33,7 +34,7 @@
 #include <soc/pmc.h>
 #include <soc/pm.h>
 #include <cpu/x86/smm.h>
-#include <soc/pcr.h>
+#include <soc/pcr_ids.h>
 #include <soc/ramstage.h>
 #include <vboot/vbnv.h>
 #include <vboot/vbnv_layout.h>
@@ -188,16 +189,19 @@ static void config_deep_sX(uint32_t offset, uint32_t mask, int sx, int enable)
 	write32(pmcbase + offset, reg);
 }
 
-static void config_deep_s5(int on)
+static void config_deep_s5(int on_ac, int on_dc)
 {
 	/* Treat S4 the same as S5. */
-	config_deep_sX(S4_PWRGATE_POL, S4DC_GATE_SUS | S4AC_GATE_SUS, 4, on);
-	config_deep_sX(S5_PWRGATE_POL, S5DC_GATE_SUS | S5AC_GATE_SUS, 5, on);
+	config_deep_sX(S4_PWRGATE_POL, S4AC_GATE_SUS, 4, on_ac);
+	config_deep_sX(S4_PWRGATE_POL, S4DC_GATE_SUS, 4, on_dc);
+	config_deep_sX(S5_PWRGATE_POL, S5AC_GATE_SUS, 5, on_ac);
+	config_deep_sX(S5_PWRGATE_POL, S5DC_GATE_SUS, 5, on_dc);
 }
 
-static void config_deep_s3(int on)
+static void config_deep_s3(int on_ac, int on_dc)
 {
-	config_deep_sX(S3_PWRGATE_POL, S3DC_GATE_SUS | S3AC_GATE_SUS, 3, on);
+	config_deep_sX(S3_PWRGATE_POL, S3AC_GATE_SUS, 3, on_ac);
+	config_deep_sX(S3_PWRGATE_POL, S3DC_GATE_SUS, 3, on_dc);
 }
 
 static void config_deep_sx(uint32_t deepsx_config)
@@ -225,8 +229,8 @@ static void pmc_init(struct device *dev)
 	reg_script_run_on_dev(dev, pch_pmc_misc_init_script);
 	pch_set_acpi_mode();
 
-	config_deep_s3(config->deep_s3_enable);
-	config_deep_s5(config->deep_s5_enable);
+	config_deep_s3(config->deep_s3_enable_ac, config->deep_s3_enable_dc);
+	config_deep_s5(config->deep_s5_enable_ac, config->deep_s5_enable_dc);
 	config_deep_sx(config->deep_sx_config);
 
 	/* Clear registers that contain write-1-to-clear bits. */

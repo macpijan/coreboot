@@ -21,6 +21,7 @@
 
 #include <arch/acpi_device.h>
 #include <device/i2c.h>
+#include <intelblocks/gspi.h>
 #include <stdint.h>
 #include <soc/gpio_defs.h>
 #include <soc/gpe.h>
@@ -85,9 +86,11 @@ struct soc_intel_skylake_config {
 	/* Enable DPTF support */
 	int dptf_enable;
 
-	/* Deep SX enable for both AC and DC */
-	int deep_s3_enable;
-	int deep_s5_enable;
+	/* Deep SX enables */
+	int deep_s3_enable_ac;
+	int deep_s3_enable_dc;
+	int deep_s5_enable_ac;
+	int deep_s5_enable_dc;
 
 	/*
 	 * Deep Sx Configuration
@@ -157,6 +160,11 @@ struct soc_intel_skylake_config {
 
 	/* Trace Hub function */
 	u8 EnableTraceHub;
+	u32 TraceHubMemReg0Size;
+	u32 TraceHubMemReg1Size;
+
+	/* DCI Enable/Disable */
+	u8 PchDciEn;
 
 	/* Pcie Root Ports */
 	u8 PcieRpEnable[CONFIG_MAX_ROOT_PORTS];
@@ -203,8 +211,12 @@ struct soc_intel_skylake_config {
 	enum skylake_i2c_voltage i2c_voltage[SKYLAKE_I2C_DEV_MAX];
 	struct lpss_i2c_bus_config i2c[SKYLAKE_I2C_DEV_MAX];
 
+	/* GSPI */
+	struct gspi_cfg gspi[CONFIG_SOC_INTEL_COMMON_BLOCK_GSPI_MAX];
+
 	/* Camera */
 	u8 Cio2Enable;
+	u8 SaImguEnable;
 
 	/* eMMC and SD */
 	u8 ScsEmmcEnabled;
@@ -264,9 +276,10 @@ struct soc_intel_skylake_config {
 	u8 LockDownConfigBiosLock;
 	/*
 	 * Enable InSMM.STS (EISS) in SPI If this bit is set, then WPD must be a
-	 * '1' and InSMM.STS must be '1' also in order to write to BIOS regions of
-	 * SPI Flash. If this bit is clear, then the InSMM.STS is a don't care. The
-	 * BIOS must set the EISS bit while BIOS Guard support is enabled.
+	 * '1' and InSMM.STS must be '1' also in order to write to BIOS regions
+	 * of SPI Flash. If this bit is clear, then the InSMM.STS is a don't
+	 * care. The BIOS must set the EISS bit while BIOS Guard support is
+	 * enabled.
 	 */
 	u8 LockDownConfigSpiEiss;
 	/* Subsystem Vendor ID of the PCH devices*/
@@ -324,7 +337,8 @@ struct soc_intel_skylake_config {
 	 */
 	u8 PmConfigPciClockRun;
 	/*
-	 * SLP_X Stretching After SUS Well Power Up. Values 0: Disabled, 1: Enabled
+	 * SLP_X Stretching After SUS Well Power Up. Values 0: Disabled,
+	 * 1: Enabled
 	 */
 	u8 PmConfigSlpStrchSusUp;
 	/*
@@ -332,6 +346,14 @@ struct soc_intel_skylake_config {
 	 * Values: 0x0 - 4s, 0x1 - 6s, 0x2 - 8s, 0x3 - 10s, 0x4 - 12s, 0x5 - 14s
 	 */
 	u8 PmConfigPwrBtnOverridePeriod;
+
+	/*
+	 * PCH Pm Slp S0 Voltage Margining Enable
+	 * Indicates platform supports VCCPrim_Core Voltage Margining
+	 * in SLP_S0# asserted state.
+	 */
+	u8 PchPmSlpS0VmEnable;
+
 	/*
 	 * Reset Power Cycle Duration could be customized in the unit of second.
 	 * PCH HW default is 4 seconds, and range is 1~4 seconds.
@@ -340,7 +362,9 @@ struct soc_intel_skylake_config {
 	u8 PmConfigPwrCycDur;
 	/* Determines if enable Serial IRQ. Values 0: Disabled, 1: Enabled.*/
 	u8 SerialIrqConfigSirqEnable;
-	/* Serial IRQ Mode Select. Values: 0: PchQuietMode, 1: PchContinuousMode.*/
+	/* Serial IRQ Mode Select. Values: 0: PchQuietMode,
+	 * 1: PchContinuousMode.
+	 */
 	u8 SerialIrqConfigSirqMode;
 	/*
 	 * Start Frame Pulse Width.
@@ -376,6 +400,17 @@ struct soc_intel_skylake_config {
 	/* Enable/Disable VMX feature */
 	u8 VmxEnable;
 
+	/*
+	 * PRMRR size setting with three options
+	 * 0x02000000 - 32MiB
+	 * 0x04000000 - 64MiB
+	 * 0x08000000 - 128MiB
+	 */
+	u32 PrmrrSize;
+
+	/* Enable/Disable host reads to PMC XRAM registers */
+	u8 PchPmPmcReadDisable;
+
 	/* Statically clock gate 8254 PIT. */
 	u8 clock_gate_8254;
 
@@ -391,7 +426,7 @@ struct soc_intel_skylake_config {
 	 *          "\\_SB.PCI0.GPIO", 0, ResourceConsumer)
 	 *          { sdcard_cd_gpio_default }
 	 */
-	unsigned sdcard_cd_gpio_default;
+	unsigned int sdcard_cd_gpio_default;
 
 	/* Use custom SD card detect GPIO configuration */
 	struct acpi_gpio sdcard_cd_gpio;
@@ -401,6 +436,38 @@ struct soc_intel_skylake_config {
 
 	/* Wake Enable Bitmap for USB3 ports */
 	u8 usb3_wake_enable_bitmap;
+
+	/*
+	 * Acoustic Noise Mitigation
+	 * 0b - Disable
+	 * 1b - Enable noise mitigation
+	 */
+	u8 AcousticNoiseMitigation;
+
+	/*
+	 * Disable Fast Package C-state ramping
+	 * Need to set AcousticNoiseMitigation = '1' first
+	 * 0b - Enabled
+	 * 1b - Disabled
+	 */
+	u8 FastPkgCRampDisableIa;
+	u8 FastPkgCRampDisableGt;
+	u8 FastPkgCRampDisableSa;
+
+	/*
+	 * Adjust the VR slew rates
+	 * Need to set AcousticNoiseMitigation = '1' first
+	 * 000b - Fast/2
+	 * 001b - Fast/4
+	 * 010b - Fast/8
+	 * 011b - Fast/16
+	 */
+	u8 SlowSlewRateForIa;
+	u8 SlowSlewRateForGt;
+	u8 SlowSlewRateForSa;
+
+	/* Enable SGX feature */
+	u8 sgx_enable;
 };
 
 typedef struct soc_intel_skylake_config config_t;

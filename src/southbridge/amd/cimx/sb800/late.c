@@ -34,6 +34,7 @@
 #include "sb_cimx.h"		/* AMD CIMX wrapper entries */
 #include "smbus.h"
 #include "fan.h"
+#include "pci_devs.h"
 #include <southbridge/amd/common/amd_pci_util.h>
 
 /*implement in mainboard.c*/
@@ -150,6 +151,20 @@ unsigned long acpi_fill_mcfg(unsigned long current)
 	return current;
 }
 
+static const char *lpc_acpi_name(struct device *dev)
+{
+	if (dev->path.type != DEVICE_PATH_PCI)
+		return NULL;
+
+	switch (dev->path.pci.devfn) {
+	/* DSDT: acpi/lpc.asl */
+	case LPC_DEVFN:
+		return "LIBR";
+	}
+
+	return NULL;
+}
+
 static struct device_operations lpc_ops = {
 	.read_resources = lpc_read_resources,
 	.set_resources = lpc_set_resources,
@@ -160,6 +175,7 @@ static struct device_operations lpc_ops = {
 	.init = lpc_init,
 	.scan_bus = scan_lpc_bus,
 	.ops_pci = &lops_pci,
+	.acpi_name = lpc_acpi_name,
 };
 
 static const struct pci_driver lpc_driver __pci_driver = {
@@ -261,6 +277,7 @@ static const struct pci_driver gec_driver __pci_driver = {
  */
 static void sb800_init(void *chip_info)
 {
+	printk(BIOS_DEBUG, "SB800: %s\n", __func__);
 	sb_config->StdHeader.CALLBACK.CalloutPtr = sb800_callout_entry;
 	sb800_cimx_config(sb_config);
 
@@ -273,36 +290,42 @@ static void sb800_init(void *chip_info)
  */
 void sb_Before_Pci_Init(void)
 {
+	printk(BIOS_DEBUG, "SB800: %s\n", __func__);
 	sb_config->StdHeader.Func = SB_BEFORE_PCI_INIT;
 	AmdSbDispatcher(sb_config);
 }
 
 void sb_After_Pci_Init(void)
 {
+	printk(BIOS_DEBUG, "SB800: %s\n", __func__);
 	sb_config->StdHeader.Func = SB_AFTER_PCI_INIT;
 	AmdSbDispatcher(sb_config);
 }
 
 void sb_Mid_Post_Init(void)
 {
+	printk(BIOS_DEBUG, "SB800: %s\n", __func__);
 	sb_config->StdHeader.Func = SB_MID_POST_INIT;
 	AmdSbDispatcher(sb_config);
 }
 
 void sb_Late_Post(void)
 {
+	printk(BIOS_DEBUG, "SB800: %s\n", __func__);
 	sb_config->StdHeader.Func = SB_LATE_POST_INIT;
 	AmdSbDispatcher(sb_config);
 }
 
 void sb_Before_Pci_Restore_Init(void)
 {
+	printk(BIOS_DEBUG, "SB800: %s\n", __func__);
 	sb_config->StdHeader.Func = SB_BEFORE_PCI_RESTORE_INIT;
 	AmdSbDispatcher(sb_config);
 }
 
 void sb_After_Pci_Restore_Init(void)
 {
+	printk(BIOS_DEBUG, "SB800: %s\n", __func__);
 	sb_config->StdHeader.Func = SB_AFTER_PCI_RESTORE_INIT;
 	AmdSbDispatcher(sb_config);
 }

@@ -14,19 +14,13 @@ bootblock-y += car.c
 bootblock-y += flash_ctrlr.c
 bootblock-y += gpio.c
 bootblock-y += heci.c
-bootblock-y += itss.c
 bootblock-y += lpc_lib.c
 bootblock-y += mmap_boot.c
 bootblock-y += pmutil.c
 bootblock-y += spi.c
 bootblock-y += tsc_freq.c
 bootblock-$(CONFIG_SOC_UART_DEBUG) += uart_early.c
-
-ifeq ($(CONFIG_FSP_CAR),y)
-bootblock-y += bootblock/cache_as_ram_fsp.S
-else
-bootblock-y += bootblock/cache_as_ram.S
-endif
+bootblock-$(CONFIG_FSP_CAR) += bootblock/cache_as_ram_fsp.S
 
 romstage-y += car.c
 romstage-$(CONFIG_PLATFORM_USES_FSP2_0) += romstage.c
@@ -34,7 +28,6 @@ romstage-y += flash_ctrlr.c
 romstage-y += gpio.c
 romstage-y += heci.c
 romstage-y += i2c_early.c
-romstage-y += itss.c
 romstage-$(CONFIG_SOC_UART_DEBUG) += uart_early.c
 romstage-y += lpc_lib.c
 romstage-y += memmap.c
@@ -65,7 +58,6 @@ ramstage-y += gpio.c
 ramstage-y += graphics.c
 ramstage-y += heci.c
 ramstage-y += i2c.c
-ramstage-y += itss.c
 ramstage-$(CONFIG_SOC_UART_DEBUG) += uart_early.c
 ramstage-y += lpc.c
 ramstage-y += lpc_lib.c
@@ -83,7 +75,9 @@ ramstage-y += reset.c
 ramstage-y += smi.c
 ramstage-y += sram.c
 ramstage-y += spi.c
+ramstage-y += xdci.c
 ramstage-y += xhci.c
+ramstage-y += sd.c
 
 postcar-y += flash_ctrlr.c
 postcar-y += memmap.c
@@ -92,11 +86,7 @@ postcar-y += spi.c
 postcar-$(CONFIG_SOC_UART_DEBUG) += uart_early.c
 postcar-y += tsc_freq.c
 
-ifeq ($(CONFIG_FSP_CAR),y)
-postcar-y += exit_car_fsp.S
-else
-postcar-y += exit_car.S
-endif
+postcar-$(CONFIG_FSP_CAR) += exit_car_fsp.S
 
 verstage-y += car.c
 verstage-y += flash_ctrlr.c

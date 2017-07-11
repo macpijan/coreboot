@@ -18,19 +18,33 @@
 #include <chip.h>
 #include <device/device.h>
 #include <device/pci_def.h>
+#include <intelblocks/itss.h>
+#include <intelblocks/pcr.h>
+#include <intelblocks/rtc.h>
 #include <soc/bootblock.h>
 #include <soc/iomap.h>
 #include <soc/lpc.h>
 #include <soc/p2sb.h>
 #include <soc/pch.h>
 #include <soc/pci_devs.h>
-#include <soc/pcr.h>
+#include <soc/pcr_ids.h>
 #include <soc/pm.h>
 #include <soc/pmc.h>
 #include <soc/smbus.h>
 
-/* Max PXRC registers in ITSS*/
-#define MAX_PXRC_CONFIG		0x08
+#define PCR_DMI_LPCLGIR1	0x2730
+#define PCR_DMI_LPCLGIR2	0x2734
+#define PCR_DMI_LPCLGIR3	0x2738
+#define PCR_DMI_LPCLGIR4	0x273c
+
+#define PCR_DMI_ACPIBA		0x27B4
+#define PCR_DMI_ACPIBDID	0x27B8
+#define PCR_DMI_PMBASEA		0x27AC
+#define PCR_DMI_PMBASEC		0x27B0
+#define PCR_DMI_TCOBASE		0x2778
+
+#define PCR_DMI_LPCIOD		0x2770
+#define PCR_DMI_LPCIOE		0x2774
 
 /*
  * Enable Prefetching and Caching.
@@ -69,7 +83,7 @@ static void enable_p2sbbar(void)
 	device_t dev = PCH_DEV_P2SB;
 
 	/* Enable PCR Base address in PCH */
-	pci_write_config32(dev, PCI_BASE_ADDRESS_0, PCH_PCR_BASE_ADDRESS);
+	pci_write_config32(dev, PCI_BASE_ADDRESS_0, CONFIG_PCR_BASE_ADDRESS);
 
 	/* Enable P2SB MSE */
 	pci_write_config8(dev, PCI_COMMAND,
@@ -108,22 +122,21 @@ static void pch_enable_lpc(void)
 	pci_write_config32(PCH_DEV_LPC, LPC_GEN4_DEC, config->gen4_dec);
 
 	/* Mirror these same settings in DMI PCR */
-	pcr_write32(PID_DMI, R_PCH_PCR_DMI_LPCLGIR1, config->gen1_dec);
-	pcr_write32(PID_DMI, R_PCH_PCR_DMI_LPCLGIR2, config->gen2_dec);
-	pcr_write32(PID_DMI, R_PCH_PCR_DMI_LPCLGIR3, config->gen3_dec);
-	pcr_write32(PID_DMI, R_PCH_PCR_DMI_LPCLGIR4, config->gen4_dec);
+	pcr_write32(PID_DMI, PCR_DMI_LPCLGIR1, config->gen1_dec);
+	pcr_write32(PID_DMI, PCR_DMI_LPCLGIR2, config->gen2_dec);
+	pcr_write32(PID_DMI, PCR_DMI_LPCLGIR3, config->gen3_dec);
+	pcr_write32(PID_DMI, PCR_DMI_LPCLGIR4, config->gen4_dec);
 }
 
 static void pch_interrupt_init(void)
 {
 	const struct device *dev;
 	const config_t *config;
-	u8 index = 0;
-	u8 pch_interrupt_routing[MAX_PXRC_CONFIG];
+	uint8_t pch_interrupt_routing[MAX_PXRC_CONFIG];
 
 	dev = dev_find_slot(0, PCI_DEVFN(PCH_DEV_SLOT_LPC, 0));
 	if (!dev || !dev->chip_info)
-	        return;
+		return;
 	config = dev->chip_info;
 
 	pch_interrupt_routing[0] = config->pirqa_routing;
@@ -135,17 +148,9 @@ static void pch_interrupt_init(void)
 	pch_interrupt_routing[6] = config->pirqg_routing;
 	pch_interrupt_routing[7] = config->pirqh_routing;
 
-	for (index = 0; index < MAX_PXRC_CONFIG; index++) {
-		if (pch_interrupt_routing[index] < 16 &&
-			pch_interrupt_routing[index] > 2 &&
-			pch_interrupt_routing[index] != 8 &&
-			pch_interrupt_routing[index] != 13) {
-			pcr_write8(PID_ITSS,
-					(R_PCH_PCR_ITSS_PIRQA_ROUT + index),
-					pch_interrupt_routing[index]);
-		}
-	}
+	itss_irq_init(pch_interrupt_routing);
 }
+
 
 static void soc_config_acpibase(void)
 {
@@ -166,8 +171,8 @@ static void soc_config_acpibase(void)
 	 * to [0x3F, PMC PCI Offset 40h bit[15:2], 1]
 	 */
 	reg32 = ((0x3f << 18) | ACPI_BASE_ADDRESS | 1);
-	pcr_write32(PID_DMI, R_PCH_PCR_DMI_ACPIBA, reg32);
-	pcr_write32(PID_DMI, R_PCH_PCR_DMI_ACPIBDID, 0x23A0);
+	pcr_write32(PID_DMI, PCR_DMI_ACPIBA, reg32);
+	pcr_write32(PID_DMI, PCR_DMI_ACPIBDID, 0x23A0);
 }
 
 static void soc_config_pwrmbase(void)
@@ -192,13 +197,13 @@ static void soc_config_pwrmbase(void)
 	 *
 	 * Program "PM Base Address Memory Range Limit" PCR[DMI] + 27ACh[31:16]
 	 * to the value programmed in PMC PCI Offset 48h bit[31:16], this has an
-	 * implication of making sure the memory allocated to PWRMBASE to be 64KB
-	 * in size.
+	 * implication of making sure the memory allocated to PWRMBASE to be
+	 * 64KB in size.
 	 */
-	pcr_write32(PID_DMI, R_PCH_PCR_DMI_PMBASEA,
+	pcr_write32(PID_DMI, PCR_DMI_PMBASEA,
 		((PCH_PWRM_BASE_ADDRESS & 0xFFFF0000) |
 		 (PCH_PWRM_BASE_ADDRESS >> 16)));
-	pcr_write32(PID_DMI, R_PCH_PCR_DMI_PMBASEC, 0x800023A0);
+	pcr_write32(PID_DMI, PCR_DMI_PMBASEC, 0x800023A0);
 }
 
 static void soc_config_tco(void)
@@ -222,8 +227,7 @@ static void soc_config_tco(void)
 	 * Program "TCO Base Address" PCR[DMI] + 2778h[15:5, 1]
 	 * to [SMBUS PCI offset 50h[15:5], 1].
 	 */
-	pcr_write32(PID_DMI, R_PCH_PCR_DMI_TCOBASE,
-		   (TCO_BASE_ADDDRESS | (1 << 1)));
+	pcr_write32(PID_DMI, PCR_DMI_TCOBASE, TCO_BASE_ADDDRESS | (1 << 1));
 
 	/* Program TCO timer halt */
 	tcobase = pci_read_config16(PCH_DEV_SMBUS, TCOBASE);
@@ -233,16 +237,9 @@ static void soc_config_tco(void)
 	outw(tcocnt, tcobase + TCO1_CNT);
 }
 
-static void soc_config_rtc(void)
-{
-	/* Enable upper 128 bytes of CMOS */
-	pcr_andthenor32(PID_RTC, R_PCH_PCR_RTC_CONF, ~0,
-			B_PCH_PCR_RTC_CONF_UCMOS_EN);
-}
-
 static void enable_heci(void)
 {
-	device_t dev = PCH_DEV_ME;
+	device_t dev = PCH_DEV_CSE;
 	u8 pcireg;
 
 	/* Assign Resources to HECI1 */
@@ -269,12 +266,12 @@ void pch_early_iorange_init(void)
 	/* IO Decode Range */
 	lpc_en = COMA_RANGE | (COMB_RANGE << 4);
 	pci_write_config16(PCH_DEV_LPC, LPC_IO_DEC, lpc_en);
-	pcr_write16(PID_DMI, R_PCH_PCR_DMI_LPCIOD, lpc_en);
+	pcr_write16(PID_DMI, PCR_DMI_LPCIOD, lpc_en);
 
 	/* IO Decode Enable */
 	lpc_en = CNF1_LPC_EN | COMA_LPC_EN | KBC_LPC_EN | MC_LPC_EN;
 	pci_write_config16(PCH_DEV_LPC, LPC_EN, lpc_en);
-	pcr_write16(PID_DMI, R_PCH_PCR_DMI_LPCIOE, lpc_en);
+	pcr_write16(PID_DMI, PCR_DMI_LPCIOE, lpc_en);
 }
 
 void pch_early_init(void)
@@ -309,7 +306,7 @@ void pch_early_init(void)
 	/* Set up GPE configuration */
 	pmc_gpe_init();
 
-	soc_config_rtc();
+	enable_rtc_upper_bank();
 
 	enable_heci();
 }

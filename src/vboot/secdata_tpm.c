@@ -1,7 +1,33 @@
 /* Copyright (c) 2013 The Chromium OS Authors. All rights reserved.
- * Use of this source code is governed by a BSD-style license that can be
- * found in the LICENSE file.
  *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are
+ * met:
+ *
+ *    * Redistributions of source code must retain the above copyright
+ * notice, this list of conditions and the following disclaimer.
+ *    * Redistributions in binary form must reproduce the above
+ * copyright notice, this list of conditions and the following disclaimer
+ * in the documentation and/or other materials provided with the
+ * distribution.
+ *    * Neither the name of Google Inc. nor the names of its
+ * contributors may be used to endorse or promote products derived from
+ * this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+ * OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
+/*
  * Functions for querying, manipulating and locking rollback indices
  * stored in the TPM NVRAM.
  */
@@ -424,23 +450,22 @@ uint32_t setup_tpm(struct vb2_context *ctx)
 		return TPM_SUCCESS;
 	}
 
-#ifdef TEGRA_SOFT_REBOOT_WORKAROUND
-	result = tlcl_startup();
-	if (result == TPM_E_INVALID_POSTINIT) {
-		/*
-		 * Some prototype hardware doesn't reset the TPM on a CPU
-		 * reset.  We do a hard reset to get around this.
-		 */
-		VBDEBUG("TPM: soft reset detected\n", result);
-		ctx->flags |= VB2_CONTEXT_SECDATA_WANTS_REBOOT;
-		return TPM_E_MUST_REBOOT;
-	} else if (result != TPM_SUCCESS) {
-		VBDEBUG("TPM: tlcl_startup returned %08x\n", result);
-		return result;
-	}
-#else
-	RETURN_ON_FAILURE(tlcl_startup());
-#endif
+	if (IS_ENABLED(CONFIG_VBOOT_SOFT_REBOOT_WORKAROUND)) {
+		result = tlcl_startup();
+		if (result == TPM_E_INVALID_POSTINIT) {
+			/*
+			 * Some prototype hardware doesn't reset the TPM on a CPU
+			 * reset.  We do a hard reset to get around this.
+			 */
+			VBDEBUG("TPM: soft reset detected\n");
+			ctx->flags |= VB2_CONTEXT_SECDATA_WANTS_REBOOT;
+			return TPM_E_MUST_REBOOT;
+		} else if (result != TPM_SUCCESS) {
+			VBDEBUG("TPM: tlcl_startup returned %08x\n", result);
+			return result;
+		}
+	} else
+		RETURN_ON_FAILURE(tlcl_startup());
 
 	/*
 	 * Some TPMs start the self test automatically at power on. In that case
@@ -515,6 +540,8 @@ uint32_t antirollback_read_space_firmware(struct vb2_context *ctx)
 
 uint32_t antirollback_write_space_firmware(struct vb2_context *ctx)
 {
+	if (IS_ENABLED(CONFIG_CR50_IMMEDIATELY_COMMIT_FW_SECDATA))
+		tlcl_cr50_enable_nvcommits();
 	return write_secdata(FIRMWARE_NV_INDEX, ctx->secdata, VB2_SECDATA_SIZE);
 }
 
